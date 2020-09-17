@@ -22,6 +22,11 @@ brew install postgresql
 I followed the instructions [here](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-14-04). It's for Ubuntu, but the commands work perfectly on a Mac. 
 
 * Instead of `myproject`, I used `ivideo_db`, and instead of `myprojectuser`, I used `ivideo_root`. Password is the usual Avanti password. 
+* On AWS
+```
+DB user: ivideoroot
+password: USUAL_AVANTI_PASSWORD
+```
 * Administrator account credentials:
 ```
 username: ivideo_admin
@@ -33,9 +38,22 @@ password: USUAL_AVANTI_PASSWORD
 source ~/eb-virt/bin/activate
 ```
 
+## Troubleshooting
+
+* SSHing into the instance
+
+```
+eb ssh -i INSTANCE_ID
+```
+
+The instance ID should be available 
+
+## Elastic Beanstalk things
+
+The packages that are nee
 ### References
 
 1. Digital Ocean's guide to setting up an [empty Django Project with Postgres](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-14-04)
-2. Decent detailed tutorial series on [Elastic Beanstalk + Django + Postgres](https://www.starwindsoftware.com/blog/deploying-django-project-to-aws-elastic-beanstalk)
+2. Decent detailed tutorial series on [Elastic Beanstalk + Django](https://www.starwindsoftware.com/blog/deploying-django-project-to-aws-elastic-beanstalk) and [Postgres](https://www.starwindsoftware.com/blog/deploying-django-project-to-aws-elastic-beanstalk-part-2-database-settings-configuration)
 3. [Offical AWS Docs for this combo](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create-deploy-python-django.html)
 4. Getting EB CLI to work properly. [Official](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-configuration.html) + [SO help](https://stackoverflow.com/questions/29190202/how-to-change-the-aws-account-using-the-elastic-beanstalk-cli)

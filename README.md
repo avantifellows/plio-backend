@@ -4,7 +4,7 @@ Avanti Interactive Video
 ## Requirements
 
 ### Python
-* `python 3.8.5`
+* `python 3.7`
 * `virtualenv` (usually installed via `pip install virtualenv`)
 * A virtual environment created with `python 3.8.5`:
 ```

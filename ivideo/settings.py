@@ -25,7 +25,7 @@ SECRET_KEY = '+o3e(i8els(3bv43!4^lflht9p9l#b%$wa+p4fmb$h#xa))%5u'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0']
+ALLOWED_HOSTS = ['0.0.0.0', 'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com']
 
 
 # Application definition

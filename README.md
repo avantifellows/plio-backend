@@ -40,13 +40,15 @@ source ~/eb-virt/bin/activate
 
 ## Troubleshooting
 
-* SSHing into the instance
+* You can ssh into the instance to figure things out.
 
 ```
 eb ssh -i INSTANCE_ID
 ```
+The instance ID should be available in the errot message. 
+* Migration problems on the EB instance. Solution from [here](https://stackoverflow.com/questions/62457165/deploying-django-to-elastic-beanstalk-migrations-failed/63074781#63074781)
 
-The instance ID should be available 
+
 
 ## Elastic Beanstalk things
 

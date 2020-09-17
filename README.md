@@ -62,4 +62,4 @@ The packages that are nee
 2. Decent detailed tutorial series on [Elastic Beanstalk + Django](https://www.starwindsoftware.com/blog/deploying-django-project-to-aws-elastic-beanstalk) and [Postgres](https://www.starwindsoftware.com/blog/deploying-django-project-to-aws-elastic-beanstalk-part-2-database-settings-configuration)
 3. [Offical AWS Docs for this combo](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/create-deploy-python-django.html)
 4. Getting EB CLI to work properly. [Official](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3-configuration.html) + [SO help](https://stackoverflow.com/questions/29190202/how-to-change-the-aws-account-using-the-elastic-beanstalk-cli)
-5. Crazy. Static file uploading error. [SO Link](https://stackoverflow.com/questions/48103527/elasticbeanstalk-wont-set-virtual-paths)
+5. Crazy. Static file uploading error. [SO Link](https://stackoverflow.com/questions/62273041/aws-elastic-beanstalk-can-not-find-static-files-for-django-app)

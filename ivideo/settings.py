@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ['0.0.0.0', 'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com
 # Application definition
 
 INSTALLED_APPS = [
+    'ivideo_player.apps.IvideoPlayerConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

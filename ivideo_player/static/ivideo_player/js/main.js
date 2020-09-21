@@ -5,9 +5,9 @@ var IdentityPoolId = "ap-south-1:55666887-6fb4-4ec4-b023-1d496059109e";
 var bucketRegion = "ap-south-1";
 
 console.log("HELLO!!")
-var script_tag = document.getElementById('video_js')
-var video_details = script_tag.getAttribute('data-search')
-console.log(video_details)
+var script_tag = document.getElementById('main_js')
+var times = script_tag.getAttribute('data-times')
+console.log(times[0])
 AWS.config.update({
         region: bucketRegion,
         credentials: new AWS.CognitoIdentityCredentials({

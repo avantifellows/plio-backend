@@ -21,7 +21,8 @@ def watch_ivideo(request, ivideo_id):
     times = []
     options = []
     print(jsondata)
-    for question in jsondata['questions']:
+    for question in jsondata['questions']['questions']:
+        print(question)
         q = question['question']
         questions.append(q['text'])
         options.append(q['options'])

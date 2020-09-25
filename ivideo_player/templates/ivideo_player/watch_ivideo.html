@@ -283,6 +283,22 @@
                     }
                 }
 
+                //generate markers for question positions
+                var progressBar = document.querySelectorAll(".plyr__progress")[0];
+                for (i = 0; i < questions_list.length; i++) {
+                  var marker = document.createElement("SPAN");
+                  marker.className = "plyr__tooltip";
+                  marker.style.setProperty("opacity", 1);
+                  marker.style.setProperty("background-color", "#ff0");
+                  marker.style.setProperty("bottom", "80%");
+                  marker.style.setProperty("height", "80%");
+
+                  var pos_percent = (time_values[i]/player.duration)*100;
+                  marker.style.setProperty("left", `${pos_percent}%`);
+
+                  progressBar.appendChild(marker);
+                }
+
                 student_id = identifier;
                 console.log(student_id);
                 document.getElementById('email_container').style.display = "none";

@@ -36,6 +36,12 @@ password: USUAL_AVANTI_PASSWORD
 
 ```
 source ~/eb-virt/bin/activate
+pip instlal django psycopg2-binary
+pip install -r requirements.txt
+python3 manage.py makemigrations
+python3 manage.py migrate
+python3 manage.py collectstatic
+python3 manage.py runserver
 ```
 
 ## Troubleshooting

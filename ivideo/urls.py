@@ -21,4 +21,6 @@ urlpatterns = [
     path('player/', include('ivideo_player.urls')),
     path('admin/', admin.site.urls),
     path('', views.index),
+    path('ivideos_list', views.get_ivideos_list),
+    path('get_ivideo', views.get_ivideo)
 ]

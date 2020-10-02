@@ -185,7 +185,7 @@ p {
 
 #email_text::placeholder {
     /* Chrome, Firefox, Opera, Safari 10.1+ */
-    color: black;
+    color: rgb(191, 191, 198);
     opacity: 1;
     /* Firefox */
 }

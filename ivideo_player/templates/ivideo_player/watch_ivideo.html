@@ -264,25 +264,23 @@
                 var num_match = identifier.match(/\d/g);
 
                 //check for mobile number
-                if (num_match && num_match.length == identifier.length) {
-                    if (num_match.length != 10) {
-                        no_num.style.display = "block";
-                        no_email.style.display = "none";
-                        return false;
-                    }
+                if (num_match === null || num_match.length != identifier.length || num_match.length != 10) {
+                    no_num.style.display = "block";
+                    // no_email.style.display = "none";
+                    return false;
                 }
                 //check for email
-                else {
-                    let at = identifier.indexOf("@");
-                    let point = identifier.lastIndexOf(".");
+                // else {
+                //     let at = identifier.indexOf("@");
+                //     let point = identifier.lastIndexOf(".");
 
-                    if (at < 1 || point < (at + 2) || (point + 2) >= identifier.length) {
-                        console.log("two");
-                        no_email.style.display = "block";
-                        no_num.style.display = "none";
-                        return false;
-                    }
-                }
+                //     if (at < 1 || point < (at + 2) || (point + 2) >= identifier.length) {
+                //         console.log("two");
+                //         no_email.style.display = "block";
+                //         no_num.style.display = "none";
+                //         return false;
+                //     }
+                // }
 
                 //generate markers for question positions
                 var progressBar = document.querySelectorAll(".plyr__progress")[0];
@@ -441,16 +439,16 @@
         <div class="container" id="container" style="display">
             <div id="player" data-plyr-provider="youtube"></div>
             <div class="validate" id="email_container" style="">
-                <h1>कृपया अपना इ-मेल या मोबाइल नंबर डालें</h1>
-                <h1>Please enter your email/mobile number</h1>
+                <h1>कृपया अपना मोबाइल नंबर डालें</h1>
+                <h1>Please enter your mobile number</h1>
                 <form id="form" action="" method="get" name="validate">
-                    <input type="text" placeholder="Email/Mobile" name="courriel" id="email_text" />
+                    <input type="text" placeholder="Mobile" name="courriel" id="email_text" />
                     <input type="button" value="Submit" id="btn" class="js-submit-email" />
                 </form>
-                <div id="novalid_email">
+                <!-- <div id="novalid_email">
                     <p>सॉरी, सही इ-मेल फिरसे डालें</p>
                     <p>Sorry, enter your correct email again</p>
-                </div>
+                </div> -->
                 <div id="novalid_number">
                     <p>सॉरी, सही मोबाइल नंबर फिरसे डालें</p>
                     <p>Sorry, enter your correct number again</p>

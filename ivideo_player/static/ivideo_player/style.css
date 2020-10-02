@@ -78,9 +78,9 @@
 }
 
 .btn {
-    padding: 1vw 4vw;
+    padding: 3vw 4vw;
     color: #fff;
-    font-size: 2vw;
+    font-size: 3vw;
     border-radius: 2vw;
     background-color: #008080;
     border: none;
@@ -94,9 +94,9 @@
 }
 
 .btn:active {
-    padding: 1vw 4vw;
+    padding: 3vw 4vw;
     color: #fff;
-    font-size: 2vw;
+    font-size: 3vw;
     border-radius: 2vw;
     background-color: #008080;
     border: none;

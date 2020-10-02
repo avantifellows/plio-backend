@@ -225,6 +225,16 @@ p {
   }
    */
 
+input[type="radio"] {
+    margin: 3px 15px 3px 5px;
+    /*height: 4em;*/
+    -webkit-transform: scale(2);
+    -moz-transform: scale(2);
+    -o-transform: scale(2);
+    -ms-transform: scale(2);
+    transform: scale(2);
+}
+
 #novalid_email {
     background-color: red;
     padding: 1em;

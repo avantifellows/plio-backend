@@ -270,7 +270,7 @@ p {
     #body {
         display: block;
     }
-    @media only screen and (orientation:portrait) {
+    @media only screen and (orientation:landscape) {
         #body {
             height: 100vw;
             -webkit-transform: rotate(90deg);
@@ -280,7 +280,7 @@ p {
             transform: rotate(90deg);
         }
     }
-    @media only screen and (orientation:landscape) {
+    @media only screen and (orientation:portrait) {
         #body {
             -webkit-transform: rotate(0deg);
             -moz-transform: rotate(0deg);

@@ -67,6 +67,37 @@
             return label;
         };
 
+        // upload responses to S3
+        function uploadJson() {
+            const student_answers = {
+                'answers': answers,
+                'questions': questions_list,
+                'options': set_of_options
+            }
+            const json_answers = JSON.stringify(student_answers)
+            console.log(json_answers)
+
+            var fileName = object_id + '_' + student_id + '.json'
+            var filePath = save_dir + '/' + fileName;
+
+            console.log("http://avanti-fellows.s3.ap-south-1.amazonaws.com/" + filePath)
+            s3.putObject({
+                Key: filePath,
+                ACL: 'public-read',
+                Body: json_answers,
+                ContentType: 'application/json'
+            }, function (err) {
+                if (err) {
+                    reject('error');
+                }
+            }
+            ).on('httpUploadProgress', function (progress) {
+                var uploaded = parseInt((progress.loaded * 100) / progress.total);
+                $("progress").attr('value', uploaded);
+            }
+            );
+        }
+
         //forces fullscreen to any element
         function toggleFullScreen(elem) {
             // ## The below if statement seems to work better ## if ((document.fullScreenElement && document.fullScreenElement !== null) || (document.msfullscreenElement && document.msfullscreenElement !== null) || (!document.mozFullScreen && !document.webkitIsFullScreen)) {
@@ -169,33 +200,7 @@
                 //logging the recorded option
                 console.log(answers);
 
-                const student_answers = {
-                    'answers': answers,
-                    'questions': questions_list,
-                    'options': set_of_options
-                }
-                const json_answers = JSON.stringify(student_answers)
-                console.log(json_answers)
-
-                var fileName = object_id + '_' + student_id + '.json'
-                var filePath = save_dir + '/' + fileName;
-
-                console.log("http://avanti-fellows.s3.ap-south-1.amazonaws.com/" + filePath)
-                s3.putObject({
-                    Key: filePath,
-                    ACL: 'public-read',
-                    Body: json_answers,
-                    ContentType: 'application/json'
-                }, function (err) {
-                    if (err) {
-                        reject('error');
-                    }
-                }
-                ).on('httpUploadProgress', function (progress) {
-                    var uploaded = parseInt((progress.loaded * 100) / progress.total);
-                    $("progress").attr('value', uploaded);
-                }
-                );
+                uploadJson();
 
                 questions.style.display = 'none';
                 player.play();
@@ -302,6 +307,8 @@
                 console.log(student_id);
                 document.getElementById('email_container').style.display = "none";
                 document.getElementById('container').style.display = "block";
+
+                uploadJson();
 
                 // toggleFullScreen(document.getElementById('grid-box'));
                 player.fullscreen.enter()

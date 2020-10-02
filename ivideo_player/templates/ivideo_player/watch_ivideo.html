@@ -39,6 +39,8 @@
         var set_of_options = {{ set_of_options | safe }};
         var vid_id = "{{ video_id }}";
         var object_id = "{{ ivideo_id }}";
+        var watch_time = 0;
+        var isPlaying = false;
 
         var answers = [];
         for (i = 0; i < time_values.length; i++) {
@@ -72,7 +74,8 @@
             const student_answers = {
                 'answers': answers,
                 'questions': questions_list,
-                'options': set_of_options
+                'options': set_of_options,
+                'watch-time': watch_time
             }
             const json_answers = JSON.stringify(student_answers)
             console.log(json_answers)
@@ -152,6 +155,15 @@
                     player.pause()
                 }
             });
+
+            player.on('playing', event => {
+                isPlaying = true;
+            });
+
+            player.on('pause', event => {
+                isPlaying = false;
+            });
+
 
             player.on('enterfullscreen', event => {
                 screen.orientation.lock('landscape');
@@ -337,6 +349,9 @@
                     setTimeout(loop, 100)
                     return
                 }
+
+                if(isPlaying) watch_time += 100;
+                
 
                 show_overlay = false;
                 for (i = 0; i < time_values.length; i++) {

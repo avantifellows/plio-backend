@@ -17,7 +17,7 @@
 }
 
 .overlay {
-    width: 100%;
+    /*width: 100%;*/
     height: 100%;
     grid-area: overlap;
     grid-column: 2/span 8;
@@ -27,7 +27,7 @@
     border-radius: 25px;
     border: 5px solid red;
     color: #fff;
-    background: #808080;
+    background: #2bb1ce;
     font-family: "Verdana";
     position: relative;
 }

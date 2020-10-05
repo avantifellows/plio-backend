@@ -17,7 +17,7 @@
 }
 
 .overlay {
-    width: 100%;
+    /*width: 100%;*/
     height: 100%;
     grid-area: overlap;
     grid-column: 2/span 8;
@@ -27,7 +27,7 @@
     border-radius: 25px;
     border: 5px solid red;
     color: #fff;
-    background: #808080;
+    background: #2bb1ce;
     font-family: "Verdana";
     position: relative;
 }
@@ -78,9 +78,9 @@
 }
 
 .btn {
-    padding: 1vw 4vw;
+    padding: 3vw 4vw;
     color: #fff;
-    font-size: 2vw;
+    font-size: 3vw;
     border-radius: 2vw;
     background-color: #008080;
     border: none;
@@ -94,9 +94,9 @@
 }
 
 .btn:active {
-    padding: 1vw 4vw;
+    padding: 3vw 4vw;
     color: #fff;
-    font-size: 2vw;
+    font-size: 3vw;
     border-radius: 2vw;
     background-color: #008080;
     border: none;
@@ -185,7 +185,7 @@ p {
 
 #email_text::placeholder {
     /* Chrome, Firefox, Opera, Safari 10.1+ */
-    color: black;
+    color: rgb(191, 191, 198);
     opacity: 1;
     /* Firefox */
 }
@@ -224,6 +224,16 @@ p {
 
   }
    */
+
+input[type="radio"] {
+    margin: 3px 15px 3px 5px;
+    /*height: 4em;*/
+    -webkit-transform: scale(2);
+    -moz-transform: scale(2);
+    -o-transform: scale(2);
+    -ms-transform: scale(2);
+    transform: scale(2);
+}
 
 #novalid_email {
     background-color: red;
@@ -270,7 +280,7 @@ p {
     #body {
         display: block;
     }
-    @media only screen and (orientation:portrait) {
+    @media only screen and (orientation:landscape) {
         #body {
             height: 100vw;
             -webkit-transform: rotate(90deg);
@@ -280,7 +290,7 @@ p {
             transform: rotate(90deg);
         }
     }
-    @media only screen and (orientation:landscape) {
+    @media only screen and (orientation:portrait) {
         #body {
             -webkit-transform: rotate(0deg);
             -moz-transform: rotate(0deg);

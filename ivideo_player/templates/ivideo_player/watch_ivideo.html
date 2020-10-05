@@ -39,6 +39,8 @@
         var set_of_options = {{ set_of_options | safe }};
         var vid_id = "{{ video_id }}";
         var object_id = "{{ ivideo_id }}";
+        var watch_time = 0;
+        var isPlaying = false;
 
         var answers = [];
         for (i = 0; i < time_values.length; i++) {
@@ -66,6 +68,38 @@
 
             return label;
         };
+
+        // upload responses to S3
+        function uploadJson() {
+            const student_answers = {
+                'answers': answers,
+                'questions': questions_list,
+                'options': set_of_options,
+                'watch-time': watch_time
+            }
+            const json_answers = JSON.stringify(student_answers)
+            console.log(json_answers)
+
+            var fileName = object_id + '_' + student_id + '.json'
+            var filePath = save_dir + '/' + fileName;
+
+            console.log("http://avanti-fellows.s3.ap-south-1.amazonaws.com/" + filePath)
+            s3.putObject({
+                Key: filePath,
+                ACL: 'public-read',
+                Body: json_answers,
+                ContentType: 'application/json'
+            }, function (err) {
+                if (err) {
+                    reject('error');
+                }
+            }
+            ).on('httpUploadProgress', function (progress) {
+                var uploaded = parseInt((progress.loaded * 100) / progress.total);
+                $("progress").attr('value', uploaded);
+            }
+            );
+        }
 
         //forces fullscreen to any element
         function toggleFullScreen(elem) {
@@ -122,6 +156,15 @@
                 }
             });
 
+            player.on('playing', event => {
+                isPlaying = true;
+            });
+
+            player.on('pause', event => {
+                isPlaying = false;
+            });
+
+
             player.on('enterfullscreen', event => {
                 screen.orientation.lock('landscape');
                 // player.fullscreen.exit()
@@ -130,7 +173,7 @@
             player.on('exitfullscreen', event => {
                 screen.orientation.lock('landscape');
                 // player.fullscreen.exit()
-                console.log('exiting')
+                // console.log('exiting')
             });
 
             document.getElementById('player').setAttribute("data-plyr-embed-id", vid_id);
@@ -169,33 +212,7 @@
                 //logging the recorded option
                 console.log(answers);
 
-                const student_answers = {
-                    'answers': answers,
-                    'questions': questions_list,
-                    'options': set_of_options
-                }
-                const json_answers = JSON.stringify(student_answers)
-                console.log(json_answers)
-
-                var fileName = object_id + '_' + student_id + '.json'
-                var filePath = save_dir + '/' + fileName;
-
-                console.log("http://avanti-fellows.s3.ap-south-1.amazonaws.com/" + filePath)
-                s3.putObject({
-                    Key: filePath,
-                    ACL: 'public-read',
-                    Body: json_answers,
-                    ContentType: 'application/json'
-                }, function (err) {
-                    if (err) {
-                        reject('error');
-                    }
-                }
-                ).on('httpUploadProgress', function (progress) {
-                    var uploaded = parseInt((progress.loaded * 100) / progress.total);
-                    $("progress").attr('value', uploaded);
-                }
-                );
+                uploadJson();
 
                 questions.style.display = 'none';
                 player.play();
@@ -264,25 +281,23 @@
                 var num_match = identifier.match(/\d/g);
 
                 //check for mobile number
-                if (num_match && num_match.length == identifier.length) {
-                    if (num_match.length != 10) {
-                        no_num.style.display = "block";
-                        no_email.style.display = "none";
-                        return false;
-                    }
+                if (num_match === null || num_match.length != identifier.length || num_match.length != 10) {
+                    no_num.style.display = "block";
+                    // no_email.style.display = "none";
+                    return false;
                 }
                 //check for email
-                else {
-                    let at = identifier.indexOf("@");
-                    let point = identifier.lastIndexOf(".");
+                // else {
+                //     let at = identifier.indexOf("@");
+                //     let point = identifier.lastIndexOf(".");
 
-                    if (at < 1 || point < (at + 2) || (point + 2) >= identifier.length) {
-                        console.log("two");
-                        no_email.style.display = "block";
-                        no_num.style.display = "none";
-                        return false;
-                    }
-                }
+                //     if (at < 1 || point < (at + 2) || (point + 2) >= identifier.length) {
+                //         console.log("two");
+                //         no_email.style.display = "block";
+                //         no_num.style.display = "none";
+                //         return false;
+                //     }
+                // }
 
                 //generate markers for question positions
                 var progressBar = document.querySelectorAll(".plyr__progress")[0];
@@ -304,6 +319,8 @@
                 console.log(student_id);
                 document.getElementById('email_container').style.display = "none";
                 document.getElementById('container').style.display = "block";
+
+                uploadJson();
 
                 // toggleFullScreen(document.getElementById('grid-box'));
                 player.fullscreen.enter()
@@ -331,6 +348,11 @@
                 if (isNaN(player_time) || questions.style.display == 'block') {
                     setTimeout(loop, 100)
                     return
+                }
+
+                if(isPlaying) {
+                    watch_time += 100;
+                    uploadJson();
                 }
 
                 show_overlay = false;
@@ -441,16 +463,16 @@
         <div class="container" id="container" style="display">
             <div id="player" data-plyr-provider="youtube"></div>
             <div class="validate" id="email_container" style="">
-                <h1>कृपया अपना इ-मेल या मोबाइल नंबर डालें</h1>
-                <h1>Please enter your email/mobile number</h1>
+                <h1>कृपया अपना मोबाइल नंबर डालें</h1>
+                <h1>Please enter your mobile number</h1>
                 <form id="form" action="" method="get" name="validate">
-                    <input type="text" placeholder="Email/Mobile" name="courriel" id="email_text" />
+                    <input type="text" placeholder="Mobile" name="courriel" id="email_text">
                     <input type="button" value="Submit" id="btn" class="js-submit-email" />
                 </form>
-                <div id="novalid_email">
+                <!-- <div id="novalid_email">
                     <p>सॉरी, सही इ-मेल फिरसे डालें</p>
                     <p>Sorry, enter your correct email again</p>
-                </div>
+                </div> -->
                 <div id="novalid_number">
                     <p>सॉरी, सही मोबाइल नंबर फिरसे डालें</p>
                     <p>Sorry, enter your correct number again</p>

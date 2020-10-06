@@ -4,6 +4,8 @@ branch-defaults:
     group_suffix: null
   master:
     environment: ivideo
+  release:
+    environment: ivideo
 environment-defaults:
   ivideo:
     branch: null

@@ -1,4 +1,7 @@
 # Source https://github.com/marketplace/actions/aws-elastic-beanstalk-django-deployment
+# Source for some errors:
+# Config not set: https://gist.github.com/RobertoSchneiders/9e0e73e836a80d53a21e#gistcomment-1896478
+
 name: Build and Deploy Django to EB
 
 on:

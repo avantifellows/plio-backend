@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index),
     path('ivideos_list', views.get_ivideos_list),
-    path('get_ivideo', views.get_ivideo)
+    path('get_ivideo', views.get_ivideo),
+    path('update_response', views.update_response)
 ]

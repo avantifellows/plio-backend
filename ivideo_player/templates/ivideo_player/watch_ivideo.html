@@ -14,26 +14,8 @@
     <link rel="stylesheet" type="text/css" href="{% static 'ivideo_player/style.css' %}">
 
     <script type="text/javascript">
-        //Bucket Configurations
-
-        var bucketName = "avanti-fellows";
-        var IdentityPoolId = "ap-south-1:55666887-6fb4-4ec4-b023-1d496059109e";
-        var bucketRegion = "ap-south-1";
-
-        AWS.config.update({
-            region: bucketRegion,
-            credentials: new AWS.CognitoIdentityCredentials({
-                IdentityPoolId: IdentityPoolId
-            })
-        });
-
-        var s3 = new AWS.S3({
-            apiVersion: '2020-07-01',
-            params: { Bucket: bucketName }
-        });
-
         //user configured metadata about the questions
-        var save_dir = 'answers';
+        // var save_dir = 'answers';
         var time_values = {{ times | safe }};
         var questions_list = {{ questions_list | safe }};
         var set_of_options = {{ set_of_options | safe }};
@@ -71,34 +53,28 @@
 
         // upload responses to S3
         function uploadJson() {
-            const student_answers = {
-                'answers': answers,
-                'questions': questions_list,
-                'options': set_of_options,
-                'watch-time': watch_time
-            }
-            const json_answers = JSON.stringify(student_answers)
-            console.log(json_answers)
-
-            var fileName = object_id + '_' + student_id + '.json'
-            var filePath = save_dir + '/' + fileName;
-
-            console.log("http://avanti-fellows.s3.ap-south-1.amazonaws.com/" + filePath)
-            s3.putObject({
-                Key: filePath,
-                ACL: 'public-read',
-                Body: json_answers,
-                ContentType: 'application/json'
-            }, function (err) {
-                if (err) {
-                    reject('error');
+            const student_response = {
+                'response': {
+                    'answers': answers,
+                    'questions': questions_list,
+                    'options': set_of_options,
+                    'watch-time': watch_time
+                },
+                'meta': {
+                    'object_id': object_id,
+                    'student_id': student_id
                 }
             }
-            ).on('httpUploadProgress', function (progress) {
-                var uploaded = parseInt((progress.loaded * 100) / progress.total);
-                $("progress").attr('value', uploaded);
-            }
-            );
+            const json_response = JSON.stringify(student_response)
+            console.log(json_response)
+
+            fetch('/update_response', {method: 'POST', body: json_response,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }})
+                .then(response => response.json())
+                .then(data => console.log(data))
         }
 
         //forces fullscreen to any element
@@ -115,20 +91,6 @@
                     elem.msRequestFullscreen();
                 }
             }
-
-            // if (elem.cancelFullScreen) {
-            //     elem.cancelFullScreen();
-            // } else if (elem.mozCancelFullScreen) {
-            //     elem.mozCancelFullScreen();
-            // } else if (elem.webkitCancelFullScreen) {
-            //     elem.webkitCancelFullScreen();
-            // } else if (elem.msExitFullscreen) {
-            //     elem.msExitFullscreen();
-            // }
-            // cancel_func();
-
-            // console.log(elem.webkitRequestFullScreen)
-            // console.log(elem.webkitCancelFullScreen)
         }
 
         //Runs the code when the content loads on the webpage

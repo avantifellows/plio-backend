@@ -1,41 +1,22 @@
 from os.path import join
+import json
 from django.http import response
-import ivideo
 from django.http import HttpResponseBadRequest, request
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseNotFound
 from rest_framework.decorators import api_view
 
-
-import json
-
-from utils.avanti_s3 import get_all_ivideo_objects, get_object, get_resource
+import ivideo
+from utils.avanti_s3 import get_all_ivideo_objects, get_object, push_response_to_s3
 
 
 @api_view(['POST'])
 def update_response(request):
-    print(request.data)
+    file_path = push_response_to_s3(request.data)
 
-    meta_data = request.data['meta']
-    response = request.data['response']
-
-    # authenticate
-    s3 = get_resource()
-
-    # define bucket
-    bucket = 'avanti-fellows'
-
-    # directory where responses are saved
-    save_dir = 'answers'
-
-    # define the path where the response is saved
-    file_name = f"{meta_data['object_id']}_{meta_data['student_id']}.json"
-    file_path = join(save_dir, file_name)
-
-    s3.Object(bucket, file_path).put(Body=json.dumps(response))
     return JsonResponse({
-        'path': f"http://avanti-fellows.s3.ap-south-1.amazonaws.com/{file_path}"
+        'path': file_path
     }, status=200)
 
 

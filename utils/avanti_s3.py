@@ -1,9 +1,38 @@
+from os.path import join
+
 import boto3
 from botocore.exceptions import ClientError
 import json
 
 # NOTE: public authentication details
 
+
+def push_response_to_s3(response_data):
+    print(response_data)
+    meta_data = response_data['meta']
+    response = response_data['response']
+
+    # authenticate
+    s3 = get_resource()
+
+    # define bucket
+    bucket = 'avanti-fellows'
+
+    # directory where responses are saved
+    save_dir = 'answers'
+
+    # define the path where the response is saved
+    file_name = f"{meta_data['object_id']}_{meta_data['student_id']}.json"
+
+    # To handle windows' default backslash system
+    file_path = join(save_dir, file_name).replace("\\","/")
+
+    s3.Object(bucket, file_path).put(Body=json.dumps(response), ContentType='application/json')
+
+    print(file_path)
+    print(response)
+
+    return f"http://avanti-fellows.s3.ap-south-1.amazonaws.com/{file_path}"
 
 def get_resource(
         service_name='s3', region_name='ap-south-1',

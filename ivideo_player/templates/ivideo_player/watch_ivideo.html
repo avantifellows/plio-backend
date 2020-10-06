@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 
@@ -504,4 +505,474 @@
     </div>
 </body>
 
+=======
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <script type="text/javascript"
+        src="https://cdn.polyfill.io/v2/polyfill.min.js?features=es6,Array.prototype.includes,CustomEvent,Object.entries,Object.values,URL"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.357.0.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/plyr@3"></script>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/plyr@3/dist/plyr.css">
+    <link rel="stylesheet" type="text/css" href="{% static 'ivideo_player/style.css' %}">
+
+    <script type="text/javascript">
+        //user configured metadata about the questions
+        // var save_dir = 'answers';
+        var time_values = {{ times | safe }};
+        var questions_list = {{ questions_list | safe }};
+        var set_of_options = {{ set_of_options | safe }};
+        var vid_id = "{{ video_id }}";
+        var object_id = "{{ ivideo_id }}";
+        var watch_time = 0;
+        var isPlaying = false;
+
+        var answers = [];
+        for (i = 0; i < time_values.length; i++) {
+            answers.push("");
+        }
+
+        //utility functions
+
+        //create a radio button for a specific option
+        function radio_btn(id, name, value) {
+            var button = document.createElement("input");
+            button.type = "radio";
+            button.id = id;
+            button.name = name;
+            button.value = value;
+
+            return button;
+        };
+
+        //create a label for the radio button created above
+        function label_for_radio_btn(forAttribute, valueHTML) {
+            var label = document.createElement("label");
+            label.htmlFor = forAttribute;
+            label.innerHTML = valueHTML;
+
+            return label;
+        };
+
+        // upload responses to S3
+        function uploadJson() {
+            const student_response = {
+                'response': {
+                    'answers': answers,
+                    'questions': questions_list,
+                    'options': set_of_options,
+                    'watch-time': watch_time
+                },
+                'meta': {
+                    'object_id': object_id,
+                    'student_id': student_id
+                }
+            }
+            const json_response = JSON.stringify(student_response)
+            console.log(json_response)
+
+            fetch('/update_response', {method: 'POST', body: json_response,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }})
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(err => console.log(err))
+        }
+
+        //forces fullscreen to any element
+        function toggleFullScreen(elem) {
+            // ## The below if statement seems to work better ## if ((document.fullScreenElement && document.fullScreenElement !== null) || (document.msfullscreenElement && document.msfullscreenElement !== null) || (!document.mozFullScreen && !document.webkitIsFullScreen)) {
+            if ((document.fullScreenElement !== undefined && document.fullScreenElement === null) || (document.msFullscreenElement !== undefined && document.msFullscreenElement === null) || (document.mozFullScreen !== undefined && !document.mozFullScreen) || (document.webkitIsFullScreen !== undefined && !document.webkitIsFullScreen)) {
+                if (elem.requestFullScreen) {
+                    elem.requestFullScreen();
+                } else if (elem.mozRequestFullScreen) {
+                    elem.mozRequestFullScreen();
+                } else if (elem.webkitRequestFullScreen) {
+                    elem.webkitRequestFullScreen(Element.ALLOW_KEYBOARD_INPUT);
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
+            }
+        }
+
+        //Runs the code when the content loads on the webpage
+        document.addEventListener('DOMContentLoaded', () => {
+            // setting up the "Plyr" video player
+
+            // Change "{}" to your options:
+            // https://github.com/sampotts/plyr/#options
+
+            const player = new Plyr('#player', {
+                keyboard: {
+                    focused: false,
+                    global: false
+                },
+                invertTime: false,
+                // fullscreen: {enabled: false}
+            });
+
+            // player.fullscreen.enter()
+
+            player.on('play', event => {
+                if (questions.style.display == 'none') {
+                } else {
+                    player.pause()
+                }
+            });
+
+            player.on('playing', event => {
+                isPlaying = true;
+            });
+
+            player.on('pause', event => {
+                isPlaying = false;
+            });
+
+
+            player.on('enterfullscreen', event => {
+                screen.orientation.lock('landscape');
+                // player.fullscreen.exit()
+            });
+
+            player.on('exitfullscreen', event => {
+                screen.orientation.lock('landscape');
+                // player.fullscreen.exit()
+                // console.log('exiting')
+            });
+
+            document.getElementById('player').setAttribute("data-plyr-embed-id", vid_id);
+            player.play()
+            // Expose player so it can be used from the console
+            window.player = player;
+
+            // Bind event listener
+            function on(selector, type, callback) {
+                document.querySelector(selector).addEventListener(type, callback, false);
+            }
+
+            //On click events for the "Submit" and "Dismiss" button
+
+            // On Submit
+            on('.js-submit', 'click', () => {
+                radio_root = document.getElementById('form-options');
+                radio_values = document.getElementById('form-options').elements;
+                var radio_value;
+
+                // iterating on options and saving the value if checked
+                for (var i = 0; i < radio_values.length; i++) {
+                    if (radio_values[i].checked) {
+                        radio_value = radio_values[i].value;
+                        answers[time_index] = radio_value;
+                        radio_values[i].checked = false;
+                        break;
+                    }
+                }
+
+                // removing all the options
+                while (radio_root.firstChild) {
+                    radio_root.removeChild(radio_root.lastChild);
+                }
+
+                //logging the recorded option
+                console.log(answers);
+
+                uploadJson();
+
+                questions.style.display = 'none';
+                player.play();
+                pause = false;
+
+                player.fullscreen.enter()
+
+                ref_time = player.currentTime;
+                time_diff_threshold = 0.8;
+
+                function is_valid() {
+                    if (player.currentTime - ref_time <= time_diff_threshold) {
+                        setTimeout(check_validity, 500);
+                    } else {
+                        exit();
+                    }
+                }
+
+                async function check_validity() {
+                    const valid = await is_valid();
+                }
+
+                function exit() {
+                    console.log(player.currentTime - ref_time);
+
+                    loop();
+                }
+
+                check_validity();
+            });
+
+            // On Dismiss
+            on('.js-dismiss', 'click', () => {
+                radio_root = document.getElementById('form-options');
+
+                // removing all the options
+                while (radio_root.firstChild) {
+                    radio_root.removeChild(radio_root.lastChild);
+                }
+
+                questions.style.display = 'none'
+                player.play()
+                pause = false;
+
+                player.fullscreen.enter()
+
+                ref_time = player.currentTime;
+                time_diff_threshold = 0.8;
+
+                // waiting for some time to pass
+                const interval = setInterval(function () {
+                    if (player.currentTime - ref_time > time_diff_threshold) {
+                        clearInterval(interval);
+                    }
+                }, 500)
+
+                loop();
+            });
+
+            // On email submit button
+            on('.js-submit-email', 'click', () => {
+                event.preventDefault();
+                let identifier = document.forms["validate"]["courriel"].value;//.trim();
+                let no_email = document.getElementById("novalid_email");
+                let no_num = document.getElementById("novalid_number");
+                var num_match = identifier.match(/\d/g);
+
+                //check for mobile number
+                if (num_match === null || num_match.length != identifier.length || num_match.length != 10) {
+                    no_num.style.display = "block";
+                    // no_email.style.display = "none";
+                    return false;
+                }
+                //check for email
+                // else {
+                //     let at = identifier.indexOf("@");
+                //     let point = identifier.lastIndexOf(".");
+
+                //     if (at < 1 || point < (at + 2) || (point + 2) >= identifier.length) {
+                //         console.log("two");
+                //         no_email.style.display = "block";
+                //         no_num.style.display = "none";
+                //         return false;
+                //     }
+                // }
+
+                //generate markers for question positions
+                var progressBar = document.querySelectorAll(".plyr__progress")[0];
+                for (i = 0; i < questions_list.length; i++) {
+                  var marker = document.createElement("SPAN");
+                  marker.className = "plyr__tooltip";
+                  marker.style.setProperty("opacity", 1);
+                  marker.style.setProperty("background-color", "#ff0");
+                  marker.style.setProperty("bottom", "80%");
+                  marker.style.setProperty("height", "80%");
+
+                  var pos_percent = (time_values[i]/player.duration)*100;
+                  marker.style.setProperty("left", `${pos_percent}%`);
+
+                  progressBar.appendChild(marker);
+                }
+
+                student_id = identifier;
+                console.log(student_id);
+                document.getElementById('email_container').style.display = "none";
+                document.getElementById('container').style.display = "block";
+
+                uploadJson();
+
+                // toggleFullScreen(document.getElementById('grid-box'));
+                player.fullscreen.enter()
+
+                // player.fullscreen.exit()
+            });
+
+            // selecting the overlay element
+            var questions = document.getElementById('overlayElement')
+
+            // this threshold makes sure that the same question is not displayed twice
+            // if the user seeks left or right
+            var time_diff_threshold = 0.1
+
+            // whether the video is paused currently due to overlay
+            var pause = false;
+            var time_index;
+
+            // setInterval(
+            function loop() {
+                // this loop sets the time_index to the question which is nearest to the
+                // player.currentTime
+
+                player_time = player.currentTime
+                if (isNaN(player_time) || questions.style.display == 'block') {
+                    setTimeout(loop, 100)
+                    return
+                }
+
+                if(isPlaying) {
+                    watch_time += 100;
+                    uploadJson();
+                }
+
+                show_overlay = false;
+                for (i = 0; i < time_values.length; i++) {
+                    diff = time_values[i] - player_time
+                    if (diff > time_diff_threshold || diff <= 0) {
+                        continue;
+                    }
+                    show_overlay = true;
+                    time_index = i;
+                    break;
+                }
+
+                if (player_time > time_values[time_values.length - 1] + time_diff_threshold) {
+                    time_index = time_values.length
+                }
+
+                // sanity check that time_index is always less than the number of
+                // time inputs at which questions appear
+                if (time_index < time_values.length && show_overlay && questions.style.display == 'none' && !pause) {
+                    // pause player
+                    player.pause()
+
+                    player.toggleControls();
+
+                    // set the video as pause
+                    pause = true;
+
+                    // disable submit button by default
+                    submit_button = document.getElementById('submit');
+                    submit_button.disabled = true;
+
+                    //build elements for the question
+                    //build the text for question
+                    document.getElementById("question-popup").innerHTML = questions_list[time_index];
+
+                    //build the radio buttons and labels
+                    var options_list = document.getElementById("form-options").elements;
+                    var radio_root = document.getElementById("form-options");
+
+                    for (i = 0; i < set_of_options[time_index].length; i++) {
+                        if (set_of_options[time_index][i] != "") {
+                            // creating a radio button element and a corresponding label
+                            var radio = radio_btn("option" + i + 1, "option", set_of_options[time_index][i]);
+                            var radio_label = label_for_radio_btn("option" + i + 1, set_of_options[time_index][i]);
+
+                            // enable submit button once a radio button is clicked
+                            radio.addEventListener('change', function () {
+                                submit_button.disabled = false
+                            });
+
+                            radio.style.display = "inline-block";
+                            radio_label.style.display = 'inline-block';
+
+                            radio_root.appendChild(radio);
+                            radio_root.appendChild(radio_label);
+
+                            var linebreak = document.createElement("br");
+                            radio_root.appendChild(linebreak);
+
+                        } else {
+                            options_list[i].style.display = "none";
+                        }
+                    }
+
+                    // display question
+                    questions.style.display = 'flex';
+
+                    player.fullscreen.exit()
+
+                    setTimeout(function () {
+                        $('html,body').animate({
+                            scrollTop: $("#overlayElement").offset().top
+                        },
+                            'slow');
+                    }, 1000)
+
+
+                } else {
+                    // console.log('still here')
+                    setTimeout(loop, 100);
+                    // loop();
+                }
+            }
+
+            // Execute a function when the user releases a key on the keyboard
+            $("#email_text").keypress(function (event) {
+                // Number 13 is the "Enter" key on the keyboard
+                if (event.keyCode === 13) {
+                    // Cancel the default action, if needed
+                    event.preventDefault();
+                    // Trigger the button element with a click
+                    $('#btn').click()
+                }
+            });
+
+            loop();
+        });
+    </script>
+    <title>Document</title>
+</head>
+
+<body id="body">
+
+    <div class="grid-box" id="grid-box">
+
+        <!-- container with player and auth -->
+        <div class="container" id="container" style="display">
+            <div id="player" data-plyr-provider="youtube"></div>
+            <div class="validate" id="email_container" style="">
+                <h1>कृपया अपना मोबाइल नंबर डालें</h1>
+                <h1>Please enter your mobile number</h1>
+                <form id="form" action="" method="get" name="validate">
+                    <input type="text" placeholder="Mobile" name="courriel" id="email_text">
+                    <input type="button" value="Submit" id="btn" class="js-submit-email" />
+                </form>
+                <!-- <div id="novalid_email">
+                    <p>सॉरी, सही इ-मेल फिरसे डालें</p>
+                    <p>Sorry, enter your correct email again</p>
+                </div> -->
+                <div id="novalid_number">
+                    <p>सॉरी, सही मोबाइल नंबर फिरसे डालें</p>
+                    <p>Sorry, enter your correct number again</p>
+                </div>
+                <div style="text-align:center;">
+                    <h2><br>You will be shown questions throughout the video <br>The time when the questions appear have been marked with a symbol</h2>
+                </div>
+            </div>
+        </div>
+        <!-- container with player and auth ends -->
+
+        <!-- overlay -->
+        <div class="overlay" id='overlayElement' style="display: none">
+            <div id='box' class="box-container">
+                <div id="question-popup">
+                </div>
+                <form id="form-options">
+                    <!-- SAMPLE FORM -->
+                    <!-- <input type="radio" id="option1" name="option" value="" style="display: none"/>
+              <label for="option1"></label><br> -->
+                </form><br><br>
+                <button type="button" id='submit' class="btn js-submit" disabled>Submit</button>
+                <button type="button" class="btn js-dismiss">Dismiss</button>
+            </div>
+        </div>
+        <!-- overlay ends -->
+
+    </div>
+</body>
+
+>>>>>>> master
 </html>

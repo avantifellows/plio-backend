@@ -13,9 +13,17 @@ virtualenv ~/eb-virt
 
 ### Postgres
 
+#### Mac
 ```
 brew install postgresql
 ```
+
+#### Windows
+* Download Postgres server from [here](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
+* Ensure that the installation includes the PostgreSQL Unicode ODBC driver. (Not required if you selected all options while installing)
+* _Note_: Once installed, the PostgreSQL server appears in the `Services` tab in Windows Task Manager.
+* Add the PostgreSQL bin directory path to the `PATH` environmental variable
+* Confirm the installation by typing `psql` in the Command Prompt
 
 ## Starting
 
@@ -36,7 +44,7 @@ password: USUAL_AVANTI_PASSWORD
 
 ```
 source ~/eb-virt/bin/activate
-pip instlal django psycopg2-binary
+pip install django psycopg2-binary
 pip install -r requirements.txt
 python3 manage.py migrate
 python3 manage.py makemigrations

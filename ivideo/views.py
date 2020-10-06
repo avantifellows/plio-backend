@@ -13,6 +13,24 @@ from utils.avanti_s3 import get_all_ivideo_objects, get_object, push_response_to
 
 @api_view(['POST'])
 def update_response(request):
+    '''Push student response JSON to s3
+    
+    request -- A JSON containing the student response
+                and meta data
+
+    request:{
+        'response' : {
+            'answers' : list of strings,
+            'questions' : list of strings,
+            'options' : list of lists of string,
+            'watch-time' : integer
+        },
+        'meta' : {
+            'object_id': string,
+            'student_id': string
+        }
+    }
+    '''
     file_path = push_response_to_s3(request.data)
 
     return JsonResponse({

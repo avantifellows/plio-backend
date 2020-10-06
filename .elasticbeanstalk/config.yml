@@ -1,0 +1,24 @@
+branch-defaults:
+  default:
+    environment: null
+    group_suffix: null
+  master:
+    environment: ivideo
+environment-defaults:
+  ivideo:
+    branch: null
+    repository: null
+global:
+  application_name: ivideo
+  branch: null
+  default_ec2_keyname: aws-eb
+  default_platform: Python 3.7 running on 64bit Amazon Linux 2
+  default_region: ap-south-1
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: eb-cli
+  repository: null
+  sc: git
+  workspace_type: Application

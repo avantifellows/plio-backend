@@ -23,7 +23,17 @@
         {% if all_ivideos %}
             {% for ivideo in all_ivideos %}
                 
-                <a href="player/{{ ivideo.object_id }} " class="ivideo">{{ ivideo.title }} ({{ ivideo.object_id }})</a>
+                <a href="player/{{ ivideo.object_id }} " class="ivideo">
+                    <div class="title">
+                        {{ ivideo.title }}
+                    </div>
+                    <div class="created_date">
+                        <i>Created: </i> {{ ivideo.created }}
+                    </div>
+                    <div class="id">
+                        ID: {{ ivideo.object_id }}
+                    </div>
+                    </a>
                 
                 
             {% endfor %}

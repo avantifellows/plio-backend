@@ -1,6 +1,8 @@
 body {
+    margin: 16px auto;
     font-family: Avenir, Helvetica, sans-serif;   
     text-align: center;
+    max-width: 800px;
 }
 
 h1, h2 {
@@ -9,6 +11,7 @@ h1, h2 {
 
 .ivideos {
     display: grid;
+    margin: auto;
     grid-template-columns: repeat(2, 1fr);
     grid-gap: 1rem;
 }

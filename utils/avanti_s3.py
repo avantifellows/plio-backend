@@ -92,9 +92,7 @@ def get_all_ivideo_objects(bucket='avanti-fellows', extensions=['json']):
                 json_content = json.loads(
                     s3.Object(bucket, file.key).get()['Body'].read().decode(
                         'utf-8'))
-                print(json_content["video_id"])
                 video_title = get_video_tile(json_content["video_id"])
-                print("HELLO: " + video_title)
                 matching_files.append(dict({
                     "object_id": name, "details": json_content, "title": video_title
                 }))

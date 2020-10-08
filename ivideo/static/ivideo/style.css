@@ -1,14 +1,46 @@
 body {
+    margin: 16px auto;
     font-family: Avenir, Helvetica, sans-serif;   
     text-align: center;
+    max-width: 800px;
 }
 
 h1, h2 {
     text-align: center;
 }
 
-ul {
-    list-style-type: none;
+.ivideos {
+    display: grid;
+    margin: auto;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-gap: 1rem;
+}
+
+.ivideo {
+    color:white;
+    border: 1px solid #ccc;
+    background: #CC593D;
+    padding: 2rem;
+    border-radius: 5px;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.ivideo a {
+    text-decoration: none;
+    color: white;
+}
+
+.ivideo .title {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.ivideo a:visited {
+    text-decoration: none;
+    color: white;
 }
 
 /* On screens that are 600px or less, set the background color to olive */

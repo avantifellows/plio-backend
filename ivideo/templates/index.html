@@ -15,17 +15,30 @@
     <h2>Welcome to the Plio Admin Page!</h2>
 
     <a href="http://dry-atoll-92279.herokuapp.com/" target="blank">Create new ivideo</a>
-    <p>After creating, refresh this page to see your video in the list</p>
+    <p>After creating, refresh to see your video in the list below</p>
 
     <div class="sub_title">
         <h2>Available Videos</h2>
+        <div class="ivideos">
         {% if all_ivideos %}
             {% for ivideo in all_ivideos %}
-                <ul>
-                    <li> Video ID: <a href="player/{{ ivideo.object_id }} ">{{ ivideo.object_id }}</a> </li>
-                </ul>
+                
+                <a href="player/{{ ivideo.object_id }} " class="ivideo">
+                    <div class="title">
+                        {{ ivideo.title }}
+                    </div>
+                    <div class="created_date">
+                        <i>Created: </i> {{ ivideo.created }}
+                    </div>
+                    <div class="id">
+                        ID: {{ ivideo.object_id }}
+                    </div>
+                    </a>
+                
+                
             {% endfor %}
         {% endif %}
+    </div>
     </div>
 
     <a href="https://plio.in/">Go to Plio Home</a>

@@ -9,7 +9,7 @@ import urllib
 import datetime
 # NOTE: public authentication details
 
-def get_video_tile(videoId):
+def get_video_title(videoId):
     """
     Gets video title from Youtube
     """
@@ -24,7 +24,6 @@ def get_video_tile(videoId):
     return data["title"]
 
 def push_response_to_s3(response_data):
-    print(response_data)
     meta_data = response_data['meta']
     response = response_data['response']
 
@@ -45,8 +44,6 @@ def push_response_to_s3(response_data):
 
     s3.Object(bucket, file_path).put(Body=json.dumps(response), ContentType='application/json')
 
-    print(file_path)
-    print(response)
 
     return f"http://avanti-fellows.s3.ap-south-1.amazonaws.com/{file_path}"
 
@@ -81,7 +78,6 @@ def get_all_ivideo_objects(bucket='avanti-fellows', extensions=['json']):
 
     # get all files information from buket
     files = s3_bucket.objects.filter(Prefix='videos/', Delimiter='/')
-    print(files)
     # create empty list for final information
     matching_files = []
 
@@ -95,13 +91,12 @@ def get_all_ivideo_objects(bucket='avanti-fellows', extensions=['json']):
                 json_content = json.loads(
                     s3.Object(bucket, file.key).get()['Body'].read().decode(
                         'utf-8'))
-                video_title = get_video_tile(json_content["video_id"])
+                video_title = get_video_title(json_content["video_id"])
                 date = datetime.datetime.strftime(file.last_modified, "%Y-%m-%d")
                 matching_files.append(dict({
                     "object_id": name, "details": json_content, "title": video_title, "created": date
                 }))
             except Exception as e:
-                print(e)
                 pass
 
     return matching_files

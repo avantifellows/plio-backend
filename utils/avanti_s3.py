@@ -4,8 +4,23 @@ import boto3
 from botocore.exceptions import ClientError
 import json
 
+import urllib.request
+import urllib
 # NOTE: public authentication details
 
+def get_video_tile(videoId):
+    """
+    Gets video title from Youtube
+    """
+    params = {"format": "json", "url": "https://www.youtube.com/watch?v=%s" % videoId}
+    url = "https://www.youtube.com/oembed"
+    query_string = urllib.parse.urlencode(params)
+    url = url + "?" + query_string
+
+    with urllib.request.urlopen(url) as response:
+        response_text = response.read()
+        data = json.loads(response_text.decode())
+    return data["title"]
 
 def push_response_to_s3(response_data):
     print(response_data)
@@ -77,10 +92,16 @@ def get_all_ivideo_objects(bucket='avanti-fellows', extensions=['json']):
                 json_content = json.loads(
                     s3.Object(bucket, file.key).get()['Body'].read().decode(
                         'utf-8'))
+                print(json_content["video_id"])
+                video_title = get_video_tile(json_content["video_id"])
+                print("HELLO: " + video_title)
                 matching_files.append(dict({
-                    "object_id": name, "details": json_content
+                    "object_id": name, "details": json_content, "title": video_title
                 }))
-            except e:
+            except Exception as e:
+                print(e)
                 pass
 
     return matching_files
+
+

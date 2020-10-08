@@ -19,13 +19,16 @@
 
     <div class="sub_title">
         <h2>Available Videos</h2>
+        <div class="ivideos">
         {% if all_ivideos %}
             {% for ivideo in all_ivideos %}
-                <ul>
-                    <li> Video ID: <a href="player/{{ ivideo.object_id }} ">{{ ivideo.object_id }}</a> </li>
-                </ul>
+                
+                <a href="player/{{ ivideo.object_id }} " class="ivideo">{{ ivideo.title }} ({{ ivideo.object_id }})</a>
+                
+                
             {% endfor %}
         {% endif %}
+    </div>
     </div>
 
     <a href="https://plio.in/">Go to Plio Home</a>

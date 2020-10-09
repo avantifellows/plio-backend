@@ -3,7 +3,7 @@ branch-defaults:
     environment: null
     group_suffix: null
   master:
-    environment: ivideo
+    environment: IvideoTest-env
   release:
     environment: ivideo
 environment-defaults:

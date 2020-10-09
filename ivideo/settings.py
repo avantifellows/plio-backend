@@ -25,7 +25,7 @@ SECRET_KEY = '+o3e(i8els(3bv43!4^lflht9p9l#b%$wa+p4fmb$h#xa))%5u'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com', 'ivideo.plio.in', 'http://awseb-e-4-awsebloa-axhyutbigtzc-891472431.ap-south-1.elb.amazonaws.com/']
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com', 'staging.plio.in', 'ivideo.plio.in', 'http://awseb-e-4-awsebloa-axhyutbigtzc-891472431.ap-south-1.elb.amazonaws.com/']
 
 if 'RDS_DB_NAME' in os.environ:
     SECURE_SSL_REDIRECT = True

@@ -199,8 +199,6 @@
                 }
 
                 function exit() {
-                    console.log(player.currentTime - ref_time);
-
                     loop();
                 }
 
@@ -225,14 +223,23 @@
                 ref_time = player.currentTime;
                 time_diff_threshold = 0.8;
 
-                // waiting for some time to pass
-                const interval = setInterval(function () {
-                    if (player.currentTime - ref_time > time_diff_threshold) {
-                        clearInterval(interval);
+                function is_valid() {
+                    if (player.currentTime - ref_time <= time_diff_threshold) {
+                        setTimeout(check_validity, 500);
+                    } else {
+                        exit();
                     }
-                }, 500)
+                }
 
-                loop();
+                async function check_validity() {
+                    const valid = await is_valid();
+                }
+
+                function exit() {
+                    loop();
+                }
+
+                check_validity();
             });
 
             // On email submit button

@@ -7,7 +7,7 @@ name: Build and Deploy Django to EB
 on:
   push:
     branches:
-      - release
+      - releeeease
 
 jobs:
   build:

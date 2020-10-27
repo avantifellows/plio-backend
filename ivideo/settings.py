@@ -93,7 +93,7 @@ if 'RDS_DB_NAME' in os.environ:
             'PORT': os.environ['RDS_PORT'],
         }
     }
-    LOGGER_FILE = "/opt/python/log/all.log"
+    LOGGER_FILE = "/var/log/all.log"
 else:
     DATABASES = {
         'default': {
@@ -116,7 +116,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'all.log'),
+            'filename': LOGGER_FILE,
             'formatter': 'verbose'
         },
     },

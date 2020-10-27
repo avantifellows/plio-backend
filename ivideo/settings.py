@@ -136,13 +136,7 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
             'formatter': 'verbose'
-        },
-        'django.request': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-            'formatter': 'verbose'
-        },
+        }
     },
 }
 

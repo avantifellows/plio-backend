@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import logging
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'request_logging.middleware.LoggingMiddleware'
 ]
 
 ROOT_URLCONF = 'ivideo.urls'
@@ -77,9 +79,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'ivideo.wsgi.application'
-
-
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
@@ -94,6 +93,7 @@ if 'RDS_DB_NAME' in os.environ:
             'PORT': os.environ['RDS_PORT'],
         }
     }
+    LOGGER_FILE = "/opt/python/log/all.log"
 else:
     DATABASES = {
         'default': {
@@ -105,6 +105,44 @@ else:
             'PORT': '',
         }
     }
+    LOGGER_FILE = os.path.join(BASE_DIR, 'logs', 'all.log')
+
+REQUEST_LOGGING_DATA_LOG_LEVEL = logging.DEBUG
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'all.log'),
+            'formatter': 'verbose'
+        },
+    },
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+            'formatter': 'verbose'
+        }
+    },
+}
+
+WSGI_APPLICATION = 'ivideo.wsgi.application'
+
+
 
 
 # Password validation

@@ -170,6 +170,11 @@ form .aligned p.help, form .aligned div.help {
     clear: right;
 }
 
+form .aligned ul {
+    margin-right: 163px;
+    margin-left: 0;
+}
+
 form ul.inline li {
     float: right;
     padding-right: 0;
@@ -251,14 +256,4 @@ form .form-row p.datetime {
 .inline-related h3 span.delete label {
     margin-left: inherit;
     margin-right: 2px;
-}
-
-/* IE7 specific bug fixes */
-
-div.colM {
-    position: relative;
-}
-
-.submit-row input {
-    float: left;
 }

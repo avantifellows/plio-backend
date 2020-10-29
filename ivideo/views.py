@@ -3,7 +3,7 @@ import json
 from django.http import response
 from django.http import HttpResponseBadRequest, request
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound
 from rest_framework.decorators import api_view
 
@@ -89,3 +89,12 @@ def index(request):
     }
 
     return render(request, 'index.html', context)
+
+
+def redirect_home(request):
+    return redirect('https://player.plio.in', permanent=True)
+
+
+def redirect_ivideo(request, ivideo_id):
+    return redirect(
+        f'https://player.plio.in/#/play/{ivideo_id}', permanent=True)

@@ -18,9 +18,12 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    path('player/', include('ivideo_player.urls')),
+    # path('player/', include('ivideo_player.urls')),
+    path('player/', views.redirect_home),
+    path('player/<str:ivideo_id>', views.redirect_ivideo),
     path('admin/', admin.site.urls),
-    path('', views.index),
+    # path('', views.index),
+    path('', views.redirect_home),
     path('ivideos_list', views.get_ivideos_list),
     path('get_ivideo', views.get_ivideo),
     path('update_response', views.update_response)

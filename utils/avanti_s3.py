@@ -7,13 +7,16 @@ import json
 import urllib.request
 import urllib
 import datetime
-# NOTE: public authentication details
+
 
 def get_video_title(videoId):
     """
     Gets video title from Youtube
     """
-    params = {"format": "json", "url": "https://www.youtube.com/watch?v=%s" % videoId}
+    params = {
+        "format": "json",
+        "url": "https://www.youtube.com/watch?v=%s" % videoId
+    }
     url = "https://www.youtube.com/oembed"
     query_string = urllib.parse.urlencode(params)
     url = url + "?" + query_string
@@ -22,6 +25,7 @@ def get_video_title(videoId):
         response_text = response.read()
         data = json.loads(response_text.decode())
     return data["title"]
+
 
 def push_response_to_s3(response_data):
     meta_data = response_data['meta']
@@ -40,12 +44,13 @@ def push_response_to_s3(response_data):
     file_name = f"{meta_data['object_id']}_{meta_data['student_id']}.json"
 
     # To handle windows' default backslash system
-    file_path = join(save_dir, file_name).replace("\\","/")
+    file_path = join(save_dir, file_name).replace("\\", "/")
 
-    s3.Object(bucket, file_path).put(Body=json.dumps(response), ContentType='application/json')
-
+    s3.Object(bucket, file_path).put(
+        Body=json.dumps(response), ContentType='application/json')
 
     return f"http://avanti-fellows.s3.ap-south-1.amazonaws.com/{file_path}"
+
 
 def get_resource(
         service_name='s3', region_name='ap-south-1',
@@ -92,13 +97,13 @@ def get_all_ivideo_objects(bucket='avanti-fellows', extensions=['json']):
                     s3.Object(bucket, file.key).get()['Body'].read().decode(
                         'utf-8'))
                 video_title = get_video_title(json_content["video_id"])
-                date = datetime.datetime.strftime(file.last_modified, "%Y-%m-%d")
+                date = datetime.datetime.strftime(
+                    file.last_modified, "%Y-%m-%d")
                 matching_files.append(dict({
-                    "object_id": name, "details": json_content, "title": video_title, "created": date
+                    "object_id": name, "details": json_content,
+                    "title": video_title, "created": date
                 }))
             except Exception as e:
                 pass
 
     return matching_files
-
-

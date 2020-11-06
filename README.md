@@ -1,5 +1,21 @@
-Avanti Interactive Video
-========================
+Plio
+====
+
+
+## DB Stuff
+
+Great help for all this set up from [this link](https://www.codingforentrepreneurs.com/blog/rds-database-serverless-django-zappa-aws-lambda) for Django/RDS/Zappa and [this link](https://tech.pritamsukumar.com/serverless-zappa/) for some Zappa IAM Details.
+
+**IMPORTANT**: You will need the zappa profile AWS key and Secret Key. Ask Pritam or whoever can give this to you.
+
+DB is hosted on AWS RDS:
+
+* DB Identifier: plio-db
+* RDS DB password: d2a12672-7e6a-4488-a365-a0e62adf2659 (UUID4 bases)
+* VPC ID: vpc-0a48a661
+
+
+## ---- OLD NOTES BELOW ----
 
 ## Requirements
 

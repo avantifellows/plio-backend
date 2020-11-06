@@ -23,7 +23,7 @@ urlpatterns = [
     path('player/<str:ivideo_id>', views.redirect_ivideo),
     path('admin/', admin.site.urls),
     # path('', views.index),
-    path('', views.redirect_home),
+    path('', views.index),
     path('ivideos_list', views.get_ivideos_list),
     path('get_ivideo', views.get_ivideo),
     path('update_response', views.update_response)

@@ -26,7 +26,7 @@ SECRET_KEY = '+o3e(i8els(3bv43!4^lflht9p9l#b%$wa+p4fmb$h#xa))%5u'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com', 'staging.plio.in', 'ivideo.plio.in', 'http://awseb-e-4-awsebloa-axhyutbigtzc-891472431.ap-south-1.elb.amazonaws.com/']
+ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com', 'staging.plio.in', 'ivideo.plio.in', 'oix3vlacdg.execute-api.ap-south-1.amazonaws.com']
 
 if 'RDS_DB_NAME' in os.environ:
     SECURE_SSL_REDIRECT = True
@@ -45,6 +45,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES': [],
+    'UNAUTHENTICATED_USER': None,
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -79,33 +85,10 @@ TEMPLATES = [
     },
 ]
 
+
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
-if 'RDS_DB_NAME' in os.environ:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': os.environ['RDS_DB_NAME'],
-            'USER': os.environ['RDS_USERNAME'],
-            'PASSWORD': os.environ['RDS_PASSWORD'],
-            'HOST': os.environ['RDS_HOSTNAME'],
-            'PORT': os.environ['RDS_PORT'],
-        }
-    }
-    LOGGER_FILE = "/var/log/all.log"
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'ivideo_db',
-            'USER': 'ivideo_root',
-            'PASSWORD': 'avanti123',
-            'HOST': 'localhost',
-            'PORT': '',
-        }
-    }
-    LOGGER_FILE = os.path.join(BASE_DIR, 'logs', 'all.log')
+LOGGER_FILE = os.path.join('/tmp/all.log')
 
 REQUEST_LOGGING_DATA_LOG_LEVEL = logging.DEBUG
 

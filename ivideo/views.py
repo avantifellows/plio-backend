@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound
 from rest_framework.decorators import api_view
+from device_detector import SoftwareDetector, DeviceDetector
 
 import ivideo
 from utils.avanti_s3 import get_all_ivideo_objects, get_object, push_response_to_s3
@@ -33,10 +34,6 @@ def update_response(request):
     '''
     user_agent_info = get_user_agent_info(request)
     request.data['response']['user_agent'] = user_agent_info
-    # request.data['response']['browser'] = user_agent_info['browser']
-    # request.data['response']['os'] = user_agent_info['os']
-    # request.data['response']['device'] = user_agent_info['device']
-
     file_path = push_response_to_s3(request.data)
 
     return JsonResponse({
@@ -82,7 +79,7 @@ def get_ivideo(request):
         'set_of_options': options,
         'video_id': jsondata['video_id'],
         'ivideo_id': ivideo_id
-        # 'browser': get_user_agent_info(request)
+        'browser': get_user_agent_info(request)
     }
 
     return JsonResponse(response, status=200)
@@ -90,34 +87,32 @@ def get_ivideo(request):
 
 def get_user_agent_info(request):
     browser_info = request.META['HTTP_USER_AGENT']
-    # return browser_info
 
-    from device_detector import SoftwareDetector
-    device = SoftwareDetector(browser_info).parse()
+    software_info = SoftwareDetector(browser_info).parse()
+    device_info = DeviceDetector(browser_info).parse()
+
+    if 'JioPages' in browser_info:
+        browser_name = 'JioPages'
+    else:
+        browser_name = software_info.client_name()
 
     user_agent_info = {
-        'os': request.user_agent.os,
-        'device': request.user_agent.device,
-        'browser': (device.client_name(), device.client_type())
+        'os':  {
+            'family':  request.user_agent.os.family,
+            'version': request.user_agent.os.version_string
+        },
+        'device': {
+            'family':  device_info.device_brand_name(),
+            'version': device_info.device_model(),
+            'type': device_info.device_type()
+        },
+        'browser': {
+            'family': browser_name,
+            'version': software_info.client_version()
+        }
     }
 
     return user_agent_info
-    if 'DuckDuckGo' in browser_info:
-        return 'DuckDuckGo'
-    elif 'Brave' in browser_info:
-        return 'Brave'
-    elif 'JioPages' in browser_info:
-        return 'JioPages'
-    elif 'Opera' in browser_info:
-        return 'Opera'
-    elif 'Firefox' in browser_info:
-        return 'Firefox'
-    elif 'Edg' in browser_info:
-        return 'Edge'
-    elif 'Chrome' in browser_info:
-        return 'Chrome'
-    else:
-        return 'unknown'
 
 
 def index(request):

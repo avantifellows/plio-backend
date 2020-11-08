@@ -22,9 +22,11 @@ def update_response(request):
     request:{
         'response' : {
             'answers' : list of strings,
-            'questions' : list of strings,
             'options' : list of lists of string,
-            'watch-time' : integer
+            'watch-time' : integer,
+            'source' : string,
+            'retention' : list of integers,
+            'user_agent' : Object
         },
         'meta' : {
             'object_id': string,

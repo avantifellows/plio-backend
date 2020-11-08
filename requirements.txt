@@ -5,6 +5,7 @@ cachetools==4.1.1
 certifi==2020.6.20
 chardet==3.0.4
 decorator==4.4.2
+device-detector==0.10
 Django==3.1.1
 django-cors-headers==3.5.0
 django-request-logging==0.7.2

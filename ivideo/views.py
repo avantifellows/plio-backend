@@ -85,6 +85,7 @@ def get_ivideo(request):
 
 def get_browser(request):
     browser_info = request.META['HTTP_USER_AGENT']
+    return browser_info
     if 'DuckDuckGo' in browser_info:
         return 'DuckDuckGo'
     elif 'Brave' in browser_info:

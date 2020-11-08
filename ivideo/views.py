@@ -32,8 +32,7 @@ def update_response(request):
         }
     }
     '''
-    user_agent_info = get_user_agent_info(request)
-    request.data['response']['user_agent'] = user_agent_info
+    request.data['response']['user_agent'] = get_user_agent_info(request)
     file_path = push_response_to_s3(request.data)
 
     return JsonResponse({

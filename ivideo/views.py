@@ -31,7 +31,12 @@ def update_response(request):
         }
     }
     '''
-    request.data['response']['browser'] = get_browser(request)
+    user_agent_info = get_user_agent_info(request)
+    request.data['response']['user_agent'] = user_agent_info
+    # request.data['response']['browser'] = user_agent_info['browser']
+    # request.data['response']['os'] = user_agent_info['os']
+    # request.data['response']['device'] = user_agent_info['device']
+
     file_path = push_response_to_s3(request.data)
 
     return JsonResponse({
@@ -76,20 +81,29 @@ def get_ivideo(request):
         'questions_list': questions,
         'set_of_options': options,
         'video_id': jsondata['video_id'],
-        'ivideo_id': ivideo_id,
-        'browser': get_browser(request)
+        'ivideo_id': ivideo_id
+        # 'browser': get_user_agent_info(request)
     }
 
     return JsonResponse(response, status=200)
 
 
-def get_browser(request):
+def get_user_agent_info(request):
     browser_info = request.META['HTTP_USER_AGENT']
-    return browser_info
+    # return browser_info
+    user_agent_info = {
+        'os': request.user_agent.os,
+        'device': request.user_agent.device,
+        'browser': request.user_agent.browser,
+    }
+
+    return user_agent_info
     if 'DuckDuckGo' in browser_info:
         return 'DuckDuckGo'
     elif 'Brave' in browser_info:
         return 'Brave'
+    elif 'JioPages' in browser_info:
+        return 'JioPages'
     elif 'Opera' in browser_info:
         return 'Opera'
     elif 'Firefox' in browser_info:

@@ -78,7 +78,7 @@ def get_ivideo(request):
         'questions_list': questions,
         'set_of_options': options,
         'video_id': jsondata['video_id'],
-        'ivideo_id': ivideo_id
+        'ivideo_id': ivideo_id,
         'browser': get_user_agent_info(request)
     }
 

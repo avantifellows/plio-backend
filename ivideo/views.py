@@ -98,8 +98,8 @@ def get_user_agent_info(request):
 
     user_agent_info = {
         'os':  {
-            'family':  request.user_agent.os.family,
-            'version': request.user_agent.os.version_string
+            'family':  device_info.os_name(),
+            'version': device_info.os_version()
         },
         'device': {
             'family':  device_info.device_brand_name(),

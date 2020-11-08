@@ -91,10 +91,14 @@ def get_ivideo(request):
 def get_user_agent_info(request):
     browser_info = request.META['HTTP_USER_AGENT']
     # return browser_info
+
+    from device_detector import SoftwareDetector
+    device = SoftwareDetector(browser_info).parse()
+
     user_agent_info = {
         'os': request.user_agent.os,
         'device': request.user_agent.device,
-        'browser': request.user_agent.browser,
+        'browser': (device.client_name(), device.client_type())
     }
 
     return user_agent_info

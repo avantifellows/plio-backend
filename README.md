@@ -1,5 +1,4 @@
-Avanti Interactive Video
-========================
+# Plio Backend
 
 ## Requirements
 
@@ -8,7 +7,7 @@ Avanti Interactive Video
 * `virtualenv` (usually installed via `pip install virtualenv`)
 * A virtual environment created with `python 3.8.5`:
 ```
-virtualenv ~/eb-virt
+virtualenv -p python3 ~/eb-virt
 ```
 
 ### Postgres
@@ -66,11 +65,13 @@ The instance ID should be available in the errot message.
 
 ## TODO
 
-[] Implement custom commands from [here](https://realpython.com/deploying-a-django-app-to-aws-elastic-beanstalk/)
+[] Implement custom commands from [here](https://realpython.com/deploying-a-django-app-to-aws-elastic-beanstalk/).
+
+## Contributing
+We follow PEP8 guidelines and use linters (`SublimeLinter`, `autopep8`).
 
 ## Elastic Beanstalk things
 
-The packages that are nee
 ### References
 
 1. Digital Ocean's guide to setting up an [empty Django Project with Postgres](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-14-04)

@@ -31,6 +31,7 @@ def update_response(request):
         }
     }
     '''
+    request.data['response']['browser'] = get_browser(request)
     file_path = push_response_to_s3(request.data)
 
     return JsonResponse({
@@ -75,10 +76,29 @@ def get_ivideo(request):
         'questions_list': questions,
         'set_of_options': options,
         'video_id': jsondata['video_id'],
-        'ivideo_id': ivideo_id
+        'ivideo_id': ivideo_id,
+        'browser': get_browser(request)
     }
 
     return JsonResponse(response, status=200)
+
+
+def get_browser(request):
+    browser_info = request.META['HTTP_USER_AGENT']
+    if 'DuckDuckGo' in browser_info:
+        return 'DuckDuckGo'
+    elif 'Brave' in browser_info:
+        return 'Brave'
+    elif 'Opera' in browser_info:
+        return 'Opera'
+    elif 'Firefox' in browser_info:
+        return 'Firefox'
+    elif 'Edg' in browser_info:
+        return 'Edge'
+    elif 'Chrome' in browser_info:
+        return 'Chrome'
+    else:
+        return 'unknown'
 
 
 def index(request):

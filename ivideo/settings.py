@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_s3_storage'
 ]
 
 REST_FRAMEWORK = {
@@ -164,7 +165,25 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-STATIC_URL = '/static/'
+# The AWS region to connect to.
+AWS_REGION = "ap-south-1"
+
+# The AWS access key to use.
+AWS_ACCESS_KEY_ID = "AKIARUBOPCTSWO57EU4K"
+
+# The AWS secret access key to use.
+AWS_SECRET_ACCESS_KEY = "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"
+
+DEFAULT_FILE_STORAGE = "django_s3_storage.storage.S3Storage"
+STATICFILES_STORAGE = "django_s3_storage.storage.StaticS3Storage"
+AWS_S3_PUBLIC_URL = "d3onnhzpzthjtl.cloudfront.net"
+AWS_S3_BUCKET_NAME_STATIC = "plio-static"
+AWS_S3_KEY_PREFIX_STATIC = "staging"
+AWS_S3_BUCKET_AUTH = False
+
+AWS_S3_MAX_AGE_SECONDS = 60 * 60 * 24 * 365  # 1 yea
+
+STATIC_URL = f'{AWS_S3_PUBLIC_URL}/{AWS_S3_KEY_PREFIX_STATIC}/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 STATICFILES_DIRS = [

@@ -117,6 +117,7 @@ celerybeat.pid
 env/
 venv/
 ENV/
+zappa_env/
 env.bak/
 venv.bak/
 

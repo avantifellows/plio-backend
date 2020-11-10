@@ -1,6 +1,53 @@
 Plio
 ====
 
+## Zappa
+
+We are using [zappa](https://github.com/zappa/Zappa) to deploy to Lambda.
+
+You have to get set up with zappa credentials. Ask whoever is responsible (Pritam) how to do this.
+
+Once you do this: inside the folder, create a virtual environment with python3
+
+```
+python3 -m venv zappa_env
+pip install -r requirements.txt
+```
+### Testing
+
+```
+export DJANGO_ENV=local
+python manage.py runserver 0.0.0.0:8001
+```
+
+You can set `DJANGO_ENV` to `staging` or `prod` to test local code with staging/production environment variables. Currently, the only environment variable is the location of the static bucket. But soon, we'll have different DBs etc.
+
+### Deploying
+
+Deploying with Zappa is very simple:
+
+* Staging:
+    ```
+    # RUN THIS COMMAND ONLY IF STATIC FILES HAVE CHANGED
+    zappa manage dev "collectstatic --noinput"
+    zappa update dev
+    ```
+    The URL will be staging-lambda.plio.in (To be switched to staging.plio.in once we terminate EB)
+* Production:
+    ```
+    # THIS COMMAND ONLY IF STATIC FILES HAVE CHANGED
+    zappa manage prod "collectstatic --noinput"
+    zappa update prod
+    ```
+    The URL will be ivideo.plio.in (TBD)
+
+### Static Files
+
+All our static files are now stored on S3 in the [`plio-static` bucket](https://s3.console.aws.amazon.com/s3/buckets/plio-static?region=ap-south-1&prefix=prod/&showversions=false). Folders inside the bucket:
+
+* `staging`: For staging backend AND local (if we want, we can configure django to use local for local)
+* `prod`: For production
+
 
 ## DB Stuff
 

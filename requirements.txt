@@ -19,7 +19,6 @@ hjson==3.0.2
 idna==2.10
 jmespath==0.10.0
 kappa==0.6.0
-numpy==1.19.2
 oauthlib==3.1.0
 Pillow==7.2.0
 pip-tools==5.3.1

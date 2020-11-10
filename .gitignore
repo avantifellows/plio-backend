@@ -148,3 +148,9 @@ cython_debug/
 #Django
 static/*
 static/admin/*
+
+#Zappa
+*backend*json
+
+# pyc files
+*pyc

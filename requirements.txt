@@ -8,6 +8,7 @@ cfn-flip==1.2.3
 chardet==3.0.4
 click==7.1.2
 decorator==4.4.2
+device-detector==0.10
 Django==3.1.1
 django-cors-headers==3.5.0
 django-request-logging==0.7.2
@@ -44,3 +45,4 @@ urllib3==1.25.10
 Werkzeug==0.16.1
 wsgi-request-logger==0.4.6
 zappa==0.52.0
+urllib3==1.25.10

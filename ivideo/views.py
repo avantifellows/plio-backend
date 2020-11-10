@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound
 from rest_framework.decorators import api_view
+from device_detector import SoftwareDetector, DeviceDetector
 
 import ivideo
 from utils.avanti_s3 import get_all_ivideo_objects, get_object, push_response_to_s3
@@ -21,9 +22,11 @@ def update_response(request):
     request:{
         'response' : {
             'answers' : list of strings,
-            'questions' : list of strings,
             'options' : list of lists of string,
-            'watch-time' : integer
+            'watch-time' : integer,
+            'source' : string,
+            'retention' : list of integers,
+            'user_agent' : Object
         },
         'meta' : {
             'object_id': string,
@@ -31,6 +34,7 @@ def update_response(request):
         }
     }
     '''
+    request.data['response']['user_agent'] = get_user_agent_info(request)
     file_path = push_response_to_s3(request.data)
 
     return JsonResponse({
@@ -75,10 +79,41 @@ def get_ivideo(request):
         'questions_list': questions,
         'set_of_options': options,
         'video_id': jsondata['video_id'],
-        'ivideo_id': ivideo_id
+        'ivideo_id': ivideo_id,
+        'browser': get_user_agent_info(request)
     }
 
     return JsonResponse(response, status=200)
+
+
+def get_user_agent_info(request):
+    browser_info = request.META['HTTP_USER_AGENT']
+
+    software_info = SoftwareDetector(browser_info).parse()
+    device_info = DeviceDetector(browser_info).parse()
+
+    if 'JioPages' in browser_info:
+        browser_name = 'JioPages'
+    else:
+        browser_name = software_info.client_name()
+
+    user_agent_info = {
+        'os':  {
+            'family':  device_info.os_name(),
+            'version': device_info.os_version()
+        },
+        'device': {
+            'family':  device_info.device_brand_name(),
+            'version': device_info.device_model(),
+            'type': device_info.device_type()
+        },
+        'browser': {
+            'family': browser_name,
+            'version': software_info.client_version()
+        }
+    }
+
+    return user_agent_info
 
 
 def index(request):

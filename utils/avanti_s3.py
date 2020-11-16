@@ -1,7 +1,6 @@
 from os.path import join
 
 import boto3
-from botocore.exceptions import ClientError
 import json
 
 import urllib.request
@@ -71,10 +70,8 @@ def get_object(key, bucket="avanti-fellows"):
     try:
         obj = s3.Object(bucket, key)
         return obj.get()['Body'].read().decode('utf-8')
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'NoSuchKey':
-            return None
-    return None
+    except:
+        return None
 
 
 def get_all_ivideo_objects(bucket='avanti-fellows', extensions=['json']):

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import logging
+import json
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,7 +27,15 @@ SECRET_KEY = '+o3e(i8els(3bv43!4^lflht9p9l#b%$wa+p4fmb$h#xa))%5u'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0', '127.0.0.1', 'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com', 'staging.plio.in', 'ivideo.plio.in', 'http://awseb-e-4-awsebloa-axhyutbigtzc-891472431.ap-south-1.elb.amazonaws.com/']
+ALLOWED_HOSTS = [
+                '0.0.0.0', 
+                '127.0.0.1', 
+                'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com', 
+                'staging.plio.in', 
+                'ivideo.plio.in', 
+                'oix3vlacdg.execute-api.ap-south-1.amazonaws.com', # Staging Lambda
+                'musxsu7886.execute-api.ap-south-1.amazonaws.com' # Prod Lambda
+                ]
 
 if 'RDS_DB_NAME' in os.environ:
     SECURE_SSL_REDIRECT = True
@@ -44,7 +53,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_s3_storage'
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'DEFAULT_PERMISSION_CLASSES': [],
+    'UNAUTHENTICATED_USER': None,
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -79,33 +95,10 @@ TEMPLATES = [
     },
 ]
 
+
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
-
-if 'RDS_DB_NAME' in os.environ:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': os.environ['RDS_DB_NAME'],
-            'USER': os.environ['RDS_USERNAME'],
-            'PASSWORD': os.environ['RDS_PASSWORD'],
-            'HOST': os.environ['RDS_HOSTNAME'],
-            'PORT': os.environ['RDS_PORT'],
-        }
-    }
-    LOGGER_FILE = "/var/log/all.log"
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'ivideo_db',
-            'USER': 'ivideo_root',
-            'PASSWORD': 'avanti123',
-            'HOST': 'localhost',
-            'PORT': '',
-        }
-    }
-    LOGGER_FILE = os.path.join(BASE_DIR, 'logs', 'all.log')
+LOGGER_FILE = os.path.join('/tmp/all.log')
 
 REQUEST_LOGGING_DATA_LOG_LEVEL = logging.DEBUG
 
@@ -180,8 +173,41 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
+if 'DJANGO_ENV' in os.environ:
+    json_data = open('zappa_settings.json')
+    if os.environ['DJANGO_ENV'] == 'local':
+        env_vars = json.load(json_data)['dev']['environment_variables']
+    elif os.environ['DJANGO_ENV'] == 'prod':
+        env_vars = json.load(json_data)['prod']['environment_variables']
+    else:
+        env_vars = json.load(json_data)['dev']['environment_variables']
+    for key, val in env_vars.items():
+        os.environ[key] = val
 
-STATIC_URL = '/static/'
+
+# The AWS region to connect to.
+AWS_REGION = "ap-south-1"
+
+# The AWS access key to use.
+AWS_ACCESS_KEY_ID = "AKIARUBOPCTSWO57EU4K"
+
+# The AWS secret access key to use.
+AWS_SECRET_ACCESS_KEY = "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"
+
+DEFAULT_FILE_STORAGE = "django_s3_storage.storage.S3Storage"
+STATICFILES_STORAGE = "django_s3_storage.storage.StaticS3Storage"
+
+# From AF S3 account
+AWS_S3_PUBLIC_URL = "d3onnhzpzthjtl.cloudfront.net"
+AWS_S3_BUCKET_NAME_STATIC = "plio-static"
+
+# Depending on environment.
+AWS_S3_KEY_PREFIX_STATIC = os.environ.get("STATIC_BUCKET")
+AWS_S3_BUCKET_AUTH = False
+
+AWS_S3_MAX_AGE_SECONDS = 60 * 60 * 24 * 365  # 1 yea
+
+STATIC_URL = f'{AWS_S3_PUBLIC_URL}/{AWS_S3_KEY_PREFIX_STATIC}/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 STATICFILES_DIRS = [

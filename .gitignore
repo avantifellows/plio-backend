@@ -117,6 +117,7 @@ celerybeat.pid
 env/
 venv/
 ENV/
+zappa_env/
 env.bak/
 venv.bak/
 
@@ -147,5 +148,11 @@ cython_debug/
 #Django
 static/*
 static/admin/*
+
+#Zappa
+*backend*json
+
+# pyc files
+*pyc
 
 .DS_Store

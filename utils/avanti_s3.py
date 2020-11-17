@@ -1,7 +1,6 @@
 from os.path import join
 
 import boto3
-from botocore.exceptions import ClientError
 import json
 
 import urllib.request
@@ -35,7 +34,7 @@ def push_response_to_s3(response_data):
     s3 = get_resource()
 
     # define bucket
-    bucket = 'avanti-fellows'
+    bucket = 'plio-data'
 
     # directory where responses are saved
     save_dir = 'answers'
@@ -49,13 +48,13 @@ def push_response_to_s3(response_data):
     s3.Object(bucket, file_path).put(
         Body=json.dumps(response), ContentType='application/json')
 
-    return f"http://avanti-fellows.s3.ap-south-1.amazonaws.com/{file_path}"
+    return f"http://plio-data.s3.ap-south-1.amazonaws.com/{file_path}"
 
 
 def get_resource(
         service_name='s3', region_name='ap-south-1',
-        aws_access_key_id='AKIAQHKYBVIIKK3LUGF6',
-        aws_secret_access_key='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'):
+        aws_access_key_id='AKIARUBOPCTS2VKY7QQH',
+        aws_secret_access_key='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'):
     """Authenticates boto3"""
 
     return boto3.resource(
@@ -66,18 +65,16 @@ def get_resource(
     )
 
 
-def get_object(key, bucket="avanti-fellows"):
+def get_object(key, bucket="plio-data"):
     s3 = get_resource()
     try:
         obj = s3.Object(bucket, key)
         return obj.get()['Body'].read().decode('utf-8')
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'NoSuchKey':
-            return None
-    return None
+    except:
+        return None
 
 
-def get_all_ivideo_objects(bucket='avanti-fellows', extensions=['json']):
+def get_all_ivideo_objects(bucket='plio-data', extensions=['json']):
     s3 = get_resource()
     s3_bucket = s3.Bucket(bucket)
 

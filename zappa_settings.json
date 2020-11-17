@@ -1,0 +1,25 @@
+{
+    "dev": {
+        "django_settings": "ivideo.settings",
+        "profile_name": "zappa",
+        "project_name": "plio-backend",
+        "runtime": "python3.8",
+        "s3_bucket": "plio-backend-lambda",
+        "aws_region": "ap-south-1",
+        "environment_variables": {
+            "DJANGO_ENV": "staging",
+            "STATIC_BUCKET": "staging"        }
+    },
+    "prod": {
+        "django_settings": "ivideo.settings",
+        "profile_name": "zappa",
+        "project_name": "plio-backend",
+        "runtime": "python3.8",
+        "s3_bucket": "plio-backend-lambda",
+        "aws_region": "ap-south-1",
+        "environment_variables": {
+            "DJANGO_ENV": "prod",
+            "STATIC_BUCKET": "prod"
+        }
+    }
+}

@@ -43,7 +43,9 @@ def push_response_to_s3(response_data: Dict):
     save_dir = 'answers'
 
     # define the path where the response is saved
-    file_name = f"{meta_data['plioId']}_{meta_data['studentId']}.json"
+    file_name = "{}_{}_v{}.json".format(
+        meta_data['plioId'], meta_data['studentId'],
+        meta_data['sessionId'])
 
     # To handle windows' default backslash system
     file_path = join(save_dir, file_name).replace("\\", "/")

@@ -43,7 +43,7 @@ def push_response_to_s3(response_data: Dict):
     save_dir = 'answers'
 
     # define the path where the response is saved
-    file_name = "{}_{}_v{}.json".format(
+    file_name = "{}_{}-{}.json".format(
         meta_data['plioId'], meta_data['studentId'],
         meta_data['sessionId'])
 
@@ -116,7 +116,7 @@ def get_session_id(
         raise ValueError('Invalid plio_id')
 
     if not user_id:
-        return 0
+        return 1
 
     s3 = get_resource()
     s3_bucket = s3.Bucket(bucket)
@@ -124,7 +124,7 @@ def get_session_id(
     # get all entries only from bucket
     files = s3_bucket.objects.filter(Prefix='answers/', Delimiter='/')
     # create empty list for final information
-    session_id = 0
+    session_id = 1
 
     # Iterate throgh 'files', convert to dict. and add extension key.
     for file in files:

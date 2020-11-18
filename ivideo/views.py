@@ -54,8 +54,8 @@ def get_plios_list(request):
 
 @api_view(['GET'])
 def get_plio(request):
-    plio_id = request.GET.get('plio_id', '')
-    user_id = request.GET.get('user_id', '')
+    plio_id = request.GET.get('plioId', '')
+    user_id = request.GET.get('userId', '')
 
     if not plio_id:
         return JsonResponse(
@@ -79,14 +79,13 @@ def get_plio(request):
     session_id = get_session_id(plio_id, user_id)
 
     response = {
-        'ivideo_details': jsondata,
+        'plioDetails': jsondata,
         'times': times,
-        'questions_list': questions,
-        'set_of_options': options,
-        'video_id': jsondata['video_id'],
-        'plio_id': plio_id,
-        'user_agent': get_user_agent_info(request),
-        'session_id': session_id
+        'options': options,
+        'videoId': jsondata['video_id'],
+        'plioId': plio_id,
+        'userAgent': get_user_agent_info(request),
+        'sessionId': session_id
     }
 
     return JsonResponse(response, status=200)

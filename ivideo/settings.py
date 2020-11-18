@@ -174,8 +174,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 if 'DJANGO_ENV' in os.environ and os.environ['DJANGO_ENV'] in ['staging', 'prod']:
     json_data = open('zappa_settings.json')
+
+    if os.environ['DJANGO_ENV'] == 'staging':
+        zappa_key = 'dev'
+    else:
+        zappa_key = 'prod'
+
     env_vars = json.load(
-        json_data)[os.environ['DJANGO_ENV']]['environment_variables']
+        json_data)[zappa_key]['environment_variables']
     
     for key, val in env_vars.items():
         os.environ[key] = val

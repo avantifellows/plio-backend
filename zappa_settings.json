@@ -1,5 +1,5 @@
 {
-    "staging": {
+    "dev": {
         "django_settings": "ivideo.settings",
         "profile_name": "zappa",
         "project_name": "plio-backend",

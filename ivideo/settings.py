@@ -45,7 +45,6 @@ else:
 # Application definition
 
 INSTALLED_APPS = [
-    'ivideo_player.apps.IvideoPlayerConfig',
     'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -173,10 +172,16 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
-if 'DJANGO_ENV' in os.environ and os.environ['DJANGO_ENV'] in ['dev', 'prod']:
+if 'DJANGO_ENV' in os.environ and os.environ['DJANGO_ENV'] in ['staging', 'prod']:
     json_data = open('zappa_settings.json')
+
+    if os.environ['DJANGO_ENV'] == 'staging':
+        zappa_key = 'dev'
+    else:
+        zappa_key = 'prod'
+
     env_vars = json.load(
-        json_data)[os.environ['DJANGO_ENV']]['environment_variables']
+        json_data)[zappa_key]['environment_variables']
     
     for key, val in env_vars.items():
         os.environ[key] = val

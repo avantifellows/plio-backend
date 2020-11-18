@@ -79,7 +79,7 @@ def get_object(key: str, bucket: str = DEFAULT_BUCKET):
 
 
 def get_all_plios(
-        bucket: str = DEFAULT_BUCKET, extensions: List[str] = ['json']):
+        bucket: str = DEFAULT_BUCKET, extensions: List[str] = ['.json']):
     """Returns all the plios in the specified bucket"""
     s3 = get_resource()
     s3_bucket = s3.Bucket(bucket)
@@ -91,24 +91,19 @@ def get_all_plios(
 
     # Iterate throgh 'files', convert to dict. and add extension key.
     for file in files:
-
-        ext = splitext(file.key)[-1]
-        name = splitext(basename(file.key))[0]
+        name, ext = splitext(basename(file.key))
         if ext in extensions:
-            try:
-                json_content = json.loads(
-                    s3.Object(bucket, file.key).get()['Body'].read().decode(
-                        'utf-8'))
-                video_title = get_video_title(json_content["video_id"])
-                date = datetime.datetime.strftime(
-                    file.last_modified, "%Y-%m-%d")
-                matching_files.append(dict({
-                    "plio_id": name, "details": json_content,
-                    "title": video_title, "created": date
-                }))
-            except Exception:
-                pass
-
+            json_content = json.loads(
+                s3.Object(bucket, file.key).get()['Body'].read().decode(
+                    'utf-8'))
+            video_title = get_video_title(json_content["video_id"])
+            date = datetime.datetime.strftime(
+                file.last_modified, "%Y-%m-%d")
+            matching_files.append(dict({
+                "plio_id": name, "details": json_content,
+                "title": video_title, "created": date
+            }))
+    
     return matching_files
 
 

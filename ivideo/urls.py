@@ -20,11 +20,10 @@ from . import views
 urlpatterns = [
     # path('player/', include('ivideo_player.urls')),
     path('player/', views.redirect_home),
-    path('player/<str:ivideo_id>', views.redirect_ivideo),
+    path('player/<str:plio_id>', views.redirect_plio),
     path('admin/', admin.site.urls),
-    # path('', views.index),
     path('', views.index),
-    path('ivideos_list', views.get_ivideos_list),
-    path('get_ivideo', views.get_ivideo),
+    path('plios_list', views.get_plios_list),
+    path('get_plio', views.get_plio),
     path('update_response', views.update_response)
 ]

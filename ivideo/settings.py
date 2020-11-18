@@ -173,41 +173,41 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
-if 'DJANGO_ENV' in os.environ:
+if 'DJANGO_ENV' in os.environ and os.environ['DJANGO_ENV'] in ['dev', 'prod']:
     json_data = open('zappa_settings.json')
-    if os.environ['DJANGO_ENV'] == 'local':
-        env_vars = json.load(json_data)['dev']['environment_variables']
-    elif os.environ['DJANGO_ENV'] == 'prod':
-        env_vars = json.load(json_data)['prod']['environment_variables']
-    else:
-        env_vars = json.load(json_data)['dev']['environment_variables']
+    env_vars = json.load(
+        json_data)[os.environ['DJANGO_ENV']]['environment_variables']
+    
     for key, val in env_vars.items():
         os.environ[key] = val
+    
+    # The AWS region to connect to.
+    AWS_REGION = "ap-south-1"
 
+    # The AWS access key to use.
+    AWS_ACCESS_KEY_ID = "AKIARUBOPCTSWO57EU4K"
 
-# The AWS region to connect to.
-AWS_REGION = "ap-south-1"
+    # The AWS secret access key to use.
+    AWS_SECRET_ACCESS_KEY = "wlkhlaeo0j8vqfM8A+kxfIUiGWRtFmjlCTxmlyJR"
 
-# The AWS access key to use.
-AWS_ACCESS_KEY_ID = "AKIARUBOPCTSWO57EU4K"
+    DEFAULT_FILE_STORAGE = "django_s3_storage.storage.S3Storage"
+    STATICFILES_STORAGE = "django_s3_storage.storage.StaticS3Storage"
 
-# The AWS secret access key to use.
-AWS_SECRET_ACCESS_KEY = "wlkhlaeo0j8vqfM8A+kxfIUiGWRtFmjlCTxmlyJR"
+    # From AF S3 account
+    AWS_S3_PUBLIC_URL = "d3onnhzpzthjtl.cloudfront.net"
+    AWS_S3_BUCKET_NAME_STATIC = "plio-static"
 
-DEFAULT_FILE_STORAGE = "django_s3_storage.storage.S3Storage"
-STATICFILES_STORAGE = "django_s3_storage.storage.StaticS3Storage"
+    # Depending on environment.
+    AWS_S3_KEY_PREFIX_STATIC = os.environ.get("STATIC_BUCKET")
+    AWS_S3_BUCKET_AUTH = False
 
-# From AF S3 account
-AWS_S3_PUBLIC_URL = "d3onnhzpzthjtl.cloudfront.net"
-AWS_S3_BUCKET_NAME_STATIC = "plio-static"
+    AWS_S3_MAX_AGE_SECONDS = 60 * 60 * 24 * 365  # 1 year
 
-# Depending on environment.
-AWS_S3_KEY_PREFIX_STATIC = os.environ.get("STATIC_BUCKET")
-AWS_S3_BUCKET_AUTH = False
+    STATIC_URL = f'{AWS_S3_PUBLIC_URL}/{AWS_S3_KEY_PREFIX_STATIC}/'
 
-AWS_S3_MAX_AGE_SECONDS = 60 * 60 * 24 * 365  # 1 yea
+else:
+    STATIC_URL = '/static/'
 
-STATIC_URL = f'{AWS_S3_PUBLIC_URL}/{AWS_S3_KEY_PREFIX_STATIC}/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 STATICFILES_DIRS = [

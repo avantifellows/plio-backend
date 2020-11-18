@@ -9,7 +9,8 @@ from rest_framework.decorators import api_view
 from device_detector import SoftwareDetector, DeviceDetector
 
 import ivideo
-from utils.avanti_s3 import get_all_ivideo_objects, get_object, push_response_to_s3
+from utils.s3 import get_all_plios, get_object, push_response_to_s3, \
+    get_session_id
 
 
 @api_view(['POST'])
@@ -43,24 +44,26 @@ def update_response(request):
 
 
 @api_view(['GET'])
-def get_ivideos_list(request):
-    all_ivideos = get_all_ivideo_objects()
+def get_plios_list(request):
+    all_plios = get_all_plios()
     response = {
-        "all_ivideos": all_ivideos
+        "all_plios": all_plios
     }
     return JsonResponse(response)
 
 
 @api_view(['GET'])
-def get_ivideo(request):
-    ivideo_id = request.GET.get('ivideo_id', '')
-    if not ivideo_id:
-        return JsonResponse(
-            {"Error": "No Video specified"}, status=HttpResponseBadRequest)
+def get_plio(request):
+    plio_id = request.GET.get('plio_id', '')
+    user_id = request.GET.get('user_id', '')
 
-    data = get_object(f'videos/{ivideo_id}.json')
+    if not plio_id:
+        return JsonResponse(
+            {"Error": "Invalid Plio specified"}, status=HttpResponseBadRequest)
+
+    data = get_object(f'videos/{plio_id}.json')
     if data is None:
-        return HttpResponseNotFound('<h1>Video not found</h1>')
+        return HttpResponseNotFound('<h1>Plio not found</h1>')
 
     jsondata = json.loads(data)
 
@@ -73,20 +76,24 @@ def get_ivideo(request):
         options.append(q['options'])
         times.append(question['time'])
 
+    session_id = get_session_id(plio_id, user_id)
+
     response = {
         'ivideo_details': jsondata,
         'times': times,
         'questions_list': questions,
         'set_of_options': options,
         'video_id': jsondata['video_id'],
-        'ivideo_id': ivideo_id,
-        'user_agent': get_user_agent_info(request)
+        'plio_id': plio_id,
+        'user_agent': get_user_agent_info(request),
+        'session_id': session_id
     }
 
     return JsonResponse(response, status=200)
 
 
 def get_user_agent_info(request):
+    """Get User-Agent information: browser, OS, device"""
     browser_info = request.META['HTTP_USER_AGENT']
 
     software_info = SoftwareDetector(browser_info).parse()
@@ -117,19 +124,16 @@ def get_user_agent_info(request):
 
 
 def index(request):
-    all_ivideos = get_all_ivideo_objects()
-    all_ivideos = [ivideo for ivideo in all_ivideos if "object_id" in ivideo]
-    context = {
-        "all_ivideos": all_ivideos
-    }
-
-    return render(request, 'index.html', context)
+    """Renders home page for backend""" 
+    return render(request, 'index.html', {"all_plios": get_all_plios()})
 
 
 def redirect_home(request):
+    """Redirect to frontend home"""
     return redirect('https://player.plio.in', permanent=True)
 
 
-def redirect_ivideo(request, ivideo_id):
+def redirect_plio(request, plio_id):
+    """Redirect to frontend plio page"""
     return redirect(
-        f'https://player.plio.in/#/play/{ivideo_id}', permanent=True)
+        f'https://player.plio.in/#/play/{plio_id}', permanent=True)

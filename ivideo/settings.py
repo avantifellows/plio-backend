@@ -205,11 +205,11 @@ AWS_S3_BUCKET_NAME_STATIC = "plio-static"
 AWS_S3_KEY_PREFIX_STATIC = os.environ.get("STATIC_BUCKET")
 AWS_S3_BUCKET_AUTH = False
 
-AWS_S3_MAX_AGE_SECONDS = 60 * 60 * 24 * 365  # 1 yea
+AWS_S3_MAX_AGE_SECONDS = 60 * 60 * 24 * 365  # 1 year
 
 STATIC_URL = f'{AWS_S3_PUBLIC_URL}/{AWS_S3_KEY_PREFIX_STATIC}/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'ivideo', 'static'),
+        os.path.join(BASE_DIR, 'ivideo', 'static')
 ]

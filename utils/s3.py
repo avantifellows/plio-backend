@@ -44,7 +44,7 @@ def push_response_to_s3(response_data: Dict):
 
     # define the path where the response is saved
     file_name = "{}_{}-{}.json".format(
-        meta_data['plioId'], meta_data['studentId'],
+        meta_data['plioId'], meta_data['userId'],
         meta_data['sessionId'])
 
     # To handle windows' default backslash system

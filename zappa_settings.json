@@ -1,5 +1,5 @@
 {
-    "dev": {
+    "staging": {
         "django_settings": "ivideo.settings",
         "profile_name": "zappa",
         "project_name": "plio-backend",
@@ -8,7 +8,8 @@
         "aws_region": "ap-south-1",
         "environment_variables": {
             "DJANGO_ENV": "staging",
-            "STATIC_BUCKET": "staging"        }
+            "STATIC_BUCKET": "staging"
+        }
     },
     "prod": {
         "django_settings": "ivideo.settings",

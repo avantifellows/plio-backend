@@ -30,7 +30,6 @@ def get_video_title(video_id: str):
 
 def push_response_to_s3(response_data: Dict):
     """Upload response to s3"""
-    meta_data = response_data['meta']
     response = response_data['response']
 
     # authenticate
@@ -44,8 +43,8 @@ def push_response_to_s3(response_data: Dict):
 
     # define the path where the response is saved
     file_name = "{}_{}-{}.json".format(
-        meta_data['plioId'], meta_data['userId'],
-        meta_data['sessionId'])
+        response['plio-id'], response['user-id'],
+        response['session-id'])
 
     # To handle windows' default backslash system
     file_path = join(save_dir, file_name).replace("\\", "/")

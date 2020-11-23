@@ -10,7 +10,7 @@ from device_detector import SoftwareDetector, DeviceDetector
 
 import ivideo
 from utils.s3 import get_all_plios, get_object, push_response_to_s3, \
-    get_session_id
+    get_session_id, create_user_profile
 
 
 @api_view(['POST'])
@@ -76,6 +76,10 @@ def get_plio(request):
         options.append(q['options'])
         times.append(question['time'])
 
+    # create user profile if it does not exist
+    create_user_profile(user_id)
+
+    # get the session ID
     session_id = get_session_id(plio_id, user_id)
 
     response = {

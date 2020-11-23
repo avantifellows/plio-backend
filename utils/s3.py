@@ -3,6 +3,7 @@ from os.path import join, splitext, basename
 
 
 import boto3
+import botocore
 import json
 
 import urllib.request
@@ -132,3 +133,19 @@ def get_session_id(
             session_id += 1
 
     return session_id
+
+
+def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
+    s3 = get_resource()
+    user_profile_object = s3.Object(
+        bucket_name, f'users/{user_id}.json')
+    try:
+        user_profile_object.load()
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            # user profile does not exist
+            user_profile_object.put(
+                Body=json.dumps({
+                    'phone': user_id
+                }),
+                ContentType='application/json')

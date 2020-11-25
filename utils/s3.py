@@ -142,14 +142,18 @@ def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
     if user_id == 'undefined':
         return
 
+    # get the S3 resource
     s3 = get_resource()
 
     # need to append 91 as that is what we get from WhatsApp
     user_id = '91' + user_id
 
+    # get the S3 object for the key
     user_profile_object = s3.Object(
         bucket_name, f'users/{user_id}.json')
+
     try:
+        # check if the object exists
         user_profile_object.load()
     except botocore.exceptions.ClientError as e:
         if e.response['Error']['Code'] == "404":
@@ -167,8 +171,10 @@ def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
                 # hard-coding to always retain only the first entry
                 # for numbers with multiple entries
                 user_data = db_response['students'][0]
-                user_info['block'] = user_data.get('Block', '')
-                user_info['district'] = user_data.get('District', '')
+                user_info['address'] = {
+                    'block': user_data.get('Block', ''),
+                    'district': user_data.get('District', '')
+                }
                 user_info['name'] = user_data.get('Name', '')
                 user_info['grade'] = user_data.get('Grade', '')
                 user_info['school'] = {

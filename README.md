@@ -1,5 +1,5 @@
-Plio
-====
+Plio Backend
+============
 
 ## Zappa
 
@@ -11,7 +11,8 @@ Once you do this: inside the folder, create a virtual environment with python3
 
 ```
 python3 -m venv zappa_env
-pip install -r requirements.txt
+pip install psycopg2-binary
+cat requirements.txt | xargs -n 1 pip install
 ```
 ### Testing
 
@@ -62,8 +63,7 @@ DB is hosted on AWS RDS:
 * VPC ID: vpc-0a48a661
 
 
-## ---- OLD NOTES BELOW ----
-# Plio Backend
+# OLD NOTES BELOW
 
 ## Requirements
 

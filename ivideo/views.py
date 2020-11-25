@@ -58,8 +58,7 @@ def get_plio(request):
     user_id = request.GET.get('userId', '')
 
     if not plio_id:
-        return JsonResponse(
-            {"Error": "Invalid Plio specified"}, status=HttpResponseBadRequest)
+        return HttpResponseNotFound('<h1>No plio ID specified</h1>')
 
     data = get_object(f'videos/{plio_id}.json')
     if data is None:

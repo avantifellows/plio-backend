@@ -1,8 +1,9 @@
 from typing import Dict, List
 from os.path import join, splitext, basename
-
+import requests
 
 import boto3
+import botocore
 import json
 
 import urllib.request
@@ -10,6 +11,8 @@ import urllib
 import datetime
 
 DEFAULT_BUCKET = 'plio-data'
+DB_QUERIES_URL = 'https://db-queries.plio.in/'
+GET_USER_PATH = 'get_student?phone='
 
 
 def get_video_title(video_id: str):
@@ -132,3 +135,54 @@ def get_session_id(
             session_id += 1
 
     return session_id
+
+
+def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
+    # handle edge case
+    if user_id == 'undefined':
+        return
+
+    # get the S3 resource
+    s3 = get_resource()
+
+    # need to append 91 as that is what we get from WhatsApp
+    user_id = '91' + user_id
+
+    # get the S3 object for the key
+    user_profile_object = s3.Object(
+        bucket_name, f'users/{user_id}.json')
+
+    try:
+        # check if the object exists
+        user_profile_object.load()
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == "404":
+            # user profile does not exist
+            user_info = {
+                'phone': user_id
+            }
+
+            # check if information is present in WhatsApp DB
+            db_response = requests.get(
+                url = DB_QUERIES_URL + GET_USER_PATH + user_id
+            ).json()
+
+            if 'students' in db_response:
+                # hard-coding to always retain only the first entry
+                # for numbers with multiple entries
+                user_data = db_response['students'][0]
+                user_info['address'] = {
+                    'block': user_data.get('Block', ''),
+                    'district': user_data.get('District', '')
+                }
+                user_info['name'] = user_data.get('Name', '')
+                user_info['grade'] = user_data.get('Grade', '')
+                user_info['school'] = {
+                    'code': user_data.get('School Code', ''),
+                    'name': user_data.get('School Name', '')
+                }
+
+            # create profile on S3
+            user_profile_object.put(
+                Body=json.dumps(user_info),
+                ContentType='application/json')

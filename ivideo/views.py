@@ -1,17 +1,20 @@
+from ivideo.settings import DB_QUERIES_URL
 from os.path import join
 import json
 from django.http import response
 from django.http import HttpResponseBadRequest, request
 from django.http import JsonResponse
+import requests
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound
 from rest_framework.decorators import api_view
 from device_detector import SoftwareDetector, DeviceDetector
 
 import ivideo
-from utils.s3 import get_all_plios, get_object, push_response_to_s3, \
+from utils.s3 import get_all_plios, push_response_to_s3, \
     get_session_id, create_user_profile
 
+GET_PLIO_URL_PREFIX = '/get_plio'
 
 @api_view(['POST'])
 def update_response(request):
@@ -45,6 +48,7 @@ def update_response(request):
 
 @api_view(['GET'])
 def get_plios_list(request):
+    
     all_plios = get_all_plios()
     response = {
         "all_plios": all_plios
@@ -54,17 +58,25 @@ def get_plios_list(request):
 
 @api_view(['GET'])
 def get_plio(request):
+    print("Yo 1")
     plio_id = request.GET.get('plioId', '')
     user_id = request.GET.get('userId', '')
 
+    print("Yo 2")
     if not plio_id:
         return HttpResponseNotFound('<h1>No plio ID specified</h1>')
 
-    data = get_object(f'videos/{plio_id}.json')
-    if data is None:
-        return HttpResponseNotFound('<h1>Plio not found</h1>')
+    print("Yo 3") 
+    print("DB Queries URL: " + DB_QUERIES_URL + GET_PLIO_URL_PREFIX)
+    data = requests.get(DB_QUERIES_URL + GET_PLIO_URL_PREFIX, params={ "plio_id": plio_id})
 
-    jsondata = json.loads(data)
+    if (data.status_code == 404):
+        return HttpResponseNotFound('<h1>No plio Found with this ID</h1>')
+    if (data.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+
+    print("Yo 4")
+    jsondata = data.json()["plio"]
 
     questions = []
     times = []
@@ -76,8 +88,14 @@ def get_plio(request):
         times.append(question['time'])
 
     # create user profile if it does not exist
-    create_user_profile(user_id)
+    print("Yo 5")
+    try:
+        create_user_profile(user_id)
+    except Exception as e:
+        print("Yo 5.5")
+        print(e)
 
+    print("YO 6")
     # get the session ID
     session_id = get_session_id(plio_id, user_id)
 
@@ -90,7 +108,7 @@ def get_plio(request):
         'userAgent': get_user_agent_info(request),
         'sessionId': session_id
     }
-
+    print("Yo 7")
     return JsonResponse(response, status=200)
 
 

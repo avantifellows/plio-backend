@@ -169,22 +169,18 @@ USE_L10N = True
 
 USE_TZ = True
 
+# Load zappa environment settings
+json_data = open('zappa_settings.json')
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.1/howto/static-files/
 if 'DJANGO_ENV' in os.environ and os.environ['DJANGO_ENV'] in ['staging', 'prod']:
-    json_data = open('zappa_settings.json')
-
     if os.environ['DJANGO_ENV'] == 'staging':
         zappa_key = 'dev'
     else:
         zappa_key = 'prod'
 
+
     env_vars = json.load(
         json_data)[zappa_key]['environment_variables']
-    
-    for key, val in env_vars.items():
-        os.environ[key] = val
     
     # The AWS region to connect to.
     AWS_REGION = "ap-south-1"
@@ -211,10 +207,19 @@ if 'DJANGO_ENV' in os.environ and os.environ['DJANGO_ENV'] in ['staging', 'prod'
     STATIC_URL = f'{AWS_S3_PUBLIC_URL}/{AWS_S3_KEY_PREFIX_STATIC}/'
 
 else:
+    # Local development
+    env_vars = json.load(
+        json_data)["local"]['environment_variables']
+    
     STATIC_URL = '/static/'
+
+for key, val in env_vars.items():
+    os.environ[key] = val
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'ivideo', 'static'),
 ]
+
+DB_QUERIES_URL = os.environ["DB_QUERIES_URL"]

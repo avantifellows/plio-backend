@@ -8,7 +8,8 @@
         "aws_region": "ap-south-1",
         "environment_variables": {
             "DJANGO_ENV": "staging",
-            "STATIC_BUCKET": "staging"
+            "STATIC_BUCKET": "staging",
+            "DB_QUERIES_URL": "https://db-queries.plio.in"
         }
     },
     "prod": {
@@ -20,7 +21,15 @@
         "aws_region": "ap-south-1",
         "environment_variables": {
             "DJANGO_ENV": "prod",
-            "STATIC_BUCKET": "prod"
+            "STATIC_BUCKET": "prod",
+            "DB_QUERIES_URL": "https://db-queries.plio.in"
+        }
+    },
+    "local": {
+        "environment_variables": {
+            "DJANGO_ENV": "local",
+            "STATIC_BUCKET": "local",
+            "DB_QUERIES_URL": "http://localhost:5000" 
         }
     }
 }

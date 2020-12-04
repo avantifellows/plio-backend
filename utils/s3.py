@@ -1,3 +1,4 @@
+from ivideo.settings import DB_QUERIES_URL
 from typing import Dict, List
 from os.path import join, splitext, basename
 import requests
@@ -6,14 +7,22 @@ import boto3
 import botocore
 import json
 
+import os
+
 import urllib.request
 import urllib
 import datetime
+from django.conf import settings
 
 DEFAULT_BUCKET = 'plio-data'
-DB_QUERIES_URL = 'https://db-queries.plio.in/'
-GET_USER_PATH = 'get_student?phone='
 
+CREATE_USER_PATH = '/create_user'
+
+# Look in zappa_settings.json if you want to change this URL
+DB_QUERIES_URL = settings.DB_QUERIES_URL
+
+LOCAL_STORAGE_PATH = '/tmp/'
+PLIOS_DB_FILE = 'all_plios.json'
 
 def get_video_title(video_id: str):
     """Gets video title from YouTube"""
@@ -72,43 +81,35 @@ def get_resource(
     )
 
 
-def get_object(key: str, bucket: str = DEFAULT_BUCKET):
-    """Returns the object data for a given key in the given bucket"""
-    s3 = get_resource()
-    try:
-        obj = s3.Object(bucket, key)
-        return obj.get()['Body'].read().decode('utf-8')
-    except:
-        return None
-
-
 def get_all_plios(
         bucket: str = DEFAULT_BUCKET, extensions: List[str] = ['.json']):
     """Returns all the plios in the specified bucket"""
-    s3 = get_resource()
-    s3_bucket = s3.Bucket(bucket)
 
-    # get all plios only from the bucket
-    files = s3_bucket.objects.filter(Prefix='videos/', Delimiter='/')
-    # create empty list for final information
-    matching_files = []
+    path = LOCAL_STORAGE_PATH + PLIOS_DB_FILE
+    if not os.path.exists(path):
+        s3 = get_resource()
+        s3.Bucket(bucket).download_file(PLIOS_DB_FILE, path)
 
+    plios = {}
+    with open(path) as f:
+        plios = json.load(f)
+
+
+    all_plios = [] 
     # Iterate throgh 'files', convert to dict. and add extension key.
-    for file in files:
-        name, ext = splitext(basename(file.key))
+    for plio in plios:
+        
+        name, ext = splitext(basename(plio['key']))
         if ext in extensions:
-            json_content = json.loads(
-                s3.Object(bucket, file.key).get()['Body'].read().decode(
-                    'utf-8'))
-            video_title = get_video_title(json_content["video_id"])
-            date = datetime.datetime.strftime(
-                file.last_modified, "%Y-%m-%d")
-            matching_files.append(dict({
+            json_content = json.loads(plio['response'])
+            video_title =  get_video_title( json_content["video_id"] )
+            date = plio["last_modified"]
+            all_plios.append(dict({
                 "plio_id": name, "details": json_content,
                 "title": video_title, "created": date
             }))
     
-    return matching_files
+    return all_plios
 
 
 def get_session_id(
@@ -124,65 +125,19 @@ def get_session_id(
     s3_bucket = s3.Bucket(bucket)
 
     # get all entries only from bucket
-    files = s3_bucket.objects.filter(Prefix='answers/', Delimiter='/')
-    # create empty list for final information
+    files = s3_bucket.objects.filter(Prefix='answers/' + plio_id + "_" + user_id, Delimiter='/')
+    
     session_id = 1
 
     # Iterate throgh 'files', convert to dict. and add extension key.
     for file in files:
-        # only retain entries for the given Plio ID and user ID combination
-        if plio_id in file.key and user_id in file.key:
-            session_id += 1
+        session_id += 1
 
     return session_id
 
 
 def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
-    # handle edge case
-    if user_id == 'undefined':
-        return
-
-    # get the S3 resource
-    s3 = get_resource()
-
-    # need to append 91 as that is what we get from WhatsApp
-    user_id = '91' + user_id
-
-    # get the S3 object for the key
-    user_profile_object = s3.Object(
-        bucket_name, f'users/{user_id}.json')
-
-    try:
-        # check if the object exists
-        user_profile_object.load()
-    except botocore.exceptions.ClientError as e:
-        if e.response['Error']['Code'] == "404":
-            # user profile does not exist
-            user_info = {
-                'phone': user_id
-            }
-
-            # check if information is present in WhatsApp DB
-            db_response = requests.get(
-                url = DB_QUERIES_URL + GET_USER_PATH + user_id
-            ).json()
-
-            if 'students' in db_response:
-                # hard-coding to always retain only the first entry
-                # for numbers with multiple entries
-                user_data = db_response['students'][0]
-                user_info['address'] = {
-                    'block': user_data.get('Block', ''),
-                    'district': user_data.get('District', '')
-                }
-                user_info['name'] = user_data.get('Name', '')
-                user_info['grade'] = user_data.get('Grade', '')
-                user_info['school'] = {
-                    'code': user_data.get('School Code', ''),
-                    'name': user_data.get('School Name', '')
-                }
-
-            # create profile on S3
-            user_profile_object.put(
-                Body=json.dumps(user_info),
-                ContentType='application/json')
+    params = {
+        "phone": user_id
+    }
+    resp = requests.post(DB_QUERIES_URL + CREATE_USER_PATH, json=params )

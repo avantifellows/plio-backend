@@ -102,7 +102,7 @@ def get_all_plios(
         name, ext = splitext(basename(plio['key']))
         if ext in extensions:
             json_content = json.loads(plio['response'])
-            video_title = json_content["video_id"]
+            video_title =  get_video_title( json_content["video_id"] )
             date = plio["last_modified"]
             all_plios.append(dict({
                 "plio_id": name, "details": json_content,
@@ -137,10 +137,7 @@ def get_session_id(
 
 
 def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
-    print(user_id)
     params = {
         "phone": user_id
     }
-    print(params)
     resp = requests.post(DB_QUERIES_URL + CREATE_USER_PATH, json=params )
-    print(resp)

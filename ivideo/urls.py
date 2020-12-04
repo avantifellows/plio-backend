@@ -18,7 +18,6 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    # path('player/', include('ivideo_player.urls')),
     path('player/', views.redirect_home),
     path('player/<str:plio_id>', views.redirect_plio),
     path('admin/', admin.site.urls),

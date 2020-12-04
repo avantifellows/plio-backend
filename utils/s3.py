@@ -94,7 +94,6 @@ def get_all_plios(
     with open(path) as f:
         plios = json.load(f)
 
-
     all_plios = [] 
     # Iterate throgh 'files', convert to dict. and add extension key.
     for plio in plios:
@@ -102,7 +101,7 @@ def get_all_plios(
         name, ext = splitext(basename(plio['key']))
         if ext in extensions:
             json_content = json.loads(plio['response'])
-            video_title =  get_video_title( json_content["video_id"] )
+            video_title = json_content['video_title']
             date = plio["last_modified"]
             all_plios.append(dict({
                 "plio_id": name, "details": json_content,

@@ -26,15 +26,15 @@ def update_response(request):
     request:{
         'response' : {
             'answers' : list of strings,
-            'options' : list of lists of string,
             'watch-time' : integer,
+            'user-id' : string,
+            'plio-id' : string,
+            'session-id' : integer,
             'source' : string,
             'retention' : list of integers,
+            'has-video-played' : integer,
+            'journey' : list of dicts,
             'user_agent' : Object
-        },
-        'meta' : {
-            'object_id': string,
-            'student_id': string
         }
     }
     '''

@@ -124,14 +124,11 @@ def get_session_id(
     s3_bucket = s3.Bucket(bucket)
 
     # get all entries only from bucket
-    files = s3_bucket.objects.filter(Prefix='answers/' + plio_id + "_" + user_id, Delimiter='/')
+    files = s3_bucket.objects.filter(
+        Prefix='answers/' + plio_id + "_" + user_id, Delimiter='/')
     
-    session_id = 1
-
-    # Iterate throgh 'files', convert to dict. and add extension key.
-    for file in files:
-        session_id += 1
-
+    # get new session ID
+    session_id = sum([1 for _ in files])
     return session_id
 
 
@@ -139,4 +136,4 @@ def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
     params = {
         "phone": user_id
     }
-    resp = requests.post(DB_QUERIES_URL + CREATE_USER_PATH, json=params )
+    requests.post(DB_QUERIES_URL + CREATE_USER_PATH, json=params )

@@ -86,9 +86,8 @@ def get_all_plios(
     """Returns all the plios in the specified bucket"""
 
     path = LOCAL_STORAGE_PATH + PLIOS_DB_FILE
-    if not os.path.exists(path):
-        s3 = get_resource()
-        s3.Bucket(bucket).download_file(PLIOS_DB_FILE, path)
+    s3 = get_resource()
+    s3.Bucket(bucket).download_file(PLIOS_DB_FILE, path)
 
     plios = {}
     with open(path) as f:

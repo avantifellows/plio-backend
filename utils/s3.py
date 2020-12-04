@@ -15,9 +15,10 @@ import datetime
 from django.conf import settings
 
 DEFAULT_BUCKET = 'plio-data'
-# Look in zappa_settings.json if you want to change this URL
 
 CREATE_USER_PATH = '/create_user'
+
+# Look in zappa_settings.json if you want to change this URL
 DB_QUERIES_URL = settings.DB_QUERIES_URL
 
 LOCAL_STORAGE_PATH = '/tmp/'
@@ -107,7 +108,6 @@ def get_all_plios(
                 "plio_id": name, "details": json_content,
                 "title": video_title, "created": date
             }))
-    
     
     return all_plios
 

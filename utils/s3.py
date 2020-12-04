@@ -101,7 +101,7 @@ def get_all_plios(
         name, ext = splitext(basename(plio['key']))
         if ext in extensions:
             json_content = json.loads(plio['response'])
-            video_title = json_content['video_title']
+            video_title = json_content.get('video_title', '')
             date = plio["last_modified"]
             all_plios.append(dict({
                 "plio_id": name, "details": json_content,

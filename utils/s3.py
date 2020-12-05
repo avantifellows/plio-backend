@@ -6,11 +6,8 @@ import requests
 import boto3
 import botocore
 import json
-
 import os
 
-import urllib.request
-import urllib
 import datetime
 from django.conf import settings
 
@@ -23,21 +20,6 @@ DB_QUERIES_URL = settings.DB_QUERIES_URL
 
 LOCAL_STORAGE_PATH = '/tmp/'
 PLIOS_DB_FILE = 'all_plios.json'
-
-def get_video_title(video_id: str):
-    """Gets video title from YouTube"""
-    params = {
-        "format": "json",
-        "url": "https://www.youtube.com/watch?v=%s" % video_id
-    }
-    url = "https://www.youtube.com/oembed"
-    query_string = urllib.parse.urlencode(params)
-    url = url + "?" + query_string
-
-    with urllib.request.urlopen(url) as response:
-        response_text = response.read()
-        data = json.loads(response_text.decode())
-    return data["title"]
 
 
 def push_response_to_s3(response_data: Dict):

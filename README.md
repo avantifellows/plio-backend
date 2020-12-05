@@ -11,6 +11,7 @@ Once you do this: inside the folder, create a virtual environment with python3
 
 ```
 python3 -m venv zappa_env
+source zappa_env/bin/activate
 pip install psycopg2-binary
 cat requirements.txt | xargs -n 1 pip install
 ```
@@ -22,6 +23,9 @@ python manage.py runserver 0.0.0.0:8001
 ```
 
 You can set `DJANGO_ENV` to `staging` or `prod` to test local code with staging/production environment variables. Currently, the only environment variable is the location of the static bucket. But soon, we'll have different DBs etc.
+
+**Note:** In Windows (even if you're using WSL), if you want to see the static html/css on a browser or hit the API using PostMan, don't use `0.0.0.0:8001`, but use `127.0.0.1:8001` instead.
+> `0.0.0.0` is the invalid, un-routable address. [source](https://news.ycombinator.com/item?id=18978357)
 
 ### Deploying
 

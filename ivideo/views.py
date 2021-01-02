@@ -15,6 +15,7 @@ from utils.s3 import get_all_plios, push_response_to_s3, \
     get_session_id, create_user_profile
 
 GET_PLIO_URL_PREFIX = '/get_plio'
+GET_SESSION_DATA_URL_PREFIX = '/get_session_data'
 
 @api_view(['POST'])
 def update_response(request):
@@ -98,8 +99,27 @@ def get_plio(request):
         'videoId': jsondata['video_id'],
         'plioId': plio_id,
         'userAgent': get_user_agent_info(request),
-        'sessionId': session_id
+        'sessionId': session_id,
+        'sessionData': None
     }
+
+    # get previous session data if it exists
+    if session_id != 1:
+        session_data = requests.get(
+            DB_QUERIES_URL + GET_SESSION_DATA_URL_PREFIX, params={
+                "plio_id": plio_id,
+                "user_id": user_id,
+                "session_id": session_id-1
+            })
+    
+        if (session_data.status_code == 404):
+            return HttpResponseNotFound('<h1>No session found for this user-plio combination</h1>')
+        if (session_data.status_code != 200):
+            return HttpResponseNotFound('<h1>An unknown error occurred in getting the session data</h1>')
+        
+        session_jsondata = session_data.json()["sessionData"]
+        response['sessionData'] = session_jsondata
+    
     return JsonResponse(response, status=200)
 
 

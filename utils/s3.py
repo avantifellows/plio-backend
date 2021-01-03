@@ -100,7 +100,7 @@ def get_session_id(
         raise ValueError('Invalid plio_id')
 
     if not user_id:
-        return 1
+        return 0
 
     s3 = get_resource()
     s3_bucket = s3.Bucket(bucket)
@@ -108,7 +108,7 @@ def get_session_id(
     # get all entries only from bucket
     files = s3_bucket.objects.filter(
         Prefix='answers/' + plio_id + "_" + user_id, Delimiter='/')
-    
+
     # get new session ID
     session_id = sum([1 for _ in files])
     return session_id

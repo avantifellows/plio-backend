@@ -65,7 +65,7 @@ def get_plio(request):
         return HttpResponseNotFound('<h1>No plio ID specified</h1>')
 
     data = requests.get(DB_QUERIES_URL + GET_PLIO_URL_PREFIX, params={ "plio_id": plio_id})
-
+    
     if (data.status_code == 404):
         return HttpResponseNotFound('<h1>No plio Found with this ID</h1>')
     if (data.status_code != 200):
@@ -87,7 +87,7 @@ def get_plio(request):
         create_user_profile(user_id)
     except Exception as e:
         print(e)
-
+    
     # get the session ID
     session_id = get_session_id(plio_id, user_id)
 

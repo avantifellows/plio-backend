@@ -14,8 +14,8 @@ import ivideo
 from utils.s3 import get_all_plios, push_response_to_s3, \
     get_session_id, create_user_profile
 
-GET_PLIO_URL_PREFIX = '/get_plio'
-GET_SESSION_DATA_URL_PREFIX = '/get_session_data'
+URL_PREFIX_GET_PLIO = '/get_plio'
+URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
 
 @api_view(['POST'])
 def update_response(request):
@@ -65,7 +65,7 @@ def get_plio(request):
     if not plio_id:
         return HttpResponseNotFound('<h1>No plio ID specified</h1>')
 
-    data = requests.get(DB_QUERIES_URL + GET_PLIO_URL_PREFIX, params={ "plio_id": plio_id})
+    data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_PLIO, params={ "plio_id": plio_id})
     
     if (data.status_code == 404):
         return HttpResponseNotFound('<h1>No plio Found with this ID</h1>')
@@ -100,13 +100,13 @@ def get_plio(request):
         'plioId': plio_id,
         'userAgent': get_user_agent_info(request),
         'sessionId': session_id,
-        'sessionData': None
+        'sessionData': ''
     }
 
     # get previous session data if it exists
     if session_id != 0:
         session_data = requests.get(
-            DB_QUERIES_URL + GET_SESSION_DATA_URL_PREFIX, params={
+            DB_QUERIES_URL + URL_PREFIX_GET_SESSION_DATA, params={
                 "plio_id": plio_id,
                 "user_id": user_id,
                 "session_id": session_id-1

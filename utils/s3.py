@@ -110,7 +110,7 @@ def get_session_id(
         Prefix='answers/' + plio_id + "_" + user_id, Delimiter='/')
 
     # get new session ID
-    session_id = sum([1 for _ in files]) + 1
+    session_id = sum([1 for _ in files])
     return session_id
 
 

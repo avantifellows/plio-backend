@@ -104,7 +104,7 @@ def get_plio(request):
     }
 
     # get previous session data if it exists
-    if session_id != 1:
+    if session_id != 0:
         session_data = requests.get(
             DB_QUERIES_URL + GET_SESSION_DATA_URL_PREFIX, params={
                 "plio_id": plio_id,

@@ -24,5 +24,6 @@ urlpatterns = [
     path('', views.index),
     path('plios_list', views.get_plios_list),
     path('get_plio', views.get_plio),
-    path('update_response', views.update_response)
+    path('update_response', views.update_response),
+    path('get_experiment_assignment', views.get_experiment_assignment)
 ]

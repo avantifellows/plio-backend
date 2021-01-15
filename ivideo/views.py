@@ -58,6 +58,26 @@ def get_plios_list(request):
 
 
 @api_view(['GET'])
+def get_experiment_assignment(request):
+    experiment_id = request.GET.get('experimentId', '')
+    user_id = request.GET.get('userId', '')
+
+    if not experiment_id:
+        return HttpResponseNotFound('<h1>No experiment ID specified</h1>')
+    
+    if not user_id:
+        return HttpResponseNotFound('<h1>No user ID specified</h1>')
+
+    
+    
+    all_plios = get_all_plios()
+    response = {
+        "all_plios": all_plios
+    }
+    return JsonResponse(response)
+
+
+@api_view(['GET'])
 def get_plio(request):
     plio_id = request.GET.get('plioId', '')
     user_id = request.GET.get('userId', '')

@@ -16,6 +16,8 @@ from utils.s3 import get_all_plios, push_response_to_s3, \
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
+URL_PREFIX_GET_USER_CONFIG = '/get_user_config'
+URL_PREFIX_UPDATE_USER_CONFIG = '/update_user_config'
 
 @api_view(['POST'])
 def update_response(request):
@@ -47,6 +49,29 @@ def update_response(request):
     }, status=200)
 
 
+@api_view(['POST'])
+def update_user_config(request):
+    """Update the user config"""
+
+    user_id = request.data.get('user-id', '')
+    config_data = request.data.get('configs', '')
+
+    if not user_id:
+        return HttpResponseNotFound('<h1>No user-id specified</h1>')
+    if not config_data:
+        return HttpResponseNotFound('<h1>No tutorial data specified</h1>')
+    
+    params = {
+        'user_id': '91' + user_id,
+        'configs': config_data
+    }
+
+    requests.post(DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
+    return JsonResponse({
+        'status': 'Success! Config updated'
+    }, status=200)
+
+
 @api_view(['GET'])
 def get_plios_list(request):
     
@@ -55,6 +80,21 @@ def get_plios_list(request):
         "all_plios": all_plios
     }
     return JsonResponse(response)
+
+
+def get_user_config(user_id):
+    if not user_id:
+        return HttpResponseNotFound('<h1>No user ID specified</h1>')
+    
+    data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_USER_CONFIG, params={ "user_id": user_id })
+
+    if (data.status_code == 404):
+        return HttpResponseNotFound('<h1>No config found for this user ID</h1>')
+    if (data.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+    
+    jsondata = data.json()["user_config"]
+    return jsondata
 
 
 @api_view(['GET'])
@@ -120,6 +160,9 @@ def get_plio(request):
         session_jsondata = session_data.json()["sessionData"]
         response['sessionData'] = session_jsondata
     
+    config_data = get_user_config(user_id)
+    response['configData'] = config_data
+
     return JsonResponse(response, status=200)
 
 

@@ -153,7 +153,7 @@ def get_experiment_assignment(request):
     # can remove the call to get the assignment from user config in
     # the future by setting seed = hash(experiment_id + user_id)
     # https://martin-thoma.com/bucketing-in-ab-testing/
-    user_config = get_user_config(user_id)
+    user_config = get_user_config(f'91{user_id}')
     if isinstance(user_config, HttpResponseNotFound):
         return user_config
 

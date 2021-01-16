@@ -1,6 +1,8 @@
 from ivideo.settings import DB_QUERIES_URL
 from os.path import join
 import json
+from typing import Dict
+import random
 from django.http import response
 from django.http import HttpResponseBadRequest, request
 from django.http import JsonResponse
@@ -15,6 +17,7 @@ from utils.s3 import get_all_plios, push_response_to_s3, \
     get_session_id, create_user_profile
 
 URL_PREFIX_GET_PLIO = '/get_plio'
+URL_PREFIX_GET_EXPERIMENT = '/get_experiment'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
 URL_PREFIX_GET_USER_CONFIG = '/get_user_config'
 URL_PREFIX_UPDATE_USER_CONFIG = '/update_user_config'
@@ -49,6 +52,19 @@ def update_response(request):
     }, status=200)
 
 
+def _update_user_config(user_id, config_data):
+    """Function to update user config given user Id and config"""
+    params = {
+        'user_id': user_id,
+        'configs': config_data
+    }
+
+    requests.post(DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
+    return JsonResponse({
+        'status': 'Success! Config updated'
+    }, status=200)
+
+
 @api_view(['POST'])
 def update_user_config(request):
     """Update the user config"""
@@ -60,16 +76,8 @@ def update_user_config(request):
         return HttpResponseNotFound('<h1>No user-id specified</h1>')
     if not config_data:
         return HttpResponseNotFound('<h1>No tutorial data specified</h1>')
-    
-    params = {
-        'user_id': '91' + user_id,
-        'configs': config_data
-    }
 
-    requests.post(DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
-    return JsonResponse({
-        'status': 'Success! Config updated'
-    }, status=200)
+    _update_user_config('91' + user_id, config_data)
 
 
 @api_view(['GET'])
@@ -83,22 +91,56 @@ def get_plios_list(request):
 
 
 def get_user_config(user_id):
+    """Returns the user config for the given user ID"""
     if not user_id:
         return HttpResponseNotFound('<h1>No user ID specified</h1>')
     
-    data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_USER_CONFIG, params={ "user_id": user_id })
+    data = requests.get(
+        DB_QUERIES_URL + URL_PREFIX_GET_USER_CONFIG, params={ "user_id": user_id })
 
     if (data.status_code == 404):
         return HttpResponseNotFound('<h1>No config found for this user ID</h1>')
     if (data.status_code != 200):
         return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
     
-    jsondata = data.json()["user_config"]
-    return jsondata
+    return data.json()["user_config"]
+
+
+def assign_user_to_variant(distribution: Dict[str, float]) -> str:
+    """Assign a user to a variant.
+
+    :param distribution: map from variant to its probability
+    :type distribution: Dict[str, float]
+    """
+    assert sum(distribution.values()) == 100
+    user_number = random.random()  # in the interval [0, 1]
+    prob_sum = 0.0
+    for variant, probability in sorted(distribution.items()):
+        if prob_sum <= user_number < prob_sum + probability:
+            return variant
+        prob_sum += probability
+    return variant
+
+
+def get_experiment_details(experiment_id):
+    """Returns the experiment JSON associated with the given ID"""
+    data = requests.get(
+        DB_QUERIES_URL + URL_PREFIX_GET_EXPERIMENT,
+        params={ "experiment_id": experiment_id })
+    
+    if (data.status_code == 404):
+        return HttpResponseNotFound(
+            '<h1>No experiment found for this ID</h1>')
+    if (data.status_code != 200):
+        return HttpResponseNotFound(
+            '<h1>An unknown error occurred</h1>')
+    
+    return data.json()["experiment"]
 
 
 @api_view(['GET'])
 def get_experiment_assignment(request):
+    """Get the variant of an A/B test that the user is assigned to"""
     experiment_id = request.GET.get('experimentId', '')
     user_id = request.GET.get('userId', '')
 
@@ -108,13 +150,43 @@ def get_experiment_assignment(request):
     if not user_id:
         return HttpResponseNotFound('<h1>No user ID specified</h1>')
 
+    # can remove the call to get the assignment from user config in
+    # the future by setting seed = hash(experiment_id + user_id)
+    # https://martin-thoma.com/bucketing-in-ab-testing/
+    user_config = get_user_config(user_id)
+    if isinstance(user_config, HttpResponseNotFound):
+        return user_config
+
+    experiment_config = user_config['experiments']
+
+    if experiment_id in experiment_config:
+        # sticky assignment - ensure that once a user is assigned
+        # to a variant then they are always assigned that variant
+        assignment = experiment_config[experiment_id]['assignment']
+    else:
+        expt_details = get_experiment_details(experiment_id)
+        if isinstance(expt_details, HttpResponseNotFound):
+            return expt_details
+            
+        expt_details = expt_details['details']
+
+        distribution = {
+            variant: probability for variant, probability in zip(
+                expt_details['links'], expt_details['split-percentages'])
+        }
+        # get the random assignment
+        assignment = assign_user_to_variant(distribution)
+        user_config['experiments'][experiment_id] = {
+            'assignment': assignment
+        }
+        _update_user_config(f'91{user_id}', user_config)
     
-    
-    all_plios = get_all_plios()
     response = {
-        "all_plios": all_plios
+        'assignment': assignment,
+        'config': user_config
     }
-    return JsonResponse(response)
+
+    return JsonResponse(response, status=200)
 
 
 @api_view(['GET'])

@@ -1,5 +1,5 @@
 from ivideo.settings import DB_QUERIES_URL
-from os.path import join
+from os.path import join, basename
 import json
 from typing import Dict
 import random
@@ -112,7 +112,7 @@ def assign_user_to_variant(distribution: Dict[str, float]) -> str:
     :param distribution: map from variant to its probability
     :type distribution: Dict[str, float]
     """
-    assert sum(distribution.values()) == 100
+    assert sum(distribution.values()) == 1
     user_number = random.random()  # in the interval [0, 1]
     prob_sum = 0.0
     for variant, probability in sorted(distribution.items()):
@@ -171,7 +171,7 @@ def get_experiment_assignment(request):
         expt_details = expt_details['details']
 
         distribution = {
-            variant: probability for variant, probability in zip(
+            variant: probability / 100 for variant, probability in zip(
                 expt_details['links'], expt_details['split-percentages'])
         }
         # get the random assignment
@@ -181,9 +181,15 @@ def get_experiment_assignment(request):
         }
         _update_user_config(f'91{user_id}', user_config)
     
+    # separately seting plio ID although it will be the same as assignment
+    # for now as we might conduct interface level changes where assignment
+    # won't be the same as plio ID
+    plio_id = basename(assignment)
+
     response = {
         'assignment': assignment,
-        'config': user_config
+        'config': user_config,
+        'plioId': plio_id
     }
 
     return JsonResponse(response, status=200)

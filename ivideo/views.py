@@ -68,7 +68,6 @@ def _update_user_config(user_id, config_data):
 @api_view(['POST'])
 def update_user_config(request):
     """Update the user config"""
-
     user_id = request.data.get('user-id', '')
     config_data = request.data.get('configs', '')
 
@@ -77,7 +76,7 @@ def update_user_config(request):
     if not config_data:
         return HttpResponseNotFound('<h1>No tutorial data specified</h1>')
 
-    _update_user_config('91' + user_id, config_data)
+    _update_user_config(get_valid_user_id(user_id), config_data)
 
 
 @api_view(['GET'])
@@ -153,7 +152,7 @@ def get_experiment_assignment(request):
     # can remove the call to get the assignment from user config in
     # the future by setting seed = hash(experiment_id + user_id)
     # https://martin-thoma.com/bucketing-in-ab-testing/
-    user_config = get_user_config(f'91{user_id}')
+    user_config = get_user_config(get_valid_user_id(user_id))
     if isinstance(user_config, HttpResponseNotFound):
         return user_config
 
@@ -179,7 +178,7 @@ def get_experiment_assignment(request):
         user_config['experiments'][experiment_id] = {
             'assignment': assignment
         }
-        _update_user_config(f'91{user_id}', user_config)
+        _update_user_config(get_valid_user_id(user_id), user_config)
     
     # separately seting plio ID although it will be the same as assignment
     # for now as we might conduct interface level changes where assignment
@@ -258,7 +257,7 @@ def get_plio(request):
         session_jsondata = session_data.json()["sessionData"]
         response['sessionData'] = session_jsondata
     
-    config_data = get_user_config('91' + user_id)
+    config_data = get_user_config(get_valid_user_id(user_id))
     response['configData'] = config_data
 
     return JsonResponse(response, status=200)
@@ -309,3 +308,17 @@ def redirect_plio(request, plio_id):
     """Redirect to frontend plio page"""
     return redirect(
         f'https://player.plio.in/#/play/{plio_id}', permanent=True)
+
+
+def get_valid_user_id(user_id: str, country_code: int = 91) -> str:
+    """Returns the country-code prefixed user ID
+
+    :param user_id: user Id to be checked/edited
+    :type user_id: str
+    :param user_id: country code to be used; defaults to 91 (India)
+    :type user_id: str
+    """
+    if len(user_id) == 12:
+        return user_id
+
+    return f'{country_code}{user_id}'

@@ -160,7 +160,7 @@ def get_plio(request):
         session_jsondata = session_data.json()["sessionData"]
         response['sessionData'] = session_jsondata
     
-    config_data = get_user_config(user_id)
+    config_data = get_user_config('91' + user_id)
     response['configData'] = config_data
 
     return JsonResponse(response, status=200)

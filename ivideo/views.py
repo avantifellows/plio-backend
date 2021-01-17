@@ -52,19 +52,6 @@ def update_response(request):
     }, status=200)
 
 
-def _update_user_config(user_id, config_data):
-    """Function to update user config given user Id and config"""
-    params = {
-        'user_id': user_id,
-        'configs': config_data
-    }
-
-    requests.post(DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
-    return JsonResponse({
-        'status': 'Success! Config updated'
-    }, status=200)
-
-
 @api_view(['POST'])
 def login_user(request):
     '''Login given user
@@ -90,6 +77,21 @@ def login_user(request):
     }, status=200)
 
 
+def _update_user_config(user_id, config_data):
+    """Function to update user config given user Id and config"""
+    params = {
+        'user_id': user_id,
+        'configs': config_data
+    }
+
+    response = requests.post(
+        DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
+    print(response)
+    return JsonResponse({
+        'status': 'Success! Config updated'
+    }, status=200)
+
+
 @api_view(['POST'])
 def update_user_config(request):
     """Update the user config"""
@@ -100,8 +102,8 @@ def update_user_config(request):
         return HttpResponseNotFound('<h1>No user-id specified</h1>')
     if not config_data:
         return HttpResponseNotFound('<h1>No tutorial data specified</h1>')
-
-    _update_user_config(get_valid_user_id(user_id), config_data)
+    
+    return _update_user_config(get_valid_user_id(user_id), config_data)
 
 
 @api_view(['GET'])

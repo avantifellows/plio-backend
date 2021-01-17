@@ -50,6 +50,44 @@ def update_response(request):
 
 
 @api_view(['POST'])
+def login_user(request):
+    '''Login given user
+
+    request -- A JSON containing the user Id
+
+    request:{
+        'userId': user ID to be logged in
+    }
+    '''
+    user_id = request.data.get('userId', '')
+
+    if not user_id:
+        return HttpResponseNotFound('<h1>No user ID specified</h1>')
+
+    try:
+        create_user_profile(user_id)
+    except Exception as e:
+        print(e)
+
+    return JsonResponse({
+        'status': 'User logged in'
+    }, status=200)
+
+
+def _update_user_config(user_id, config_data):
+    """Function to update user config given user Id and config"""
+    params = {
+        'user_id': user_id,
+        'configs': config_data
+    }
+
+    requests.post(DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
+    return JsonResponse({
+        'status': 'Success! Config updated'
+    }, status=200)
+
+
+@api_view(['POST'])
 def update_user_config(request):
     """Update the user config"""
 

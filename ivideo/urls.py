@@ -27,5 +27,6 @@ urlpatterns = [
     path('update_response', views.update_response),
     path('get_experiment_assignment', views.get_experiment_assignment),
     path('get_user_config', views.get_user_config),
-    path('update_user_config', views.update_user_config)
+    path('update_user_config', views.update_user_config),
+    path('login_user', views.login_user)
 ]

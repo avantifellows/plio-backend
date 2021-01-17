@@ -99,6 +99,8 @@ def get_session_id(
     if not plio_id:
         raise ValueError('Invalid plio_id')
 
+    # TODO: for older plio-user entries, have to add a file with session id "0"
+    # which will be identical to the file with session id "1"
     if not user_id:
         return 0
 

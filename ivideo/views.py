@@ -14,7 +14,10 @@ import ivideo
 from utils.s3 import get_all_plios, push_response_to_s3, \
     get_session_id, create_user_profile
 
-GET_PLIO_URL_PREFIX = '/get_plio'
+URL_PREFIX_GET_PLIO = '/get_plio'
+URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
+URL_PREFIX_GET_USER_CONFIG = '/get_user_config'
+URL_PREFIX_UPDATE_USER_CONFIG = '/update_user_config'
 
 @api_view(['POST'])
 def update_response(request):
@@ -46,6 +49,29 @@ def update_response(request):
     }, status=200)
 
 
+@api_view(['POST'])
+def update_user_config(request):
+    """Update the user config"""
+
+    user_id = request.data.get('user-id', '')
+    config_data = request.data.get('configs', '')
+
+    if not user_id:
+        return HttpResponseNotFound('<h1>No user-id specified</h1>')
+    if not config_data:
+        return HttpResponseNotFound('<h1>No tutorial data specified</h1>')
+    
+    params = {
+        'user_id': '91' + user_id,
+        'configs': config_data
+    }
+
+    requests.post(DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
+    return JsonResponse({
+        'status': 'Success! Config updated'
+    }, status=200)
+
+
 @api_view(['GET'])
 def get_plios_list(request):
     
@@ -56,6 +82,21 @@ def get_plios_list(request):
     return JsonResponse(response)
 
 
+def get_user_config(user_id):
+    if not user_id:
+        return HttpResponseNotFound('<h1>No user ID specified</h1>')
+    
+    data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_USER_CONFIG, params={ "user_id": user_id })
+
+    if (data.status_code == 404):
+        return HttpResponseNotFound('<h1>No config found for this user ID</h1>')
+    if (data.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+    
+    jsondata = data.json()["user_config"]
+    return jsondata
+
+
 @api_view(['GET'])
 def get_plio(request):
     plio_id = request.GET.get('plioId', '')
@@ -64,7 +105,7 @@ def get_plio(request):
     if not plio_id:
         return HttpResponseNotFound('<h1>No plio ID specified</h1>')
 
-    data = requests.get(DB_QUERIES_URL + GET_PLIO_URL_PREFIX, params={ "plio_id": plio_id})
+    data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_PLIO, params={ "plio_id": plio_id})
     
     if (data.status_code == 404):
         return HttpResponseNotFound('<h1>No plio Found with this ID</h1>')
@@ -98,8 +139,30 @@ def get_plio(request):
         'videoId': jsondata['video_id'],
         'plioId': plio_id,
         'userAgent': get_user_agent_info(request),
-        'sessionId': session_id
+        'sessionId': session_id,
+        'sessionData': ''
     }
+
+    # get previous session data if it exists
+    if session_id != 0:
+        session_data = requests.get(
+            DB_QUERIES_URL + URL_PREFIX_GET_SESSION_DATA, params={
+                "plio_id": plio_id,
+                "user_id": user_id,
+                "session_id": session_id-1
+            })
+    
+        if (session_data.status_code == 404):
+            return HttpResponseNotFound('<h1>No session found for this user-plio combination</h1>')
+        if (session_data.status_code != 200):
+            return HttpResponseNotFound('<h1>An unknown error occurred in getting the session data</h1>')
+        
+        session_jsondata = session_data.json()["sessionData"]
+        response['sessionData'] = session_jsondata
+    
+    config_data = get_user_config('91' + user_id)
+    response['configData'] = config_data
+
     return JsonResponse(response, status=200)
 
 

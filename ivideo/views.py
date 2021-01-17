@@ -74,19 +74,6 @@ def login_user(request):
     }, status=200)
 
 
-def _update_user_config(user_id, config_data):
-    """Function to update user config given user Id and config"""
-    params = {
-        'user_id': user_id,
-        'configs': config_data
-    }
-
-    requests.post(DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
-    return JsonResponse({
-        'status': 'Success! Config updated'
-    }, status=200)
-
-
 @api_view(['POST'])
 def update_user_config(request):
     """Update the user config"""

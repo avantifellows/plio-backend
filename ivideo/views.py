@@ -86,7 +86,6 @@ def _update_user_config(user_id, config_data):
 
     response = requests.post(
         DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
-    print(response)
     return JsonResponse({
         'status': 'Success! Config updated'
     }, status=200)

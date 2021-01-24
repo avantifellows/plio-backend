@@ -12,8 +12,8 @@ import datetime
 from django.conf import settings
 
 DEFAULT_BUCKET = 'plio-data'
-
 CREATE_USER_PATH = '/create_user'
+GET_DEFAULT_USER_CONFIG_PATH = '/get_default_user_config'
 
 # Look in zappa_settings.json if you want to change this URL
 DB_QUERIES_URL = settings.DB_QUERIES_URL
@@ -121,3 +121,8 @@ def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
         "phone": user_id
     }
     requests.post(DB_QUERIES_URL + CREATE_USER_PATH, json=params )
+
+
+def get_default_user_config():
+    response = requests.get(DB_QUERIES_URL + GET_DEFAULT_USER_CONFIG_PATH)
+    return json.loads(response.json())

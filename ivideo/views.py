@@ -14,7 +14,7 @@ from device_detector import SoftwareDetector, DeviceDetector
 
 import ivideo
 from utils.s3 import get_all_plios, push_response_to_s3, \
-    get_session_id, create_user_profile
+    get_session_id, create_user_profile, get_default_user_config
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_EXPERIMENT = '/get_experiment'
@@ -180,7 +180,7 @@ def get_experiment_assignment(request):
     # https://martin-thoma.com/bucketing-in-ab-testing/
     user_config = get_user_config(get_valid_user_id(user_id))
     if isinstance(user_config, HttpResponseNotFound):
-        return user_config
+        user_config = get_default_user_config()
 
     experiment_config = user_config['experiments']
 
@@ -274,7 +274,7 @@ def get_plio(request):
                 "user_id": user_id,
                 "session_id": session_id-1
             })
-    
+
         if (session_data.status_code == 404):
             return HttpResponseNotFound('<h1>No session found for this user-plio combination</h1>')
         if (session_data.status_code != 200):

@@ -11,14 +11,13 @@ from device_detector import SoftwareDetector, DeviceDetector
 
 from ivideo.settings import DB_QUERIES_URL
 import ivideo
+from users.views import get_user_config
 from utils.s3 import get_all_plios, push_response_to_s3, \
-    get_session_id, create_user_profile, get_default_user_config
+    get_session_id
 
 URL_PREFIX_GET_PLIO = '/get_plio'
-URL_PREFIX_GET_EXPERIMENT = '/get_experiment'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
-URL_PREFIX_GET_USER_CONFIG = '/get_user_config'
-URL_PREFIX_UPDATE_USER_CONFIG = '/update_user_config'
+
 
 @api_view(['POST'])
 def update_response(request):
@@ -50,59 +49,6 @@ def update_response(request):
     }, status=200)
 
 
-@api_view(['POST'])
-def login_user(request):
-    '''Login given user
-
-    request -- A JSON containing the user Id
-
-    request:{
-        'userId': user ID to be logged in
-    }
-    '''
-    user_id = request.data.get('userId', '')
-
-    if not user_id:
-        return HttpResponseNotFound('<h1>No user ID specified</h1>')
-
-    try:
-        create_user_profile(user_id)
-    except Exception as e:
-        print(e)
-
-    return JsonResponse({
-        'status': 'User logged in'
-    }, status=200)
-
-
-def _update_user_config(user_id, config_data):
-    """Function to update user config given user Id and config"""
-    params = {
-        'user_id': get_valid_user_id(user_id),
-        'configs': config_data
-    }
-
-    requests.post(
-        DB_QUERIES_URL + URL_PREFIX_UPDATE_USER_CONFIG, json=params)
-    return JsonResponse({
-        'status': 'Success! Config updated'
-    }, status=200)
-
-
-@api_view(['POST'])
-def update_user_config(request):
-    """Update the user config"""
-    user_id = request.data.get('user-id', '')
-    config_data = request.data.get('configs', '')
-
-    if not user_id:
-        return HttpResponseNotFound('<h1>No user-id specified</h1>')
-    if not config_data:
-        return HttpResponseNotFound('<h1>No tutorial data specified</h1>')
-    
-    return _update_user_config(get_valid_user_id(user_id), config_data)
-
-
 @api_view(['GET'])
 def get_plios_list(request):
     
@@ -111,25 +57,6 @@ def get_plios_list(request):
         "all_plios": all_plios
     }
     return JsonResponse(response)
-
-
-def get_user_config(user_id):
-    """Returns the user config for the given user ID"""
-    if not user_id:
-        return HttpResponseNotFound('<h1>No user ID specified</h1>')
-    
-    data = requests.get(
-        DB_QUERIES_URL + URL_PREFIX_GET_USER_CONFIG, params={
-            "user_id": get_valid_user_id(user_id)
-        })
-
-    if (data.status_code == 404):
-        return HttpResponseNotFound('<h1>No config found for this user ID</h1>')
-    if (data.status_code != 200):
-        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
-    
-    return data.json()["user_config"]
-
 
 
 @api_view(['GET'])
@@ -158,12 +85,6 @@ def get_plio(request):
         options.append(q['options'])
         times.append(question['time'])
 
-    # create user profile if it does not exist
-    try:
-        create_user_profile(user_id)
-    except Exception as e:
-        print(e)
-    
     # get the session ID
     session_id = get_session_id(plio_id, user_id)
 
@@ -195,7 +116,11 @@ def get_plio(request):
         session_jsondata = session_data.json()["sessionData"]
         response['sessionData'] = session_jsondata
     
-    config_data = get_user_config(get_valid_user_id(user_id))
+    if not user_id:
+        config_data = {}
+    else:
+        config_data = get_user_config(user_id)
+
     response['configData'] = config_data
 
     return JsonResponse(response, status=200)
@@ -246,17 +171,3 @@ def redirect_plio(request, plio_id):
     """Redirect to frontend plio page"""
     return redirect(
         f'https://player.plio.in/#/play/{plio_id}', permanent=True)
-
-
-def get_valid_user_id(user_id: str, country_code: int = 91) -> str:
-    """Returns the country-code prefixed user ID
-
-    :param user_id: user Id to be checked/edited
-    :type user_id: str
-    :param user_id: country code to be used; defaults to 91 (India)
-    :type user_id: str
-    """
-    if len(user_id) == 12:
-        return user_id
-
-    return f'{country_code}{user_id}'

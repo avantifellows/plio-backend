@@ -7,8 +7,8 @@ from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
 from ivideo.settings import DB_QUERIES_URL
-from ivideo.views import get_user_config, get_default_user_config, \
-    _update_user_config
+from users.views import get_user_config, update_user_config
+from utils.s3 import get_default_user_config
 
 URL_PREFIX_GET_EXPERIMENT = '/get_experiment'
 
@@ -54,7 +54,7 @@ def get_assignment(request):
         user_config['experiments'][experiment_id] = {
             'assignment': assignment
         }
-        _update_user_config(user_id, user_config)
+        update_user_config(user_id, user_config)
     
     # separately seting plio ID although it will be the same as assignment
     # for now as we might conduct interface level changes where assignment

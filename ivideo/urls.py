@@ -26,11 +26,9 @@ urlpatterns = [
     path('get_plio', views.get_plio),
     path('update_response', views.update_response),
 
-    # TODO: separate app for users
-    path('get_user_config', views.get_user_config),
-    path('update_user_config', views.update_user_config),
-    path('login_user', views.login_user),
+    # separate app for users
+    path('users/', include('users.urls')),
 
-    # TODO: separate app for experiments
+    # separate app for experiments
     path('experiments/', include('experiments.urls')),
 ]

@@ -28,14 +28,14 @@ SECRET_KEY = '+o3e(i8els(3bv43!4^lflht9p9l#b%$wa+p4fmb$h#xa))%5u'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-                '0.0.0.0', 
-                '127.0.0.1', 
-                'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com', 
-                'staging.plio.in', 
-                'ivideo.plio.in', 
-                'oix3vlacdg.execute-api.ap-south-1.amazonaws.com', # Staging Lambda
-                'musxsu7886.execute-api.ap-south-1.amazonaws.com' # Prod Lambda
-                ]
+    '0.0.0.0', 
+    '127.0.0.1', 
+    'ivideo.eba-ra9p3ies.ap-south-1.elasticbeanstalk.com', 
+    'staging.plio.in', 
+    'ivideo.plio.in', 
+    'oix3vlacdg.execute-api.ap-south-1.amazonaws.com', # Staging Lambda
+    'musxsu7886.execute-api.ap-south-1.amazonaws.com' # Prod Lambda
+]
 
 if 'RDS_DB_NAME' in os.environ:
     SECURE_SSL_REDIRECT = True
@@ -135,8 +135,6 @@ LOGGING = {
 WSGI_APPLICATION = 'ivideo.wsgi.application'
 
 
-
-
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
@@ -178,7 +176,6 @@ if 'DJANGO_ENV' in os.environ and os.environ['DJANGO_ENV'] in ['staging', 'prod'
     else:
         zappa_key = 'prod'
 
-
     env_vars = json.load(
         json_data)[zappa_key]['environment_variables']
     
@@ -210,7 +207,7 @@ else:
     # Local development
     env_vars = json.load(
         json_data)["local"]['environment_variables']
-    
+
     STATIC_URL = '/static/'
 
 for key, val in env_vars.items():

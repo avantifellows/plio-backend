@@ -1,4 +1,4 @@
-from ivideo.settings import DB_QUERIES_URL
+from plio.settings import DB_QUERIES_URL
 from typing import Dict, List
 from os.path import join, splitext, basename
 import requests

@@ -37,14 +37,14 @@ Deploying with Zappa is very simple:
     zappa manage dev "collectstatic --noinput"
     zappa update dev
     ```
-    The URL will be staging-lambda.plio.in (To be switched to staging.plio.in once we terminate EB)
+    The URL will be staging.plio.in (To be switched to staging.plio.in once we terminate EB)
 * Production:
     ```
     # THIS COMMAND ONLY IF STATIC FILES HAVE CHANGED
     zappa manage prod "collectstatic --noinput"
     zappa update prod
     ```
-    The URL will be ivideo.plio.in (TBD)
+    The URL will be backend.plio.in (TBD)
 
 ### Static Files
 

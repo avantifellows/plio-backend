@@ -46,7 +46,7 @@ def get_assignment(request):
         expt_details = expt_details['details']
 
         distribution = {
-            variant: probability / 100 for variant, probability in zip(
+            variant: probability for variant, probability in zip(
                 expt_details['links'], expt_details['split-percentages'])
         }
         # get the random assignment

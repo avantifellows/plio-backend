@@ -9,8 +9,8 @@ from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
 from device_detector import SoftwareDetector, DeviceDetector
 
-from ivideo.settings import DB_QUERIES_URL
-import ivideo
+from plio.settings import DB_QUERIES_URL
+import plio
 from users.views import get_user_config
 from utils.s3 import get_all_plios, push_response_to_s3, \
     get_session_id

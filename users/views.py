@@ -3,7 +3,7 @@ from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
-from ivideo.settings import DB_QUERIES_URL
+from plio.settings import DB_QUERIES_URL
 
 from utils.s3 import create_user_profile
 

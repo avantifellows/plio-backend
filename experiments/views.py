@@ -8,7 +8,7 @@ from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
 from ivideo.settings import DB_QUERIES_URL
 from users.views import get_user_config, update_user_config
-from utils.s3 import get_default_user_config
+from utils.s3 import get_default_user_config, get_all_experiments
 
 URL_PREFIX_GET_EXPERIMENT = '/get_experiment'
 
@@ -100,6 +100,28 @@ def get_experiment(experiment_id):
             '<h1>An unknown error occurred</h1>')
     
     return data.json()["experiment"]
+
+
+@api_view(['GET'])
+def _get_experiment(request):
+    experiment_id = request.GET.get('experimentId', '')
+
+    if not experiment_id:
+        return HttpResponseNotFound('<h1>No experiment ID specified</h1>')
+    
+    experiment = get_experiment(experiment_id)
+    if isinstance(experiment, HttpResponseNotFound):
+        return experiment
+
+    return JsonResponse(experiment, status=200)
+
+
+@api_view(['GET'])
+def get_experiment_list(request):
+    """Get the list of all experiments"""
+    return JsonResponse({
+        "all_experiments": get_all_experiments()
+    })
 
 
 def index(request):

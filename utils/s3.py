@@ -20,6 +20,7 @@ DB_QUERIES_URL = settings.DB_QUERIES_URL
 
 LOCAL_STORAGE_PATH = '/tmp/'
 PLIOS_DB_FILE = 'all_plios.json'
+EXPERIMENTS_DB_FILE = 'all_experiments.json'
 
 
 def push_response_to_s3(response_data: Dict):
@@ -91,6 +92,34 @@ def get_all_plios(
             }))
     
     return all_plios
+
+
+def get_all_experiments(
+        bucket: str = DEFAULT_BUCKET, extensions: List[str] = ['.json']):
+    """Returns all the plios in the specified bucket"""
+
+    path = LOCAL_STORAGE_PATH + EXPERIMENTS_DB_FILE
+    if not os.path.exists(path):
+        s3 = get_resource()
+        s3.Bucket(bucket).download_file(EXPERIMENTS_DB_FILE, path)
+
+    experiments = {}
+    with open(path) as f:
+        experiments = json.load(f)
+
+    all_experiments = [] 
+    # Iterate throgh 'files', convert to dict. and add extension key.
+    for experiment in experiments:
+        name, ext = splitext(basename(experiment['key']))
+        if ext in extensions:
+            expt_info = json.loads(experiment['response'])
+
+            all_experiments.append(dict({
+                "experiment_id": name, "details": expt_info['details'],
+                "type": expt_info['type'], "created": expt_info["creation_date"]
+            }))
+
+    return all_experiments
 
 
 def get_session_id(

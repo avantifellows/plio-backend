@@ -109,10 +109,12 @@ def get_plio(request):
             })
 
         if (session_data.status_code == 404):
-            return HttpResponseNotFound('<h1>No session found for this user-plio combination</h1>')
+            return HttpResponseNotFound(
+                '<h1>No session found for this user-plio combination</h1>')
         if (session_data.status_code != 200):
-            return HttpResponseNotFound('<h1>An unknown error occurred in getting the session data</h1>')
-        
+            return HttpResponseNotFound(
+                '<h1>An unknown error occurred in getting the session data</h1>')
+
         session_jsondata = session_data.json()["sessionData"]
         response['sessionData'] = session_jsondata
     

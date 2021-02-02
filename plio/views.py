@@ -18,7 +18,7 @@ from utils.s3 import get_all_plios, push_response_to_s3, \
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
 URL_PREFIX_GET_PLIO_FEATURES = '/get_plio_features'
-URL_PREFIX_GET_DEFAULT_PLIO_CONFIG = '/get_default_plio_config'
+URL_PREFIX_GET_DEFAULT_COMPONENT_CONFIG = '/get_default_component_config'
 URL_PREFIX_GET_PLIO_CONFIG = '/get_plio_config'
 
 
@@ -160,13 +160,13 @@ def get_all_plio_features():
     return data.json()["plio_features"]
 
 
-def prepare_plio_config(plio_id):
+def prepare_plio_config(plio_id: str):
     """
     Fetches the specific plio-config and default-plio-config,
     if a feature F1 is present in plio-config, it will override that
     feature in default-plio-config, and return it
     """
-    default_plio_config = get_default_plio_config()
+    default_plio_config = get_default_component_config('plio')
     if not isinstance(default_plio_config, dict):
         return default_plio_config
 
@@ -176,7 +176,7 @@ def prepare_plio_config(plio_id):
 
     current_plio_config = current_plio_config.get('player', '')
 
-    if current_plio_config == '':
+    if not current_plio_config:
         return default_plio_config
 
     for feature, details in current_plio_config.items():
@@ -187,31 +187,33 @@ def prepare_plio_config(plio_id):
 
 
 @api_view(['GET'])
-def _get_default_plio_config(request):
+def _get_default_component_config(request):
     """
-    params: None
-    example: /get_default_plio_config
+    params: type (REQUIRED)
+    example: /get_default_component_config
     """
-    default_plio_config = get_default_plio_config()
-
-    if not isinstance(default_plio_config, dict):
-        return default_plio_config
+    component_type = request.GET.get('type', '')
+    if not component_type:
+        return HttpResponseNotFound('<h1>No component type specified</h1>')
     
-    return JsonResponse(default_plio_config, status=200)
+    default_component_config = get_default_component_config(component_type)
+
+    if not isinstance(default_component_config, dict):
+        return default_component_config
+    
+    return JsonResponse(default_component_config, status=200)
 
 
-def get_default_plio_config():
-    """Fetches the default plio config from the DB"""
-    default_plio_config = requests.get(
-        DB_QUERIES_URL + URL_PREFIX_GET_DEFAULT_PLIO_CONFIG
+def get_default_component_config(component_type: str):
+    """Fetches the default component config from the DB"""
+    default_component_config = requests.get(
+        DB_QUERIES_URL + URL_PREFIX_GET_DEFAULT_COMPONENT_CONFIG, params={"type" : component_type}
     )
 
-    if (default_plio_config.status_code == 404):
-        return HttpResponseNotFound('<h1>default-plio-config not found</h1>')
-    if (default_plio_config.status_code != 200):
+    if (default_component_config.status_code != 200):
         return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
 
-    return default_plio_config.json()["default_plio_config"]
+    return default_component_config.json()["value"]
 
 
 @api_view(['GET'])

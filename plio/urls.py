@@ -26,7 +26,7 @@ urlpatterns = [
     path('get_plio', views.get_plio),
     path('update_response', views.update_response),
     path('get_plio_features', views._get_all_plio_features),
-    path('get_default_plio_config', views._get_default_plio_config),
+    path('get_default_component_config', views._get_default_component_config),
     path('get_plio_config', views._get_plio_config),
 
     # separate app for users

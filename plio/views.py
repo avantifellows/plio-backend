@@ -17,7 +17,7 @@ from utils.s3 import get_all_plios, push_response_to_s3, \
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
-URL_PREFIX_GET_PLIO_FEATURES = '/get_plio_features'
+URL_PREFIX_GET_COMPONENT_FEATURES = '/get_component_features'
 
 
 @api_view(['POST'])
@@ -145,17 +145,18 @@ def _get_component_features(request):
 def get_component_features(component_type):
     """Returns the specific component-features JSON after fetching it from S3"""
 
-    if component_type == "plio":
-        data = requests.get(
-            DB_QUERIES_URL + URL_PREFIX_GET_PLIO_FEATURES
-        )
+    data = requests.get(
+        DB_QUERIES_URL + URL_PREFIX_GET_COMPONENT_FEATURES, params={
+            "type": component_type
+        }
+    )
 
-        if (data.status_code == 404):
-            return HttpResponseNotFound('<h1>plio-features.json not found</h1>')
-        if (data.status_code != 200):
-            return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+    if (data.status_code == 404):
+        return HttpResponseNotFound(f'<h1>{component_type} features not found</h1>')
+    if (data.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
 
-        return data.json()["plio_features"]
+    return data.json()["value"]
 
 
 def get_user_agent_info(request):

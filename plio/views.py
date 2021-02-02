@@ -18,6 +18,8 @@ from utils.s3 import get_all_plios, push_response_to_s3, \
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
 URL_PREFIX_GET_PLIO_FEATURES = '/get_plio_features'
+URL_PREFIX_GET_DEFAULT_PLIO_CONFIG = '/get_default_plio_config'
+URL_PREFIX_GET_PLIO_CONFIG = '/get_plio_config'
 
 
 @api_view(['POST'])
@@ -124,6 +126,13 @@ def get_plio(request):
 
     response['configData'] = config_data
 
+    # prepare plio config
+    plio_config = prepare_plio_config(plio_id)
+    if not isinstance(plio_config, dict):
+        return plio_config
+    
+    response['plioConfig'] = plio_config
+
     return JsonResponse(response, status=200)
 
 
@@ -149,6 +158,91 @@ def get_all_plio_features():
         return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
 
     return data.json()["plio_features"]
+
+
+def prepare_plio_config(plio_id):
+    """
+    Fetches the specific plio-config and default-plio-config,
+    if a feature F1 is present in plio-config, it will override that
+    feature in default-plio-config, and return it
+    """
+    default_plio_config = get_default_plio_config()
+    if not isinstance(default_plio_config, dict):
+        return default_plio_config
+
+    current_plio_config = get_plio_config(plio_id)
+    if not isinstance(current_plio_config, dict):
+        return current_plio_config
+
+    current_plio_config = current_plio_config.get('player', '')
+
+    if current_plio_config == '':
+        return default_plio_config
+
+    for feature, details in current_plio_config.items():
+        if feature in default_plio_config['player']:
+            default_plio_config['player'][f'{feature}'] = details
+    
+    return default_plio_config
+
+
+@api_view(['GET'])
+def _get_default_plio_config(request):
+    """
+    params: None
+    example: /get_default_plio_config
+    """
+    default_plio_config = get_default_plio_config()
+
+    if not isinstance(default_plio_config, dict):
+        return default_plio_config
+    
+    return JsonResponse(default_plio_config, status=200)
+
+
+def get_default_plio_config():
+    """Fetches the default plio config from the DB"""
+    default_plio_config = requests.get(
+        DB_QUERIES_URL + URL_PREFIX_GET_DEFAULT_PLIO_CONFIG
+    )
+
+    if (default_plio_config.status_code == 404):
+        return HttpResponseNotFound('<h1>default-plio-config not found</h1>')
+    if (default_plio_config.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+
+    return default_plio_config.json()["default_plio_config"]
+
+
+@api_view(['GET'])
+def _get_plio_config(request):
+    """
+    params: plioId (REQUIRED)
+    example: /get_plio_config?plioId=aAsdnq23asd
+    """
+    plio_id = request.GET.get('plioId', '')
+    if not plio_id:
+        return HttpResponseNotFound('<h1>No plio ID specified</h1>')
+    
+    plio_config = get_plio_config(plio_id)
+    if not isinstance(plio_config, dict):
+        return plio_config
+    
+    return JsonResponse(plio_config, status=200)
+
+
+def get_plio_config(plio_id):
+    """Fetches config of the specified plio from the DB"""
+    plio_config = requests.get(
+        DB_QUERIES_URL + URL_PREFIX_GET_PLIO_CONFIG, params={"plio_id": plio_id}
+    )
+
+    if (plio_config.status_code == 404):
+        return HttpResponseNotFound(f'<h1>plio-config for plio {plio_id} not found</h1>')
+    if (plio_config.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+
+    return plio_config.json()["plio_config"]
 
 
 def get_user_agent_info(request):

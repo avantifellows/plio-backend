@@ -17,6 +17,7 @@ from utils.s3 import get_all_plios, push_response_to_s3, \
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
+URL_PREFIX_GET_PLIO_FEATURES = '/get_plio_features'
 
 
 @api_view(['POST'])
@@ -124,6 +125,30 @@ def get_plio(request):
     response['configData'] = config_data
 
     return JsonResponse(response, status=200)
+
+
+@api_view(['GET'])
+def _get_all_plio_features(request):
+    all_plio_features = get_all_plio_features()
+    if not isinstance(all_plio_features, dict):
+        return all_plio_features
+    
+    return JsonResponse(all_plio_features, status=200)
+
+
+def get_all_plio_features():
+    """Returns the plio-features JSON after fetching it from S3"""
+
+    data = requests.get(
+        DB_QUERIES_URL + URL_PREFIX_GET_PLIO_FEATURES       
+    )
+
+    if (data.status_code == 404):
+        return HttpResponseNotFound('<h1>plio-features.json not found</h1>')
+    if (data.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+
+    return data.json()["plio_features"]
 
 
 def get_user_agent_info(request):

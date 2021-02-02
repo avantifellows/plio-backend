@@ -17,9 +17,9 @@ from utils.s3 import get_all_plios, push_response_to_s3, \
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
-URL_PREFIX_GET_PLIO_FEATURES = '/get_plio_features'
 URL_PREFIX_GET_DEFAULT_COMPONENT_CONFIG = '/get_default_component_config'
 URL_PREFIX_GET_PLIO_CONFIG = '/get_plio_config'
+URL_PREFIX_GET_COMPONENT_FEATURES = '/get_component_features'
 
 
 @api_view(['POST'])
@@ -137,27 +137,35 @@ def get_plio(request):
 
 
 @api_view(['GET'])
-def _get_all_plio_features(request):
-    all_plio_features = get_all_plio_features()
-    if not isinstance(all_plio_features, dict):
-        return all_plio_features
+def _get_component_features(request):
+    component_type = request.GET.get('type', '')
+
+    if not component_type:
+        return HttpResponseNotFound('<h1>No component type specified</h1>')
+
+    component_features = get_component_features(component_type)
+
+    if not isinstance(component_features, dict):
+        return component_features
     
-    return JsonResponse(all_plio_features, status=200)
+    return JsonResponse(component_features, status=200)
 
 
-def get_all_plio_features():
-    """Returns the plio-features JSON after fetching it from S3"""
+def get_component_features(component_type):
+    """Returns the specific component-features JSON after fetching it from S3"""
 
     data = requests.get(
-        DB_QUERIES_URL + URL_PREFIX_GET_PLIO_FEATURES       
+        DB_QUERIES_URL + URL_PREFIX_GET_COMPONENT_FEATURES, params={
+            "type": component_type
+        }
     )
 
     if (data.status_code == 404):
-        return HttpResponseNotFound('<h1>plio-features.json not found</h1>')
+        return HttpResponseNotFound(f'<h1>{component_type} features not found</h1>')
     if (data.status_code != 200):
         return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
 
-    return data.json()["plio_features"]
+    return data.json()["value"]
 
 
 def prepare_plio_config(plio_id: str):

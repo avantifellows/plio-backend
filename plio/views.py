@@ -12,14 +12,13 @@ from device_detector import SoftwareDetector, DeviceDetector
 from plio.settings import DB_QUERIES_URL
 import plio
 from users.views import get_user_config
+from components.views import get_default_component_config
 from utils.s3 import get_all_plios, push_response_to_s3, \
     get_session_id
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
-URL_PREFIX_GET_DEFAULT_COMPONENT_CONFIG = '/get_default_component_config'
 URL_PREFIX_GET_PLIO_CONFIG = '/get_plio_config'
-URL_PREFIX_GET_COMPONENT_FEATURES = '/get_component_features'
 
 
 @api_view(['POST'])
@@ -120,52 +119,21 @@ def get_plio(request):
         response['sessionData'] = session_jsondata
     
     if not user_id:
-        config_data = {}
+        response['userConfig'] = {}
     else:
-        config_data = get_user_config(user_id)
-
-    response['configData'] = config_data
+        response['userConfig'] = get_user_config(user_id)
 
     # prepare plio config
     plio_config = prepare_plio_config(plio_id)
+    
+    # if the returned object is not dict, it will be some variant
+    # of HttpResponseNotFound, returning it if that's the case
     if not isinstance(plio_config, dict):
         return plio_config
     
     response['plioConfig'] = plio_config
 
     return JsonResponse(response, status=200)
-
-
-@api_view(['GET'])
-def _get_component_features(request):
-    component_type = request.GET.get('type', '')
-
-    if not component_type:
-        return HttpResponseNotFound('<h1>No component type specified</h1>')
-
-    component_features = get_component_features(component_type)
-
-    if not isinstance(component_features, dict):
-        return component_features
-    
-    return JsonResponse(component_features, status=200)
-
-
-def get_component_features(component_type):
-    """Returns the specific component-features JSON after fetching it from S3"""
-
-    data = requests.get(
-        DB_QUERIES_URL + URL_PREFIX_GET_COMPONENT_FEATURES, params={
-            "type": component_type
-        }
-    )
-
-    if (data.status_code == 404):
-        return HttpResponseNotFound(f'<h1>{component_type} features not found</h1>')
-    if (data.status_code != 200):
-        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
-
-    return data.json()["value"]
 
 
 def prepare_plio_config(plio_id: str):
@@ -192,36 +160,6 @@ def prepare_plio_config(plio_id: str):
             default_plio_config['player'][f'{feature}'] = details
     
     return default_plio_config
-
-
-@api_view(['GET'])
-def _get_default_component_config(request):
-    """
-    params: type (REQUIRED)
-    example: /get_default_component_config
-    """
-    component_type = request.GET.get('type', '')
-    if not component_type:
-        return HttpResponseNotFound('<h1>No component type specified</h1>')
-    
-    default_component_config = get_default_component_config(component_type)
-
-    if not isinstance(default_component_config, dict):
-        return default_component_config
-    
-    return JsonResponse(default_component_config, status=200)
-
-
-def get_default_component_config(component_type: str):
-    """Fetches the default component config from the DB"""
-    default_component_config = requests.get(
-        DB_QUERIES_URL + URL_PREFIX_GET_DEFAULT_COMPONENT_CONFIG, params={"type" : component_type}
-    )
-
-    if (default_component_config.status_code != 200):
-        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
-
-    return default_component_config.json()["value"]
 
 
 @api_view(['GET'])

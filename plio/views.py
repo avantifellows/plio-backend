@@ -16,7 +16,7 @@ from utils.s3 import PLIOS_DB_FILE, LOCAL_STORAGE_PATH
 import plio
 from users.views import get_user_config
 from utils.s3 import push_response_to_s3, \
-    get_session_id, save_as_gz
+    get_session_id, save_as_gz, load_gz
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
@@ -63,7 +63,7 @@ def get_plios_list(request):
     return JsonResponse(response)
 
 
-def get_all_plios(extensions: List[str] = ['.json']):
+def get_all_plios():
     """Returns all plios information which the frontend can consume"""
 
     local_save_path = LOCAL_STORAGE_PATH + PLIOS_DB_FILE
@@ -73,24 +73,21 @@ def get_all_plios(extensions: List[str] = ['.json']):
             return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
 
         save_as_gz(local_save_path, json.loads(data.json()))
-
-    plios = {}
-
-    plios = json.loads(gzip.open(local_save_path, 'rb').read())
+    
+    plios = json.loads(load_gz(local_save_path))
 
     all_plios = [] 
     # Iterate throgh 'files', convert to dict. and add extension key.
     for plio in plios:
         
         name, ext = splitext(basename(plio['key']))
-        if ext in extensions:
-            json_content = json.loads(plio['response'])
-            video_title = json_content.get('video_title', '')
-            date = plio["last_modified"]
-            all_plios.append(dict({
-                "plio_id": name, "details": json_content,
-                "title": video_title, "created": date
-            }))
+        json_content = json.loads(plio['response'])
+        video_title = json_content.get('video_title', '')
+        date = plio["last_modified"]
+        all_plios.append(dict({
+            "plio_id": name, "details": json_content,
+            "title": video_title, "created": date
+        }))
     
     return all_plios
 

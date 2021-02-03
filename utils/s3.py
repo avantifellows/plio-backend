@@ -98,7 +98,13 @@ def get_default_user_config():
     response = requests.get(DB_QUERIES_URL + GET_DEFAULT_USER_CONFIG_PATH)
     return json.loads(response.json())
 
+
 def save_as_gz(save_path: str, data: Any):
     """Compresses and saves the given data as .gzip file"""
     with gzip.open(save_path, 'wb') as f:
         f.write(json.dumps(data).encode())
+
+
+def load_gz(load_from_path: str, mode: str='rb'):
+    """Loads and uncompresses a .gzip file from the provided path"""
+    return gzip.open(load_from_path, mode).read()

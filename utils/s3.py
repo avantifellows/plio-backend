@@ -64,36 +64,6 @@ def get_resource(
     )
 
 
-def get_all_plios(
-        bucket: str = DEFAULT_BUCKET, extensions: List[str] = ['.json']):
-    """Returns all the plios in the specified bucket"""
-
-    path = LOCAL_STORAGE_PATH + PLIOS_DB_FILE
-    if not os.path.exists(path):
-        s3 = get_resource()
-        s3.Bucket(bucket).download_file(PLIOS_DB_FILE, path)
-
-    plios = {}
-    with open(path) as f:
-        plios = json.load(f)
-
-    all_plios = [] 
-    # Iterate throgh 'files', convert to dict. and add extension key.
-    for plio in plios:
-        
-        name, ext = splitext(basename(plio['key']))
-        if ext in extensions:
-            json_content = json.loads(plio['response'])
-            video_title = json_content.get('video_title', '')
-            date = plio["last_modified"]
-            all_plios.append(dict({
-                "plio_id": name, "details": json_content,
-                "title": video_title, "created": date
-            }))
-    
-    return all_plios
-
-
 def get_session_id(
         plio_id: str, user_id: str, bucket: str = DEFAULT_BUCKET):
     """Returns the session ID for a given user-plio combination"""

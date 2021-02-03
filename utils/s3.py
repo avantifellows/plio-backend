@@ -105,6 +105,6 @@ def save_as_gz(save_path: str, data: Any):
         f.write(json.dumps(data).encode())
 
 
-def load_gz(load_from_path: str, mode: str='rb'):
+def load_gz(load_from_path: str, mode: str = 'rb'):
     """Loads and uncompresses a .gzip file from the provided path"""
     return gzip.open(load_from_path, mode).read()

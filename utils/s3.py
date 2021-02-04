@@ -19,9 +19,6 @@ GET_DEFAULT_USER_CONFIG_PATH = '/get_default_user_config'
 # Look in zappa_settings.json if you want to change this URL
 DB_QUERIES_URL = settings.DB_QUERIES_URL
 
-LOCAL_STORAGE_PATH = '/tmp/'
-PLIOS_DB_FILE = 'all_plios.json.gz'
-
 
 def push_response_to_s3(response_data: Dict):
     """Upload response to s3"""
@@ -97,14 +94,3 @@ def create_user_profile(user_id: str, bucket_name: str = DEFAULT_BUCKET):
 def get_default_user_config():
     response = requests.get(DB_QUERIES_URL + GET_DEFAULT_USER_CONFIG_PATH)
     return json.loads(response.json())
-
-
-def save_as_gz(save_path: str, data: Any):
-    """Compresses and saves the given data as .gzip file"""
-    with gzip.open(save_path, 'wb') as f:
-        f.write(json.dumps(data).encode())
-
-
-def load_gz(load_from_path: str, mode: str = 'rb'):
-    """Loads and uncompresses a .gzip file from the provided path"""
-    return gzip.open(load_from_path, mode).read()

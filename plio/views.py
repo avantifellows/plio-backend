@@ -1,8 +1,7 @@
 from os.path import join, basename, splitext
 import os
 import json
-from typing import Dict, List
-import gzip
+from typing import Dict
 import random
 import requests
 from django.shortcuts import render, redirect
@@ -12,11 +11,10 @@ from rest_framework.decorators import api_view
 from device_detector import SoftwareDetector, DeviceDetector
 
 from plio.settings import DB_QUERIES_URL
-from utils.s3 import PLIOS_DB_FILE, LOCAL_STORAGE_PATH
 import plio
 from users.views import get_user_config
 from utils.s3 import push_response_to_s3, \
-    get_session_id, save_as_gz, load_gz
+    get_session_id
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
@@ -72,9 +70,8 @@ def get_all_plios():
 
     plios = json.loads(data.json())
     all_plios = [] 
-    # Iterate throgh 'files', convert to dict. and add extension key.
+    # Iterate throgh 'files', convert to dict
     for plio in plios:
-        
         name, ext = splitext(basename(plio['key']))
         json_content = json.loads(plio['response'])
         video_title = json_content.get('video_title', '')

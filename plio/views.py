@@ -1,7 +1,6 @@
 from os.path import join, basename, splitext
 import os
 import json
-from typing import Dict
 import random
 import requests
 from django.shortcuts import render, redirect

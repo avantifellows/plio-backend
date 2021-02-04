@@ -1,6 +1,6 @@
-from os.path import join, basename
+from os.path import join, basename, splitext
+import os
 import json
-from typing import Dict
 import random
 import requests
 from django.shortcuts import render, redirect
@@ -12,11 +12,12 @@ from device_detector import SoftwareDetector, DeviceDetector
 from plio.settings import DB_QUERIES_URL
 import plio
 from users.views import get_user_config
-from utils.s3 import get_all_plios, push_response_to_s3, \
+from utils.s3 import push_response_to_s3, \
     get_session_id
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
+URL_PREFIX_GET_ALL_PLIOS = '/get_plios'
 
 
 @api_view(['POST'])
@@ -57,6 +58,29 @@ def get_plios_list(request):
         "all_plios": all_plios
     }
     return JsonResponse(response)
+
+
+def get_all_plios():
+    """Returns all plios information which the frontend can consume"""
+    
+    data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_PLIOS)
+    if (data.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+
+    plios = json.loads(data.json())
+    all_plios = [] 
+    # Iterate throgh 'files', convert to dict
+    for plio in plios:
+        name, ext = splitext(basename(plio['key']))
+        json_content = json.loads(plio['response'])
+        video_title = json_content.get('video_title', '')
+        date = plio["last_modified"]
+        all_plios.append(dict({
+            "plio_id": name, "details": json_content,
+            "title": video_title, "created": date
+        }))
+    
+    return all_plios
 
 
 @api_view(['GET'])

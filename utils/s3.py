@@ -1,5 +1,5 @@
 from plio.settings import DB_QUERIES_URL
-from typing import Dict, List
+from typing import Dict, List, Any
 from os.path import join, splitext, basename
 import requests
 
@@ -7,6 +7,7 @@ import boto3
 import botocore
 import json
 import os
+import gzip
 
 import datetime
 from django.conf import settings
@@ -17,9 +18,6 @@ GET_DEFAULT_USER_CONFIG_PATH = '/get_default_user_config'
 
 # Look in zappa_settings.json if you want to change this URL
 DB_QUERIES_URL = settings.DB_QUERIES_URL
-
-LOCAL_STORAGE_PATH = '/tmp/'
-PLIOS_DB_FILE = 'all_plios.json'
 
 
 def push_response_to_s3(response_data: Dict):
@@ -61,36 +59,6 @@ def get_resource(
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key
     )
-
-
-def get_all_plios(
-        bucket: str = DEFAULT_BUCKET, extensions: List[str] = ['.json']):
-    """Returns all the plios in the specified bucket"""
-
-    path = LOCAL_STORAGE_PATH + PLIOS_DB_FILE
-    if not os.path.exists(path):
-        s3 = get_resource()
-        s3.Bucket(bucket).download_file(PLIOS_DB_FILE, path)
-
-    plios = {}
-    with open(path) as f:
-        plios = json.load(f)
-
-    all_plios = [] 
-    # Iterate throgh 'files', convert to dict. and add extension key.
-    for plio in plios:
-        
-        name, ext = splitext(basename(plio['key']))
-        if ext in extensions:
-            json_content = json.loads(plio['response'])
-            video_title = json_content.get('video_title', '')
-            date = plio["last_modified"]
-            all_plios.append(dict({
-                "plio_id": name, "details": json_content,
-                "title": video_title, "created": date
-            }))
-    
-    return all_plios
 
 
 def get_session_id(

@@ -65,17 +65,12 @@ def get_plios_list(request):
 
 def get_all_plios():
     """Returns all plios information which the frontend can consume"""
-
-    local_save_path = LOCAL_STORAGE_PATH + PLIOS_DB_FILE
-    if not os.path.exists(local_save_path):
-        data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_PLIOS)
-        if (data.status_code != 200):
-            return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
-
-        save_as_gz(local_save_path, json.loads(data.json()))
     
-    plios = json.loads(load_gz(local_save_path))
+    data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_PLIOS)
+    if (data.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
 
+    plios = json.loads(data.json())
     all_plios = [] 
     # Iterate throgh 'files', convert to dict. and add extension key.
     for plio in plios:

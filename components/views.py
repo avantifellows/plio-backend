@@ -25,6 +25,10 @@ URL_PREFIX_GET_COMPONENT_FEATURES = '/get_component_features'
 
 @api_view(['GET'])
 def _get_component_features(request):
+    """
+    params: type (REQUIRED) [the type of component needed]
+    example: /_get_component_features?type=plio
+    """
     component_type = request.GET.get('type', '')
 
     if not component_type:
@@ -32,6 +36,9 @@ def _get_component_features(request):
 
     component_features = get_component_features(component_type)
 
+    # if the returned object is not dict, it will be some variant
+    # of HttpResponseNotFound, returning it if that's the case
+    # TODO: return `JSONResponses` instead of `HttpResponse` classes wherever possible
     if not isinstance(component_features, dict):
         return component_features
     

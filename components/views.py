@@ -24,17 +24,17 @@ URL_PREFIX_GET_COMPONENT_FEATURES = '/get_component_features'
 
 
 @api_view(['GET'])
-def _get_component_features(request):
+def _get_features(request):
     """
     params: type (REQUIRED) [the type of component needed]
-    example: /_get_component_features?type=plio
+    example: /_get_features?type=plio
     """
     component_type = request.GET.get('type', '')
 
     if not component_type:
         return HttpResponseNotFound('<h1>No component type specified</h1>')
 
-    component_features = get_component_features(component_type)
+    component_features = get_features(component_type)
 
     # if the returned object is not dict, it will be some variant
     # of HttpResponseNotFound, returning it if that's the case
@@ -45,7 +45,7 @@ def _get_component_features(request):
     return JsonResponse(component_features, status=200)
 
 
-def get_component_features(component_type):
+def get_features(component_type):
     """Returns the specific component-features JSON after fetching it from S3"""
 
     data = requests.get(
@@ -63,7 +63,7 @@ def get_component_features(component_type):
 
 
 @api_view(['GET'])
-def _get_default_component_config(request):
+def _get_default_config(request):
     """
     params: type (REQUIRED)
     example: /get_default_component_config
@@ -72,7 +72,7 @@ def _get_default_component_config(request):
     if not component_type:
         return HttpResponseNotFound('<h1>No component type specified</h1>')
     
-    default_component_config = get_default_component_config(component_type)
+    default_component_config = get_default_config(component_type)
 
     if not isinstance(default_component_config, dict):
         return default_component_config
@@ -80,7 +80,7 @@ def _get_default_component_config(request):
     return JsonResponse(default_component_config, status=200)
 
 
-def get_default_component_config(component_type: str):
+def get_default_config(component_type: str):
     """Fetches the default component config from the DB"""
     default_component_config = requests.get(
         DB_QUERIES_URL + URL_PREFIX_GET_DEFAULT_COMPONENT_CONFIG, params={"type" : component_type}

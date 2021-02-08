@@ -1,6 +1,6 @@
 {
     "dev": {
-        "django_settings": "ivideo.settings",
+        "django_settings": "plio.settings",
         "profile_name": "zappa",
         "project_name": "plio-backend",
         "runtime": "python3.8",
@@ -13,7 +13,7 @@
         }
     },
     "prod": {
-        "django_settings": "ivideo.settings",
+        "django_settings": "plio.settings",
         "profile_name": "zappa",
         "project_name": "plio-backend",
         "runtime": "python3.8",
@@ -29,7 +29,7 @@
         "environment_variables": {
             "DJANGO_ENV": "local",
             "STATIC_BUCKET": "local",
-            "DB_QUERIES_URL": "http://localhost:5000" 
+            "DB_QUERIES_URL": "http://localhost:5000"
         }
     }
 }

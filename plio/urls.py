@@ -1,4 +1,4 @@
-"""ivideo URL Configuration
+"""plio URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/2.1/topics/http/urls/
@@ -25,6 +25,10 @@ urlpatterns = [
     path('plios_list', views.get_plios_list),
     path('get_plio', views.get_plio),
     path('update_response', views.update_response),
-    path('get_user_config', views.get_user_config),
-    path('update_user_config', views.update_user_config)
+
+    # separate app for users
+    path('users/', include('users.urls')),
+
+    # separate app for experiments
+    path('experiments/', include('experiments.urls')),
 ]

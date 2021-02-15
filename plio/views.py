@@ -48,7 +48,7 @@ def update_response(request):
     request.data['response']['user_agent'] = get_user_agent_info(request)
 
     # add creation date
-    request.data['response']['creation_date'] = f'{datetime.now():%m-%d-%Y}'
+    request.data['response']['creation_date'] = f'{datetime.now():%Y-%m-%d %H:%M:%S}'
 
     file_path = push_response_to_s3(request.data)
 

@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
+from datetime import datetime
 from device_detector import SoftwareDetector, DeviceDetector
 
 from plio.settings import DB_QUERIES_URL
@@ -44,6 +45,10 @@ def update_response(request):
     }
     '''
     request.data['response']['user_agent'] = get_user_agent_info(request)
+
+    # add creation date
+    request.data['response']['creation_date'] = f'{datetime.now():%m-%d-%Y}'
+
     file_path = push_response_to_s3(request.data)
 
     return JsonResponse({

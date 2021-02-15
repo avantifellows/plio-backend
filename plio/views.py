@@ -40,7 +40,8 @@ def update_response(request):
             'retention' : list of integers,
             'has-video-played' : integer,
             'journey' : list of dicts,
-            'user_agent' : Object
+            'user_agent' : Object,
+            'creation_date': string
         }
     }
     '''

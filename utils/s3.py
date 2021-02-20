@@ -1,6 +1,6 @@
 from plio.settings import DB_QUERIES_URL
 from typing import Dict, List, Any
-from os.path import join, splitext, basename
+from os.path import splitext, basename
 import requests
 
 import boto3
@@ -19,32 +19,6 @@ GET_DEFAULT_USER_CONFIG_PATH = '/get_default_user_config'
 # Look in zappa_settings.json if you want to change this URL
 DB_QUERIES_URL = settings.DB_QUERIES_URL
 
-
-def push_response_to_s3(response_data: Dict):
-    """Upload response to s3"""
-    response = response_data['response']
-
-    # authenticate
-    s3 = get_resource()
-
-    # define bucket
-    bucket = DEFAULT_BUCKET
-
-    # directory where responses are saved
-    save_dir = 'answers'
-
-    # define the path where the response is saved
-    file_name = "{}_{}-{}.json".format(
-        response['plio-id'], response['user-id'],
-        response['session-id'])
-
-    # To handle windows' default backslash system
-    file_path = join(save_dir, file_name).replace("\\", "/")
-
-    s3.Object(bucket, file_path).put(
-        Body=json.dumps(response), ContentType='application/json')
-
-    return f"http://{DEFAULT_BUCKET}.s3.ap-south-1.amazonaws.com/{file_path}"
 
 
 def get_resource(

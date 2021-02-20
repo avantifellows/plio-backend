@@ -13,13 +13,13 @@ from plio.settings import DB_QUERIES_URL
 import plio
 from users.views import get_user_config
 from components.views import get_default_config
-from utils.s3 import push_response_to_s3, get_session_id
+from utils.s3 import get_session_id
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
 URL_PREFIX_GET_PLIO_CONFIG = '/get_plio_config'
 URL_PREFIX_GET_ALL_PLIOS = '/get_plios'	
-
+URL_PREFIX_UPDATE_RESPONSE_ENTRY = '/update_response_entry'
 
 
 @api_view(['POST'])
@@ -50,11 +50,14 @@ def update_response(request):
     # add creation date
     request.data['response']['creation_date'] = f'{datetime.now():%Y-%m-%d %H:%M:%S}'
 
-    file_path = push_response_to_s3(request.data)
+    params = { 'response': request.data['response'] }
+
+    result = requests.post(
+        DB_QUERIES_URL + URL_PREFIX_UPDATE_RESPONSE_ENTRY, json=params)
 
     return JsonResponse({
-        'path': file_path
-    }, status=200)
+        'result': result.json()
+    }, status=result.status_code)
 
 
 @api_view(['GET'])

@@ -1,4 +1,8 @@
 import requests
+import json
+import math
+import logging
+import pandas as pd
 from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
@@ -6,9 +10,13 @@ from rest_framework.decorators import api_view
 from plio.settings import DB_QUERIES_URL
 
 from utils.s3 import create_user_profile
+from utils.data import convert_objects_to_df
+from utils.cleanup import is_valid_user_id
+from utils.security import hash_function
 
 URL_PREFIX_GET_USER_CONFIG = '/get_user_config'
 URL_PREFIX_UPDATE_USER_CONFIG = '/update_user_config'
+URL_PREFIX_GET_ALL_USERS = '/get_users'
 
 
 # Create your views here.
@@ -109,3 +117,71 @@ def login_user(request):
     return JsonResponse({
         'status': 'User logged in'
     }, status=200)
+
+
+@api_view(['GET'])
+def get_df(request):
+    """Returns a dataframe for all users"""	
+    users = fetch_all_users()
+
+    # if the returned object is not dict, it will be some variant
+    # of HttpResponseNotFound, returning it if that's the case
+    if not isinstance(users, list):
+        return users
+
+    users_df = convert_objects_to_df(users)
+
+    preprocess = request.GET.get('preprocess', True)
+    if preprocess:
+        # add secret key to each user
+        users_df['secret_key'] = users_df['id'].apply(
+            hash_function)
+
+        # remove bad user IDs
+        users_df = remove_test_users(users_df)
+
+        users_df['block'] = users_df['address'].apply(
+            lambda address: address['block'] if isinstance(
+                address, dict) else 'unknown'
+        )
+
+        users_df['district'] = users_df['address'].apply(
+            lambda address: address['district'] if isinstance(
+                address, dict) else 'unknown'
+        )
+
+        users_df['school-name'] = users_df['school'].apply(
+            lambda school: school['name'] if isinstance(
+                school, dict) else 'unknown'
+        )
+
+        users_df['school-code'] = users_df['school'].apply(
+            lambda school: school['code'].split('.')[0] if not (
+                isinstance(school, float) and math.isnan(school)
+            ) else 'unknown'
+        )
+
+        users_df['grade'] = users_df['grade'].apply(
+            lambda grade: grade.split('.')[0] if not (
+                isinstance(grade, float) and math.isnan(grade)
+            ) else 'unknown'
+        )
+
+        users_df.drop(columns=['address', 'school'], inplace=True)
+
+    return JsonResponse(users_df.to_dict())
+
+
+def fetch_all_users():
+    response = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_USERS)
+    if (response.status_code != 200):
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+
+    return json.loads(response.json())
+
+
+def remove_test_users(users_df: pd.DataFrame) -> pd.DataFrame:
+    """Removes known test users based on their IDs"""
+    # currently only ensures that the user ID should be non-empty
+    return users_df[users_df['id'].apply(
+        is_valid_user_id)].reset_index(drop=True)

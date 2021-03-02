@@ -26,12 +26,19 @@ urlpatterns = [
     path('get_plio', views.get_plio),
     path('update_response', views.update_response),
     path('get_plio_config', views._get_plio_config),
+    path('get_plios_df', views.get_plios_df),
+
+    # separate app for tags
+    path('entries/', include('entries.urls')),
 
     # separate app for users
     path('users/', include('users.urls')),
 
     # separate app for experiments
     path('experiments/', include('experiments.urls')),
+
+    # separate app for tags
+    path('tags/', include('tags.urls')),
 
      # separate app for components
     path('components/', include('components.urls'))

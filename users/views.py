@@ -131,7 +131,8 @@ def get_df(request):
 
     users_df = convert_objects_to_df(users)
 
-    preprocess = request.GET.get('preprocess', True)
+    preprocess = json.loads(request.GET.get('preprocess', 'True').lower())
+
     if preprocess:
         # add secret key to each user
         users_df['secret_key'] = users_df['id'].apply(

@@ -84,8 +84,10 @@ def get_plios_df(request):
 
     plios_df = convert_objects_to_df(plios)
 
-    preprocess = request.GET.get('preprocess', True)
-    keep_test_plios = request.GET.get('keep_test_plios', False)
+    preprocess = json.loads(request.GET.get('preprocess', 'True').lower())
+    keep_test_plios = json.loads(
+        request.GET.get('keep_test_plios', 'False').lower())
+
     if preprocess:
         # load video durations
         plios_df['video_duration'] = get_video_durations_from_ids(

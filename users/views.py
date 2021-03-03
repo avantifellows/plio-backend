@@ -121,7 +121,8 @@ def login_user(request):
 
 @api_view(['GET'])
 def get_df(request):
-    """Returns a dataframe for all users"""	
+    """Returns a dataframe for all users"""
+    logging.info('Fetching all users df')
     users = fetch_all_users()
 
     # if the returned object is not dict, it will be some variant

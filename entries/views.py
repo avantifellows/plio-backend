@@ -19,7 +19,8 @@ def index(request):
 
 @api_view(['GET'])
 def get_df(request):
-    """Returns a dataframe for all entries"""	
+    """Returns a dataframe for all entries"""
+    logging.info('Fetching all entries df')
     entries = fetch_all_entries()
 
     # if the returned object is not dict, it will be some variant

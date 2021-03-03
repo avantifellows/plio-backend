@@ -107,7 +107,8 @@ def get_experiment(experiment_id):
 
 @api_view(['GET'])
 def get_df(request):
-    """Returns a dataframe for all experiments"""	
+    """Returns a dataframe for all experiments"""
+    logging.info('Fetching all experiments df')
     experiments = fetch_all_experiments()
 
     # if the returned object is not dict, it will be some variant

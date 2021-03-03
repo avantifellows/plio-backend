@@ -34,16 +34,6 @@ def convert_objects_to_df(objects: List):
         for key, value in info['response'].items():
             object_dict[key] = value
 
-        # if format_date:
-        #     # convert date string to datetime object
-        #     assert date_attr in object_dict
-
-        #     object_dict[date_attr] = datetime.strptime(
-        #             object_dict[date_attr], date_pattern).replace(
-        #                 tzinfo=timezone.utc
-        #         )
-        #     )
-
         objects_df.append(object_dict)
 
     return pd.DataFrame(objects_df)

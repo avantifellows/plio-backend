@@ -1,5 +1,6 @@
 import requests
 import random
+import json
 from os.path import basename
 from typing import Dict
 from django.shortcuts import redirect
@@ -9,8 +10,10 @@ from rest_framework.decorators import api_view
 from plio.settings import DB_QUERIES_URL
 from users.views import get_user_config, update_user_config
 from utils.s3 import get_default_user_config
+from utils.data import convert_objects_to_df
 
 URL_PREFIX_GET_EXPERIMENT = '/get_experiment'
+URL_PREFIX_GET_ALL_EXPERIMENTS = '/get_experiments'	
 
 
 @api_view(['GET'])
@@ -100,6 +103,30 @@ def get_experiment(experiment_id):
             '<h1>An unknown error occurred</h1>')
     
     return data.json()["experiment"]
+
+
+@api_view(['GET'])
+def get_df(request):
+    """Returns a dataframe for all experiments"""	
+    experiments = fetch_all_experiments()
+
+    # if the returned object is not dict, it will be some variant
+    # of HttpResponseNotFound, returning it if that's the case
+    if not isinstance(experiments, list):
+        return experiments
+
+    experiments_df = convert_objects_to_df(experiments)
+
+    return JsonResponse(experiments_df.to_dict())
+
+
+
+def fetch_all_experiments():
+    response = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_EXPERIMENTS)
+    if (response.status_code != 200):	
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+
+    return json.loads(response.json())
 
 
 def index(request):

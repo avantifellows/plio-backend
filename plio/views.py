@@ -2,6 +2,7 @@ from os.path import join, basename, splitext
 import json
 import random
 import requests
+import pandas as pd
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
@@ -14,6 +15,9 @@ import plio
 from users.views import get_user_config
 from components.views import get_default_config
 from utils.s3 import get_session_id
+from utils.data import convert_objects_to_df
+from utils.video import get_video_durations_from_ids
+from utils.cleanup import is_test_plio_id, is_test_plio_video
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
@@ -62,22 +66,77 @@ def update_response(request):
 
 @api_view(['GET'])
 def get_plios_list(request):
-    
-    all_plios = get_all_plios()
     response = {
-        "all_plios": all_plios
+        "all_plios": get_all_plios()
     }
     return JsonResponse(response)
 
 
+@api_view(['GET'])
+def get_plios_df(request):
+    """Returns a dataframe for all plios"""	
+    plios = fetch_all_plios()
+
+    # if the returned object is not dict, it will be some variant
+    # of HttpResponseNotFound, returning it if that's the case
+    if not isinstance(plios, list):
+        return plios
+
+    plios_df = convert_objects_to_df(plios)
+
+    preprocess = json.loads(request.GET.get('preprocess', 'True').lower())
+    keep_test_plios = json.loads(
+        request.GET.get('keep_test_plios', 'False').lower())
+
+    if preprocess:
+        # load video durations
+        plios_df['video_duration'] = get_video_durations_from_ids(
+            plios_df['video_id'])
+
+        # handle weird data structure of plios
+        plio_questions = plios_df['questions']
+        plios_df['questions'] = [
+            question['questions'] for question in plio_questions
+        ]
+
+        plios_df['num_questions'] = [
+            len(questions) for questions in plio_questions
+        ]
+
+        if not keep_test_plios:
+            # remove test plios
+            plios_df = remove_test_plios(plios_df)
+
+    return JsonResponse(plios_df.to_dict())
+
+
+def remove_test_plios(plios_df: pd.DataFrame) -> pd.DataFrame:
+    """Removes test plios"""
+    plios_df = plios_df[~plios_df['id'].apply(is_test_plio_id)]
+    plios_df = plios_df[~plios_df['video_id'].apply(is_test_plio_video)]
+
+    return plios_df.reset_index(drop=True)
+
+
+def fetch_all_plios():
+    response = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_PLIOS)
+    if (response.status_code != 200):	
+        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
+
+    return json.loads(response.json())
+
+
 def get_all_plios():	
-    """Returns all plios information which the frontend can consume"""	
-    	
-    data = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_PLIOS)	
-    if (data.status_code != 200):	
-        return HttpResponseNotFound('<h1>An unknown error occurred</h1>')	
-    plios = json.loads(data.json())	
+    """Returns the list of all plios for the frontend"""	
+    plios = fetch_all_plios()
+
+    # if the returned object is not dict, it will be some variant
+    # of HttpResponseNotFound, returning it if that's the case
+    if not isinstance(plios, list):
+        return plios
+
     all_plios = [] 	
+
     # Iterate through 'files', convert to dict	
     for plio in plios:	
         name, ext = splitext(basename(plio['key']))	
@@ -257,7 +316,16 @@ def get_user_agent_info(request):
 
 def index(request):
     """Renders home page for backend""" 
-    return render(request, 'index.html', {"all_plios": get_all_plios()})
+    plios = get_all_plios()
+
+    # if the returned object is not dict, it will be some variant
+    # of HttpResponseNotFound, returning it if that's the case
+    if not isinstance(plios, list):
+        return plios
+
+    return render(request, 'index.html', {
+        "all_plios": plios
+    })
 
 
 def redirect_home(request):

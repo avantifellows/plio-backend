@@ -1,5 +1,6 @@
 import requests
 import json
+import logging
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request

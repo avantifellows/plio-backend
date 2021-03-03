@@ -1,5 +1,6 @@
 import requests
 import random
+import logging
 import json
 from os.path import basename
 from typing import Dict

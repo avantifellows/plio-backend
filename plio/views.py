@@ -1,5 +1,6 @@
 from os.path import join, basename, splitext
 import json
+import logging
 import random
 import requests
 import pandas as pd
@@ -75,6 +76,7 @@ def get_plios_list(request):
 @api_view(['GET'])
 def get_plios_df(request):
     """Returns a dataframe for all plios"""	
+    logging.info('Fetching all plios df')
     plios = fetch_all_plios()
 
     # if the returned object is not dict, it will be some variant

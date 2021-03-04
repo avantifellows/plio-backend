@@ -1,5 +1,6 @@
 import requests
 import random
+import logging
 import json
 from os.path import basename
 from typing import Dict
@@ -107,7 +108,8 @@ def get_experiment(experiment_id):
 
 @api_view(['GET'])
 def get_df(request):
-    """Returns a dataframe for all experiments"""	
+    """Returns a dataframe for all experiments"""
+    logging.info('Fetching all experiments df')
     experiments = fetch_all_experiments()
 
     # if the returned object is not dict, it will be some variant

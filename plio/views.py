@@ -1,5 +1,6 @@
 from os.path import join, basename, splitext
 import json
+import logging
 import random
 import requests
 import pandas as pd
@@ -7,65 +8,27 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
+from rest_framework.request import Request
 from datetime import datetime
-from device_detector import SoftwareDetector, DeviceDetector
 
 from plio.settings import DB_QUERIES_URL
 import plio
-from users.views import get_user_config
 from components.views import get_default_config
+from users.views import get_user_config
 from utils.s3 import get_session_id
 from utils.data import convert_objects_to_df
 from utils.video import get_video_durations_from_ids
 from utils.cleanup import is_test_plio_id, is_test_plio_video
+from utils.request import get_user_agent_info
 
 URL_PREFIX_GET_PLIO = '/get_plio'
 URL_PREFIX_GET_SESSION_DATA = '/get_session_data'
 URL_PREFIX_GET_PLIO_CONFIG = '/get_plio_config'
 URL_PREFIX_GET_ALL_PLIOS = '/get_plios'	
-URL_PREFIX_UPDATE_RESPONSE_ENTRY = '/update_response_entry'
-
-
-@api_view(['POST'])
-def update_response(request):
-    '''Push student response JSON to s3
-
-    request -- A JSON containing the student response
-                and meta data
-
-    request:{
-        'response' : {
-            'answers' : list of strings,
-            'watch-time' : integer,
-            'user-id' : string,
-            'plio-id' : string,
-            'session-id' : integer,
-            'source' : string,
-            'retention' : list of integers,
-            'has-video-played' : integer,
-            'journey' : list of dicts,
-            'user_agent' : Object,
-            'creation_date': string
-        }
-    }
-    '''
-    request.data['response']['user_agent'] = get_user_agent_info(request)
-
-    # add creation date
-    request.data['response']['creation_date'] = f'{datetime.now():%Y-%m-%d %H:%M:%S}'
-
-    params = { 'response': request.data['response'] }
-
-    result = requests.post(
-        DB_QUERIES_URL + URL_PREFIX_UPDATE_RESPONSE_ENTRY, json=params)
-
-    return JsonResponse({
-        'result': result.json()
-    }, status=result.status_code)
 
 
 @api_view(['GET'])
-def get_plios_list(request):
+def get_plios_list(request: Request):
     response = {
         "all_plios": get_all_plios()
     }
@@ -73,8 +36,9 @@ def get_plios_list(request):
 
 
 @api_view(['GET'])
-def get_plios_df(request):
+def get_plios_df(request: Request):
     """Returns a dataframe for all plios"""	
+    logging.info('Fetching all plios df')
     plios = fetch_all_plios()
 
     # if the returned object is not dict, it will be some variant
@@ -139,7 +103,7 @@ def get_all_plios():
 
     # Iterate through 'files', convert to dict	
     for plio in plios:	
-        name, ext = splitext(basename(plio['key']))	
+        name, _ = splitext(basename(plio['key']))	
         json_content = json.loads(plio['response'])	
         video_title = json_content.get('video_title', '')	
         date = plio["last_modified"]	
@@ -152,7 +116,7 @@ def get_all_plios():
 
 
 @api_view(['GET'])
-def get_plio(request):
+def get_plio(request: Request):
     plio_id = request.GET.get('plioId', '')
     user_id = request.GET.get('userId', '')
 
@@ -253,7 +217,7 @@ def prepare_plio_config(plio_id: str):
 
 
 @api_view(['GET'])
-def _get_plio_config(request):
+def _get_plio_config(request: Request):
     """
     params: plioId (REQUIRED)
     example: /get_plio_config?plioId=aAsdnq23asd
@@ -269,7 +233,7 @@ def _get_plio_config(request):
     return JsonResponse(plio_config, status=200)
 
 
-def get_plio_config(plio_id):
+def get_plio_config(plio_id: str):
     """Fetches config of the specified plio from the DB"""
     plio_config = requests.get(
         DB_QUERIES_URL + URL_PREFIX_GET_PLIO_CONFIG, params={"plio_id": plio_id}
@@ -283,38 +247,7 @@ def get_plio_config(plio_id):
     return plio_config.json()["plio_config"]
 
 
-def get_user_agent_info(request):
-    """Get User-Agent information: browser, OS, device"""
-    browser_info = request.META['HTTP_USER_AGENT']
-
-    software_info = SoftwareDetector(browser_info).parse()
-    device_info = DeviceDetector(browser_info).parse()
-
-    if 'JioPages' in browser_info:
-        browser_name = 'JioPages'
-    else:
-        browser_name = software_info.client_name()
-
-    user_agent_info = {
-        'os':  {
-            'family':  device_info.os_name(),
-            'version': device_info.os_version()
-        },
-        'device': {
-            'family':  device_info.device_brand_name(),
-            'version': device_info.device_model(),
-            'type': device_info.device_type()
-        },
-        'browser': {
-            'family': browser_name,
-            'version': software_info.client_version()
-        }
-    }
-
-    return user_agent_info
-
-
-def index(request):
+def index(request: Request):
     """Renders home page for backend""" 
     plios = get_all_plios()
 
@@ -328,12 +261,12 @@ def index(request):
     })
 
 
-def redirect_home(request):
+def redirect_home(request: Request):
     """Redirect to frontend home"""
     return redirect('https://player.plio.in', permanent=True)
 
 
-def redirect_plio(request, plio_id):
+def redirect_plio(request: Request, plio_id: str):
     """Redirect to frontend plio page"""
     return redirect(
         f'https://player.plio.in/#/play/{plio_id}', permanent=True)

@@ -1,17 +1,22 @@
 import requests
 import json
+import logging
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
+from rest_framework.request import Request
 import pandas as pd
+from datetime import datetime
 
 from plio.settings import DB_QUERIES_URL
 from utils.data import convert_objects_to_df
 from utils.security import hash_function
 from utils.cleanup import is_valid_user_id
+from utils.request import get_user_agent_info
 
 URL_PREFIX_GET_ALL_ENTRIES = '/get_entries'
+URL_PREFIX_UPDATE_ENTRY = '/update_response_entry'
 
 def index(request):
     return redirect('https://player.plio.in', permanent=True)
@@ -19,7 +24,8 @@ def index(request):
 
 @api_view(['GET'])
 def get_df(request):
-    """Returns a dataframe for all entries"""	
+    """Returns a dataframe for all entries"""
+    logging.info('Fetching all entries df')
     entries = fetch_all_entries()
 
     # if the returned object is not dict, it will be some variant
@@ -49,14 +55,6 @@ def get_df(request):
     return JsonResponse(entries_df.to_dict())
 
 
-# def remove_test_entries(entries_df: pd.DataFrame) -> pd.DataFrame:
-#     """Removes test entries"""
-#     entries_df = entries_df[~entries_df['id'].apply(is_test_plio_id)]
-#     entries_df = entries_df[~entries_df['video_id'].apply(is_test_plio_video)]
-
-#     return entries_df.reset_index(drop=True)
-
-
 def fetch_all_entries():
     print('Fetching')
     response = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_ENTRIES)
@@ -72,3 +70,36 @@ def remove_entries_from_test_users(
     """Removes test user IDs from the entries dataframe"""
     return entries_df[entries_df[entry_user_id_key].apply(
         is_valid_user_id)].reset_index(drop=True)
+
+
+@api_view(['POST'])
+def update_entry(request: Request):
+    '''Push plio response JSON to s3
+
+    request.data = {
+        'response': {
+            'answers' : list of strings,
+            'watch-time' : integer,
+            'user-id' : string,
+            'plio-id' : string,
+            'session-id' : integer,
+            'source' : string,
+            'retention' : list of integers,
+            'has-video-played' : integer,
+            'journey' : list of dicts
+        }
+    }
+    '''
+    request.data['response']['user_agent'] = get_user_agent_info(request)
+
+    # add creation date
+    request.data['response']['creation_date'] = f'{datetime.now():%Y-%m-%d %H:%M:%S}'
+
+    params = { 'response': request.data['response'] }
+
+    result = requests.post(
+        DB_QUERIES_URL + URL_PREFIX_UPDATE_ENTRY, json=params)
+
+    return JsonResponse({
+        'result': result.json()
+    }, status=result.status_code)

@@ -173,9 +173,9 @@ def get_plio(request: Request):
         response['sessionData'] = session_jsondata
     
     if not user_id:
-        response['userConfig'] = {}
+        response['userConfigs'] = {}
     else:
-        response['userConfig'] = get_user_config(user_id)
+        response['userConfigs'] = get_user_config(user_id)
 
     # prepare plio config
     plio_config = prepare_plio_config(plio_id)

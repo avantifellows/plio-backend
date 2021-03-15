@@ -2,19 +2,21 @@
 
 
 ### Pre-requisites
+- Python: Required version `3.8.2`
 
-1. Python: Required version `3.8.2`
-2. Clone the repository and change the working directory
+
+### Installation steps
+1. Clone the repository and change the working directory
     ```sh
     git clone https://github.com/avantifellows/plio-backend.git
     cd plio-backend
     ```
-3. Create a virtual environment and activate it
+2. Create a virtual environment and activate it
     ```sh
     python3 -m venv zappa_env
     source zappa_env/bin/activate
     ```
-4. Install the dependencies
+3. Install the dependencies
     #### Development
     ```sh
     pip install -r requirements-dev.txt
@@ -25,16 +27,16 @@
     pip install -r requirements.txt
     ```
 
-5. Set up your .env file by copying .env.example
+4. Set up your .env file by copying .env.example
     ```sh
     cp .env.example .env
     ```
-6. Update variables in your `.env` file based on your settings.
-7. For **development** only, run the following command to install pre-commit
+5. Update variables in your `.env` file based on your settings.
+6. For **development** only, run the following command to install pre-commit
     ```sh
     pre-commit install
     ```
-8. Start the python server
+7. Start the python server
     ```
     export DJANGO_ENV=local && python manage.py runserver 0.0.0.0:8001
     ```

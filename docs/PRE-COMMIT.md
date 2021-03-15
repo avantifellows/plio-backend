@@ -1,7 +1,7 @@
 ## Pre-commit
 Plio utilizes the power of pre-commit to identify simple programming issues at the time of code check-in. This helps the reviewer to focus more on architectural and conceptual issues and reduce the overall time to market.
 
-The pre-commit configurations are stored in [.pre-commit-config.yaml](.pre-commit-config.yaml) file.
+The pre-commit configurations are stored in [.pre-commit-config.yaml](./.pre-commit-config.yaml) file.
 
 To know about the syntax, visit the [official documentation site](https://pre-commit.com/).
 

@@ -58,7 +58,7 @@ def get_plios_df(request: Request):
             plios_df['video_id'])
 
         plios_df['num_questions'] = plios_df['items'].apply(
-            lambda items: len(items))
+            lambda items: len([item for item in items if item['type'] == 'question']))
 
         if not keep_test_plios:
             # remove test plios
@@ -128,10 +128,11 @@ def get_plio(request: Request):
     questions = []
     times = []
     options = []
-    for question in plio_data['items']:
-        questions.append(question['details']['text'])
-        options.append(question['details']['options'])
-        times.append(question['time'])
+    for item in plio_data['items']:
+        if item['type'] == 'question':
+            questions.append(item['details']['text'])
+            options.append(item['details']['options'])
+            times.append(item['time'])
 
     # get the session ID
     session_id = get_session_id(plio_id, user_id)

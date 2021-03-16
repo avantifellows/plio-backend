@@ -78,7 +78,7 @@ def update_entry(request: Request):
 
     request.data = {
         'response': {
-            'answers' : list of strings,
+            'answers' : list of integers,
             'watch-time' : integer,
             'user-id' : string,
             'plio-id' : string,

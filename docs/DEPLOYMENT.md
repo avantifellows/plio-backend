@@ -5,7 +5,9 @@ This document covers steps on setting up this repository on various cloud hostin
 
 ### AWS
 
-Plio utilizes [zappa](https://github.com/zappa/Zappa) to deploy to AWS Lambda. Deploying with Zappa is very simple:
+Plio utilizes [zappa](https://github.com/zappa/Zappa) to deploy to AWS Lambda. Set up Zappa before starting on the deployment as it requires Zappa credentials.
+
+Deploying with Zappa is very simple:
 
 #### Staging
 ```sh

@@ -16,22 +16,22 @@ def convert_objects_to_df(objects: List):
 
     # convert JSON string to JSON object
     for info in tqdm(objects):
-        info['response'] = json.loads(info['response'])
+        info["response"] = json.loads(info["response"])
 
         # dict which will contain flattened key-value pairs
         object_dict = {}
 
         for key, value in info.items():
-            if key == 'response':
+            if key == "response":
                 continue
 
             object_dict[key] = value
 
         # set the id for the object
-        object_dict['id'] = id_from_object_key(info['key'])
+        object_dict["id"] = id_from_object_key(info["key"])
 
         # flatten the key-value pairs under response
-        for key, value in info['response'].items():
+        for key, value in info["response"].items():
             object_dict[key] = value
 
         objects_df.append(object_dict)

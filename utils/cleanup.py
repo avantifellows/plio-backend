@@ -8,7 +8,7 @@ def is_valid_user_id(user_id: str) -> bool:
 
 def is_test_plio_id(plio_id: str) -> bool:
     """Returns whether given plio id is a test plio ID or not"""
-    return 'test' in plio_id
+    return "test" in plio_id
 
 
 def is_test_plio_video(video_id: str) -> bool:

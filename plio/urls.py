@@ -18,27 +18,22 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    path('player/', views.redirect_home),
-    path('player/<str:plio_id>', views.redirect_plio),
-    path('admin/', admin.site.urls),
-    path('', views.index),
-    path('plios_list', views.get_plios_list),
-    path('get_plio', views.get_plio),
-    path('get_plio_config', views._get_plio_config),
-    path('get_plios_df', views.get_plios_df),
-
+    path("player/", views.redirect_home),
+    path("player/<str:plio_id>", views.redirect_plio),
+    path("admin/", admin.site.urls),
+    path("", views.index),
+    path("plios_list", views.get_plios_list),
+    path("get_plio", views.get_plio),
+    path("get_plio_config", views._get_plio_config),
+    path("get_plios_df", views.get_plios_df),
     # separate app for tags
-    path('entries/', include('entries.urls')),
-
+    path("entries/", include("entries.urls")),
     # separate app for users
-    path('users/', include('users.urls')),
-
+    path("users/", include("users.urls")),
     # separate app for experiments
-    path('experiments/', include('experiments.urls')),
-
+    path("experiments/", include("experiments.urls")),
     # separate app for tags
-    path('tags/', include('tags.urls')),
-
-     # separate app for components
-    path('components/', include('components.urls'))
+    path("tags/", include("tags.urls")),
+    # separate app for components
+    path("components/", include("components.urls")),
 ]

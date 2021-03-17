@@ -9,4 +9,4 @@ def hash_function(string: str) -> str:
     :return: SHA-256 hashed value
     :rtype: str
     """
-    return sha256(string.encode('utf-8')).hexdigest()
+    return sha256(string.encode("utf-8")).hexdigest()

@@ -57,15 +57,8 @@ def get_plios_df(request: Request):
         plios_df['video_duration'] = get_video_durations_from_ids(
             plios_df['video_id'])
 
-        # handle weird data structure of plios
-        plio_questions = plios_df['questions']
-        plios_df['questions'] = [
-            question['questions'] for question in plio_questions
-        ]
-
-        plios_df['num_questions'] = [
-            len(questions) for questions in plio_questions
-        ]
+        plios_df['num_questions'] = plios_df['items'].apply(
+            lambda items: len([item for item in items if item['type'] == 'question']))
 
         if not keep_test_plios:
             # remove test plios
@@ -130,25 +123,25 @@ def get_plio(request: Request):
     if (data.status_code != 200):
         return HttpResponseNotFound('<h1>An unknown error occurred</h1>')
 
-    jsondata = data.json()["plio"]
+    plio_data = data.json()["plio"]
 
     questions = []
     times = []
     options = []
-    for question in jsondata['questions']['questions']:
-        q = question['question']
-        questions.append(q['text'])
-        options.append(q['options'])
-        times.append(question['time'])
+    for item in plio_data['items']:
+        if item['type'] == 'question':
+            questions.append(item['details']['text'])
+            options.append(item['details']['options'])
+            times.append(item['time'])
 
     # get the session ID
     session_id = get_session_id(plio_id, user_id)
 
     response = {
-        'plioDetails': jsondata,
+        'plioDetails': plio_data,
         'times': times,
         'options': options,
-        'videoId': jsondata['video_id'],
+        'videoId': plio_data['video_id'],
         'plioId': plio_id,
         'userAgent': get_user_agent_info(request),
         'sessionId': session_id,
@@ -169,8 +162,8 @@ def get_plio(request: Request):
         if (session_data.status_code != 200):
             return HttpResponseNotFound('<h1>An unknown error occurred in getting the session data</h1>')
         
-        session_jsondata = session_data.json()["sessionData"]
-        response['sessionData'] = session_jsondata
+        session_plio_data = session_data.json()["sessionData"]
+        response['sessionData'] = session_plio_data
     
     if not user_id:
         response['userConfigs'] = {}

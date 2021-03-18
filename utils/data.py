@@ -73,6 +73,9 @@ def fetch_items_from_sources(items: List[Dict]):
         data=json.dumps({"problem_ids": problem_ids}),
     ).json()
 
+    # the response list is not returned in the same order as the problem ids
+    response_id_to_problem_map = {_response["id"]: _response for _response in response}
+
     response_index = 0
     for index, problem_id in enumerate(problem_ids):
         if not problem_id:
@@ -80,7 +83,7 @@ def fetch_items_from_sources(items: List[Dict]):
 
         # convert a CMS question to a plio item
         items[index] = convert_cms_question_to_plio_item(
-            response[response_index], items[index]
+            response_id_to_problem_map[problem_id], items[index]
         )
 
         # increment response index

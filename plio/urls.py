@@ -24,6 +24,7 @@ urlpatterns = [
     path("", views.index),
     path("plios_list", views.get_plios_list),
     path("get_plio", views.get_plio),
+    path("create_plio", views.create_plio),
     path("get_plio_config", views._get_plio_config),
     path("get_plios_df", views.get_plios_df),
     # separate app for tags

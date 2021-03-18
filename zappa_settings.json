@@ -9,7 +9,10 @@
         "environment_variables": {
             "DJANGO_ENV": "staging",
             "STATIC_BUCKET": "staging",
-            "DB_QUERIES_URL": "https://db-queries.plio.in"
+            "DB_QUERIES_URL": "https://db-queries.plio.in",
+            "CMS_URL": "https://cms.peerlearning.com/api",
+            "CMS_TOKEN": "0cf74284b6d0806f5efbe86f22f0656e5644a85385b17730c3f029a81aed4265",
+            "GET_CMS_PROBLEM_URL": "/problems"
         }
     },
     "prod": {
@@ -22,14 +25,20 @@
         "environment_variables": {
             "DJANGO_ENV": "prod",
             "STATIC_BUCKET": "prod",
-            "DB_QUERIES_URL": "https://db-queries.plio.in"
+            "DB_QUERIES_URL": "https://db-queries.plio.in",
+            "CMS_URL": "https://cms.peerlearning.com/api",
+            "CMS_TOKEN": "0cf74284b6d0806f5efbe86f22f0656e5644a85385b17730c3f029a81aed4265",
+            "GET_CMS_PROBLEM_URL": "/problems"
         }
     },
     "local": {
         "environment_variables": {
             "DJANGO_ENV": "local",
             "STATIC_BUCKET": "local",
-            "DB_QUERIES_URL": "http://localhost:5000"
+            "DB_QUERIES_URL": "http://localhost:5000",
+            "CMS_URL": "https://cms.peerlearning.com/api",
+            "CMS_TOKEN": "0cf74284b6d0806f5efbe86f22f0656e5644a85385b17730c3f029a81aed4265",
+            "GET_CMS_PROBLEM_URL": "/problems"
         }
     }
 }

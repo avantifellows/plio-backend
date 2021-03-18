@@ -4,8 +4,10 @@ import pytz
 
 
 def convert_to_ist(
-        date: Union[str, datetime], return_string: bool = False,
-        date_format: str = '%Y-%m-%d %H:%M:%S'):
+    date: Union[str, datetime],
+    return_string: bool = False,
+    date_format: str = "%Y-%m-%d %H:%M:%S",
+):
     """Returns the given date in IST
 
     :param date: input date that is to be converted
@@ -21,7 +23,7 @@ def convert_to_ist(
     """
     assert isinstance(date, (str, datetime))
 
-    ist = pytz.timezone('Asia/Kolkata')
+    ist = pytz.timezone("Asia/Kolkata")
 
     # try to convert to datetime object if date is a string
     if isinstance(date, str):

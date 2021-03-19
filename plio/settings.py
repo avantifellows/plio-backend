@@ -217,6 +217,6 @@ STATICFILES_DIRS = [
 ]
 
 DB_QUERIES_URL = os.environ["DB_QUERIES_URL"]
-CMS_URL = os.environ["CMS_URL"]
+CMS_URL = "https://cms.peerlearning.com/api"
 CMS_TOKEN = os.environ["CMS_TOKEN"]
-GET_CMS_PROBLEM_URL = os.environ["GET_CMS_PROBLEM_URL"]
+GET_CMS_PROBLEM_URL = "/problems"

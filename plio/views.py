@@ -132,7 +132,12 @@ def get_plio(request: Request):
     plio_data = data.json()["plio"]
 
     # fetch problems from CMS
-    plio_data["items"] = fetch_items_from_sources(plio_data["items"])
+    item_fetch_response = fetch_items_from_sources(plio_data["items"])
+
+    if item_fetch_response["status"] == "error":
+        return HttpResponseNotFound(item_fetch_response["reason"])
+
+    plio_data["items"] = item_fetch_response["items"]
 
     questions = []
     times = []

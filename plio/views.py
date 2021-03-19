@@ -16,7 +16,7 @@ import plio
 from components.views import get_default_config
 from users.views import get_user_config
 from utils.s3 import get_session_id
-from utils.data import convert_objects_to_df
+from utils.data import convert_objects_to_df, fetch_items_from_sources
 from utils.video import get_video_durations_from_ids
 from utils.cleanup import is_test_plio_id, is_test_plio_video
 from utils.request import get_user_agent_info
@@ -25,6 +25,7 @@ URL_PREFIX_GET_PLIO = "/get_plio"
 URL_PREFIX_GET_SESSION_DATA = "/get_session_data"
 URL_PREFIX_GET_PLIO_CONFIG = "/get_plio_config"
 URL_PREFIX_GET_ALL_PLIOS = "/get_plios"
+URL_PREFIX_CREATE_PLIO = "/create_plio"
 
 
 @api_view(["GET"])
@@ -130,6 +131,14 @@ def get_plio(request: Request):
 
     plio_data = data.json()["plio"]
 
+    # fetch problems from CMS
+    item_fetch_response = fetch_items_from_sources(plio_data["items"])
+
+    if item_fetch_response["status"] == "error":
+        return HttpResponseNotFound(item_fetch_response["reason"])
+
+    plio_data["items"] = item_fetch_response["items"]
+
     questions = []
     times = []
     options = []
@@ -192,6 +201,12 @@ def get_plio(request: Request):
     response["plioConfig"] = plio_config
 
     return JsonResponse(response, status=200)
+
+
+@api_view(["POST"])
+def create_plio(request: Request):
+    response = requests.post(DB_QUERIES_URL + URL_PREFIX_CREATE_PLIO, json=request.data)
+    return JsonResponse(response.json(), status=response.status_code)
 
 
 def prepare_plio_config(plio_id: str):

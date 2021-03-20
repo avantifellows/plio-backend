@@ -9,7 +9,7 @@ from rest_framework.request import Request
 import pandas as pd
 from datetime import datetime
 
-from plio.settings import DB_QUERIES_URL
+from plio.settings import DB_QUERIES_URL, FRONTEND_URL
 from utils.data import convert_objects_to_df
 from utils.security import hash_function
 from utils.cleanup import is_valid_user_id
@@ -20,7 +20,7 @@ URL_PREFIX_UPDATE_ENTRY = "/update_response_entry"
 
 
 def index(request):
-    return redirect("https://player.plio.in", permanent=True)
+    return redirect(FRONTEND_URL, permanent=True)
 
 
 @api_view(["GET"])

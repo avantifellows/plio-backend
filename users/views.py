@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
-from plio.settings import DB_QUERIES_URL
+from plio.settings import DB_QUERIES_URL, FRONTEND_URL
 
 from utils.s3 import create_user_profile
 from utils.data import convert_objects_to_df
@@ -21,7 +21,7 @@ URL_PREFIX_GET_ALL_USERS = "/get_users"
 
 # Create your views here.
 def index(request):
-    return redirect("https://player.plio.in", permanent=True)
+    return redirect(FRONTEND_URL, permanent=True)
 
 
 def get_user_config(user_id):

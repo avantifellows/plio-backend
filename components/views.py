@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
-from plio.settings import DB_QUERIES_URL
+from plio.settings import DB_QUERIES_URL, FRONTEND_URL
 
 URL_PREFIX_GET_DEFAULT_COMPONENT_CONFIG = "/get_default_component_config"
 URL_PREFIX_GET_COMPONENT_FEATURES = "/get_component_features"
@@ -93,4 +93,4 @@ def get_default_config(component_type: str):
 
 
 def index(request):
-    return redirect("https://player.plio.in", permanent=True)
+    return redirect(FRONTEND_URL, permanent=True)

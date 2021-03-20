@@ -11,7 +11,7 @@ from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from datetime import datetime
 
-from plio.settings import DB_QUERIES_URL
+from plio.settings import DB_QUERIES_URL, FRONTEND_URL
 import plio
 from components.views import get_default_config
 from users.views import get_user_config
@@ -282,9 +282,9 @@ def index(request: Request):
 
 def redirect_home(request: Request):
     """Redirect to frontend home"""
-    return redirect("https://player.plio.in", permanent=True)
+    return redirect(FRONTEND_URL, permanent=True)
 
 
 def redirect_plio(request: Request, plio_id: str):
     """Redirect to frontend plio page"""
-    return redirect(f"https://player.plio.in/#/play/{plio_id}", permanent=True)
+    return redirect(f"{FRONTEND_URL}/#/play/{plio_id}", permanent=True)

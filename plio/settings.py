@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_s3_storage",
+    "plio",
 ]
 
 REST_FRAMEWORK = {
@@ -220,3 +221,14 @@ DB_QUERIES_URL = os.environ["DB_QUERIES_URL"]
 CMS_URL = "https://cms.peerlearning.com/api"
 CMS_TOKEN = os.environ["CMS_TOKEN"]
 GET_CMS_PROBLEM_URL = "/problems"
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "plio",
+        "USER": "postgres",
+        "PASSWORD": "",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
+    }
+}

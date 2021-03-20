@@ -64,7 +64,7 @@ def fetch_items_from_sources(items: List[Dict]):
             updated_items.append(item)
 
     if not problem_ids:
-        return items
+        return {"status": "success", "items": items}
 
     cms_response = fetch_items_from_cms(problem_ids, items_to_update)
     if cms_response["status"] == "error":

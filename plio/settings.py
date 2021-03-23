@@ -232,3 +232,5 @@ DATABASES = {
         "PORT": int(os.environ["DATABASE_PORT"]),
     }
 }
+
+AUTH_USER_MODEL = "plio.User"

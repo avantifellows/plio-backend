@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 
 class Video(models.Model):
@@ -129,3 +130,7 @@ class ModelHasTag(models.Model):
 
     class Meta:
         db_table = "model_has_tag"
+
+
+class User(AbstractUser):
+    pass

@@ -258,3 +258,5 @@ DATABASES = {
 AUTH_USER_MODEL = "users.User"
 
 DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
+
+FRONTEND_URL = "https://app.plio.in"

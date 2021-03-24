@@ -5,14 +5,14 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from rest_framework.decorators import api_view
 
-from plio.settings import DB_QUERIES_URL
+from plio.settings import DB_QUERIES_URL, FRONTEND_URL
 from utils.data import convert_objects_to_df
 
 URL_PREFIX_GET_ALL_TAGS = "/get_tags"
 
 
 def index(request):
-    return redirect("https://player.plio.in", permanent=True)
+    return redirect(FRONTEND_URL, permanent=True)
 
 
 @api_view(["GET"])

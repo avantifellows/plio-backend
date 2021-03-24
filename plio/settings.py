@@ -46,7 +46,11 @@ else:
 SHARED_APPS = (
     "django_tenants",
     "users",
+    "organizations",
     "plio",
+    "experiments",
+    "tags",
+    "entries",
     "django.contrib.contenttypes",
     "django.contrib.auth",
     "django.contrib.sessions",
@@ -57,6 +61,9 @@ SHARED_APPS = (
 TENANT_APPS = (
     "django.contrib.contenttypes",
     "plio",
+    "experiments",
+    "tags",
+    "entries",
 )
 
 INSTALLED_APPS = [
@@ -71,10 +78,14 @@ INSTALLED_APPS = [
     "django_s3_storage",
     "users",
     "plio",
+    "organizations",
+    "experiments",
+    "tags",
+    "entries",
 ]
 
-TENANT_MODEL = "users.Organization"
-TENANT_DOMAIN_MODEL = "users.Domain"
+TENANT_MODEL = "organizations.Organization"
+TENANT_DOMAIN_MODEL = "organizations.Domain"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],

@@ -43,7 +43,24 @@ else:
 
 # Application definition
 
+SHARED_APPS = (
+    "django_tenants",
+    "users",
+    "plio",
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.admin",
+)
+
+TENANT_APPS = (
+    "django.contrib.contenttypes",
+    "plio",
+)
+
 INSTALLED_APPS = [
+    "django_tenants",
     "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -52,8 +69,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_s3_storage",
+    "users",
     "plio",
 ]
+
+TENANT_MODEL = "users.Organization"
+TENANT_DOMAIN_MODEL = "users.Domain"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
@@ -62,6 +83,7 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
+    "django_tenants.middleware.main.TenantMainMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -224,7 +246,7 @@ GET_CMS_PROBLEM_URL = "/problems"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django_tenants.postgresql_backend",
         "NAME": os.environ["DATABASE_NAME"],
         "USER": os.environ["DATABASE_USER"],
         "PASSWORD": os.environ["DATABASE_PASSWORD"],
@@ -233,4 +255,6 @@ DATABASES = {
     }
 }
 
-AUTH_USER_MODEL = "plio.User"
+AUTH_USER_MODEL = "users.User"
+
+DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)

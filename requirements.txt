@@ -25,4 +25,5 @@ six==1.15.0
 sqlparse==0.4.1
 tqdm==4.51.0
 urllib3==1.25.11
+Pillow==8.1.2
 django-tenants==3.2.1

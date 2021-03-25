@@ -10,10 +10,23 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
 
 1. macOS
 
-    Use brew to install Postgres
+    - Use brew to install Postgres
     ```sh
     brew install postgresql
     ```
+    - Start postgresql
+    ```sh
+    pg_ctl -D /usr/local/var/postgres start
+    ```
+     - Check your installation by running
+     ```sh
+     psql
+     ```
+     - You should see something like this:
+     ```sql
+     YOUR_USERNAME=#
+     ```
+
 
 2. Windows
     - Download [Postgres server](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
@@ -44,7 +57,20 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
     ```sh
     pip install -r requirements.txt
     ```
-4. Create a new database in your Postgres
+4. Create a new database in your Postgres. You will find the values for the variables `DATABASE_NAME`, `DATABASE_USER` and `DATABASE_PASSWORD` in `zappa_settings.json`.
+    - Open the PostgreSQL command prompt (ensure that you have already started postgres as mentioned above)
+    ```sh
+    psql
+    ```
+     - Create a Database
+     ```sql
+     USERNAME=# CREATE DATABASE DATABASE_NAME;
+     ```
+     - Create a user
+     ```sql
+     USERNAME=# CREATE USER DATABASE_USER WITH PASSWORD DATABASE_PASSWORD;
+     ```
+     You might see an error saying that an empty password is not allowed if you are using an empty password. The user would be created anyways.
 5. Set up your .env file by copying .env.example
     ```sh
     cp .env.example .env

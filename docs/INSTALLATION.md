@@ -56,7 +56,7 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
     export LDFLAGS="-L/usr/local/opt/openssl/lib"
     export CPPFLAGS="-I/usr/local/opt/openssl/include"
     ```
-4. Create a new database in your Postgres. You will find the values for the variables `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER` and `DATABASE_PASSWORD` in `zappa_settings.json`.
+4. Create a new database in your Postgres.
     - Open the PostgreSQL command prompt (ensure that you have already started postgres as mentioned above)
         ```sh
         psql
@@ -78,9 +78,9 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
         ```sh
         python manage.py migrate_schemas --shared
         ```
-    - You can also create tenants by using the commands [here](https://django-tenants.readthedocs.io/en/latest/use.html)
+    - For seeding database and creating tenant organizations, visit the our [multitenancy](MULTITENANCY.md) guidelines.
 
-8. For **development purpose** only, run the following command to install pre-commit
+8. For **DEVELOPMENT PURPOSE** only, run the following command to install pre-commit
     ```sh
     pre-commit install
     ```

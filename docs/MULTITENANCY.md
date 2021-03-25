@@ -49,6 +49,6 @@ Run the following commands to create an organization from programmatically:
     -- view tables in public schema
     SELECT tablename FROM pg_catalog.pg_tables where schemaname='public';
 
-    -- view tables in organization tenant schema
+    -- view tables in tenant organization schema
     SELECT tablename FROM pg_catalog.pg_tables where schemaname='avantifellows';
     ```

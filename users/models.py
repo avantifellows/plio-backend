@@ -10,6 +10,7 @@ class User(AbstractUser):
     avatar_url = models.ImageField(upload_to="avatars/", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "user"
@@ -26,6 +27,7 @@ class UserMeta(models.Model):
     grade = models.CharField(max_length=20, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "user_meta"
@@ -33,6 +35,9 @@ class UserMeta(models.Model):
 
 class Role(models.Model):
     name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "role"

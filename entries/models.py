@@ -12,6 +12,7 @@ class Session(models.Model):
     has_video_played = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "session"
@@ -23,6 +24,7 @@ class SessionAnswer(models.Model):
     answer = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "session_answer"
@@ -35,6 +37,7 @@ class Event(models.Model):
     details = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "event"

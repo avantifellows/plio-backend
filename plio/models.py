@@ -7,6 +7,7 @@ class Video(models.Model):
     title = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "video"
@@ -22,7 +23,7 @@ class Plio(models.Model):
     is_public = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField()
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "plio"
@@ -36,7 +37,7 @@ class Item(models.Model):
     meta = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField()
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "item"
@@ -48,7 +49,7 @@ class Question(models.Model):
     options = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField()
+    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "question"

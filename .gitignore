@@ -156,3 +156,4 @@ static/admin/*
 *pyc
 
 .DS_Store
+zappa_settings.json

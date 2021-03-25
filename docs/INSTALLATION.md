@@ -9,23 +9,16 @@ Required version `3.8.2`
 Plio backend uses Postgres SQL database. Use the instructions below to set up the database server on your operating system.
 
 1. macOS
-
     - Use brew to install Postgres
-    ```sh
-    brew install postgresql
-    ```
-    - Start postgresql
-    ```sh
-    pg_ctl -D /usr/local/var/postgres start
-    ```
+        ```sh
+        brew install postgresql           # install postgresql
+        brew services start postgresql    # start postgresql
+        ```
      - Check your installation by running
-     ```sh
-     psql
-     ```
-     - You should see something like this:
-     ```sql
-     YOUR_USERNAME=#
-     ```
+        ```sh
+        psql
+        ```
+     - You should be inside the PostgreSQL shell
 
 
 2. Windows
@@ -57,20 +50,23 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
     ```sh
     pip install -r requirements.txt
     ```
-4. Create a new database in your Postgres. You will find the values for the variables `DATABASE_NAME`, `DATABASE_USER` and `DATABASE_PASSWORD` in `zappa_settings.json`.
-    - Open the PostgreSQL command prompt (ensure that you have already started postgres as mentioned above)
+
+    In case of errors in macOS venv, run the following commands to configure OpenSSL properly:
     ```sh
-    psql
+    export LDFLAGS="-L/usr/local/opt/openssl/lib"
+    export CPPFLAGS="-I/usr/local/opt/openssl/include"
     ```
-     - Create a Database
-     ```sql
-     USERNAME=# CREATE DATABASE DATABASE_NAME;
-     ```
-     - Create a user
-     ```sql
-     USERNAME=# CREATE USER DATABASE_USER WITH PASSWORD DATABASE_PASSWORD;
-     ```
-     You might see an error saying that an empty password is not allowed if you are using an empty password. The user would be created anyways.
+4. Create a new database in your Postgres. You will find the values for the variables `DATABASE_HOST`, `DATABASE_NAME`, `DATABASE_USER` and `DATABASE_PASSWORD` in `zappa_settings.json`.
+    - Open the PostgreSQL command prompt (ensure that you have already started postgres as mentioned above)
+        ```sh
+        psql
+        ```
+     - Create a database and user with password
+        ```sql
+        CREATE DATABASE DATABASE_NAME;
+        CREATE USER DATABASE_USER WITH PASSWORD 'DATABASE_PASSWORD';
+        ```
+        You might see an error saying that an empty password is not allowed if you are using an empty password. The user would be created anyways.
 5. Set up your .env file by copying .env.example
     ```sh
     cp .env.example .env

@@ -27,11 +27,11 @@
     pip install -r requirements.txt
     ```
 
-4. Set up your .env file by copying .env.example
+4. Set up your zappa_settings.json file by copying zappa_settings.example.json file
     ```sh
-    cp .env.example .env
+    cp zappa_settings.example.json zappa_settings.json
     ```
-5. Update variables in your `.env` file based on your settings.
+5. Update environment variables in your `zappa_settings.json` file based on your environment. For all available settings, see our [Zappa Settings guide](ZAPPA-SETTINGS.md).
 6. For **development** only, run the following command to install pre-commit
     ```sh
     pre-commit install

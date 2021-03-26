@@ -35,7 +35,7 @@ These are the environment variables passed on to the Django app for various func
    3. `local` for local environment
 2. `STATIC_BUCKET` - S3 bucket for static assets.
 3. `DB_QUERIES_URL` - URL for `db_queries` repository hosting. Soon to be deprecated.
-4. `CMS_TOKEN` - Secret token for Content Management System
+4. `CMS_TOKEN` - Secret token for Avanti's [Content Management System](http://cms.peerlearning.com) - if you plan to use it, you'll need to ask for access from the admins.
 5. `DATABASE_HOST` - Database server host URL. For local development, use `localhost`.
 6. `DATABASE_PORT` - Port on which database is running. Default `5432` for local installation.
 7. `DATABASE_NAME` - Name of your database.

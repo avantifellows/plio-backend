@@ -5,7 +5,7 @@ This document covers steps on setting up this repository on various cloud hostin
   - [AWS](#aws)
 
 ### Pre-requisites
-1. Set up your zappa_settings.json file by copying zappa_settings.example.json file
+1. Set up your `zappa_settings.json` file by copying `zappa_settings.example.json` file
     ```sh
     cp zappa_settings.example.json zappa_settings.json
     ```

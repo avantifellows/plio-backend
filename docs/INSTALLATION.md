@@ -67,7 +67,7 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
         CREATE USER DATABASE_USER WITH PASSWORD 'DATABASE_PASSWORD';
         ```
         You might see an error saying that an empty password is not allowed if you are using an empty password. The user would be created anyways.
-5. Set up your zappa_settings.json file by copying zappa_settings.example.json file
+5. Set up your `zappa_settings.json` file by copying `zappa_settings.example.json` file
     ```sh
     cp zappa_settings.example.json zappa_settings.json
     ```

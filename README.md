@@ -11,3 +11,4 @@ Visit our [deployment guideline](docs/DEPLOYMENT.md) for setting up this reposit
 - [Pre-commit](docs/PRE-COMMIT.md)
 - [GitHub Workflows](docs/GITHUB-WORKFLOWS.md)
 - [Multitenancy](docs/MULTITENANCY.md)
+- [Zappa Settings](docs/ZAPPA-SETTINGS.md)

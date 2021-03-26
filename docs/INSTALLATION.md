@@ -67,11 +67,11 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
         CREATE USER DATABASE_USER WITH PASSWORD 'DATABASE_PASSWORD';
         ```
         You might see an error saying that an empty password is not allowed if you are using an empty password. The user would be created anyways.
-5. Set up your .env file by copying .env.example
+5. Set up your `zappa_settings.json` file by copying `zappa_settings.example.json` file
     ```sh
-    cp .env.example .env
+    cp zappa_settings.example.json zappa_settings.json
     ```
-6. Update variables in your `.env` file based on your settings.
+6. Update environment variables in your `zappa_settings.json` file based on your environment. For all available settings, see our [Zappa Settings guide](ZAPPA-SETTINGS.md).
 7. Database setup: Plio is a multi-tenant app that uses semi-isolated database structure: shared database, separate schemas. One database for all tenants, but one schema per tenant using the [django-tenants](https://django-tenants.readthedocs.io/en/latest/) package.
 
     - Run migrations to create the shared (public) schema

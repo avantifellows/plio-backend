@@ -32,7 +32,12 @@
             "DJANGO_ENV": "local",
             "STATIC_BUCKET": "local",
             "DB_QUERIES_URL": "http://localhost:5000",
-            "CMS_TOKEN": "0cf74284b6d0806f5efbe86f22f0656e5644a85385b17730c3f029a81aed4265"
+            "CMS_TOKEN": "0cf74284b6d0806f5efbe86f22f0656e5644a85385b17730c3f029a81aed4265",
+            "DATABASE_NAME": "plio",
+            "DATABASE_USER": "postgres",
+            "DATABASE_PASSWORD": "",
+            "DATABASE_HOST": "localhost",
+            "DATABASE_PORT": "5432"
         }
     }
 }

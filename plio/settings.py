@@ -43,7 +43,31 @@ else:
 
 # Application definition
 
+SHARED_APPS = (
+    "django_tenants",
+    "users",
+    "organizations",
+    "plio",
+    "experiments",
+    "tags",
+    "entries",
+    "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.admin",
+)
+
+TENANT_APPS = (
+    "django.contrib.contenttypes",
+    "plio",
+    "experiments",
+    "tags",
+    "entries",
+)
+
 INSTALLED_APPS = [
+    "django_tenants",
     "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -52,7 +76,16 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_s3_storage",
+    "users",
+    "plio",
+    "organizations",
+    "experiments",
+    "tags",
+    "entries",
 ]
+
+TENANT_MODEL = "organizations.Organization"
+TENANT_DOMAIN_MODEL = "organizations.Domain"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
@@ -61,6 +94,7 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
+    "django_tenants.middleware.main.TenantMainMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -220,4 +254,20 @@ DB_QUERIES_URL = os.environ["DB_QUERIES_URL"]
 CMS_URL = "https://cms.peerlearning.com/api"
 CMS_TOKEN = os.environ["CMS_TOKEN"]
 GET_CMS_PROBLEM_URL = "/problems"
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django_tenants.postgresql_backend",
+        "NAME": os.environ["DATABASE_NAME"],
+        "USER": os.environ["DATABASE_USER"],
+        "PASSWORD": os.environ["DATABASE_PASSWORD"],
+        "HOST": os.environ["DATABASE_HOST"],
+        "PORT": int(os.environ["DATABASE_PORT"]),
+    }
+}
+
+AUTH_USER_MODEL = "users.User"
+
+DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
+
 FRONTEND_URL = "https://app.plio.in"

@@ -27,7 +27,7 @@
     pip install -r requirements.txt
     ```
 
-4. Set up your zappa_settings.json file by copying zappa_settings.example.json file
+4. Set up your `zappa_settings.json` file by copying `zappa_settings.example.json` file
     ```sh
     cp zappa_settings.example.json zappa_settings.json
     ```

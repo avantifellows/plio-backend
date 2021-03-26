@@ -6,7 +6,9 @@ from plio.models import Plio
 class Experiment(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING
+    )
     is_test = models.BooleanField(default=False)
     type = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -18,8 +20,8 @@ class Experiment(models.Model):
 
 
 class ExperimentPlio(models.Model):
-    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE)
-    plio = models.ForeignKey(Plio, on_delete=models.CASCADE)
+    experiment = models.ForeignKey(Experiment, on_delete=models.DO_NOTHING)
+    plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     split_percentage = models.CharField(max_length=255)
 
     class Meta:

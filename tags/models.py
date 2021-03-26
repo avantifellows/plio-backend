@@ -12,7 +12,7 @@ class Tag(models.Model):
 
 
 class ModelHasTag(models.Model):
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.DO_NOTHING)
     model_type = models.CharField(max_length=255)
     model_id = models.PositiveBigIntegerField()
 

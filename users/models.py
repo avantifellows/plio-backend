@@ -17,7 +17,7 @@ class User(AbstractUser):
 
 
 class UserMeta(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
     pincode = models.CharField(max_length=20, null=True)
     block = models.CharField(max_length=20, null=True)
     district = models.CharField(max_length=20, null=True)
@@ -44,10 +44,10 @@ class Role(models.Model):
 
 
 class OrganizationUser(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
+    organization = models.ForeignKey(Organization, on_delete=models.DO_NOTHING)
     is_owner = models.BooleanField(default=False)
-    role_id = models.ForeignKey(Role, on_delete=models.CASCADE)
+    role_id = models.ForeignKey(Role, on_delete=models.DO_NOTHING)
 
     class Meta:
         db_table = "organization_user"

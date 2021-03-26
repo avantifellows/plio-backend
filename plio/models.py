@@ -14,10 +14,12 @@ class Video(models.Model):
 
 
 class Plio(models.Model):
-    video = models.ForeignKey(Video, on_delete=models.CASCADE)
+    video = models.ForeignKey(Video, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=255)
     uuid = models.CharField(max_length=20)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING
+    )
     failsafe_url = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=255, blank=True)
     is_public = models.BooleanField(default=False)
@@ -30,7 +32,7 @@ class Plio(models.Model):
 
 
 class Item(models.Model):
-    plio = models.ForeignKey(Plio, on_delete=models.CASCADE)
+    plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     text = models.TextField()
     time = models.CharField(max_length=255)
@@ -44,7 +46,7 @@ class Item(models.Model):
 
 
 class Question(models.Model):
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     options = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)

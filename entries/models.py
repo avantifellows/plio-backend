@@ -5,9 +5,9 @@ from experiments.models import Experiment
 
 
 class Session(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    plio = models.ForeignKey(Plio, on_delete=models.CASCADE)
-    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
+    plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
+    experiment = models.ForeignKey(Experiment, on_delete=models.DO_NOTHING)
     retention = models.TextField()
     has_video_played = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -19,8 +19,8 @@ class Session(models.Model):
 
 
 class SessionAnswer(models.Model):
-    session = models.ForeignKey(Session, on_delete=models.CASCADE)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
+    question = models.ForeignKey(Question, on_delete=models.DO_NOTHING)
     answer = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -31,7 +31,7 @@ class SessionAnswer(models.Model):
 
 
 class Event(models.Model):
-    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     player_time = models.PositiveIntegerField()
     details = models.JSONField()

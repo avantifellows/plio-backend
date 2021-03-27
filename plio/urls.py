@@ -19,6 +19,8 @@ from rest_framework import routers, serializers, viewsets
 from users.models import User
 from organizations.models import Organization
 from organizations.serializers import OrganizationSerializer
+from users.models import User
+from users.serializers import UserSerializer
 from . import views
 
 # ViewSets define the view behavior.
@@ -27,8 +29,15 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     serializer_class = OrganizationSerializer
 
 
+# ViewSets define the view behavior.
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
 api_router = routers.DefaultRouter()
 api_router.register(r"organizations", OrganizationViewSet)
+api_router.register(r"users", UserViewSet)
 
 urlpatterns = [
     path("player/", views.redirect_home),

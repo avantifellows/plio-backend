@@ -5,7 +5,7 @@ from organizations.models import Organization
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ["id", "name", "shortcode", "schema_name"]
+        fields = ["id", "schema_name", "name", "shortcode"]
 
     def create(self, validated_data):
         """
@@ -17,10 +17,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
         """
         Update and return an existing `Organization` instance, given the validated data.
         """
-        instance.title = validated_data.get("title", instance.title)
-        instance.code = validated_data.get("code", instance.code)
-        instance.linenos = validated_data.get("linenos", instance.linenos)
-        instance.language = validated_data.get("language", instance.language)
-        instance.style = validated_data.get("style", instance.style)
+        instance.name = validated_data.get("name", instance.name)
+        instance.shortcode = validated_data.get("shortcode", instance.shortcode)
         instance.save()
         return instance

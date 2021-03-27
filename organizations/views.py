@@ -29,7 +29,7 @@ def organization_list(request):
 @csrf_exempt
 def organization_detail(request, pk):
     """
-    Retrieve, update or delete a code organization.
+    Retrieve, update or delete an organization.
     """
     try:
         organization = Organization.objects.get(pk=pk)

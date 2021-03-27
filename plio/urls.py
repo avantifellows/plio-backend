@@ -15,7 +15,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework import routers, serializers, viewsets
+from users.models import User
+from organizations.models import Organization
+from organizations.serializers import OrganizationSerializer
 from . import views
+
+# ViewSets define the view behavior.
+class OrganizationViewSet(viewsets.ModelViewSet):
+    queryset = Organization.objects.all()
+    serializer_class = OrganizationSerializer
+
+
+api_router = routers.DefaultRouter()
+api_router.register(r"organizations", OrganizationViewSet)
 
 urlpatterns = [
     path("player/", views.redirect_home),
@@ -27,6 +40,8 @@ urlpatterns = [
     path("create_plio", views.create_plio),
     path("get_plio_config", views._get_plio_config),
     path("get_plios_df", views.get_plios_df),
+    path("api/v1/", include(api_router.urls)),
+    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     # separate app for tags
     path("entries/", include("entries.urls")),
     # separate app for users

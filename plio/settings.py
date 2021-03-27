@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_s3_storage",
+    "rest_framework",
     "users",
     "plio",
     "organizations",
@@ -89,7 +90,10 @@ TENANT_DOMAIN_MODEL = "organizations.Domain"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+        # "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
+    ],
     "UNAUTHENTICATED_USER": None,
 }
 

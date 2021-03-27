@@ -21,6 +21,8 @@ from organizations.models import Organization
 from organizations.serializers import OrganizationSerializer
 from users.models import User
 from users.serializers import UserSerializer
+from plio.models import Video, Plio
+from plio.serializers import VideoSerializer, PlioSerializer
 from . import views
 
 # ViewSets define the view behavior.
@@ -35,9 +37,23 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
 
+# ViewSets define the view behavior.
+class VideoViewSet(viewsets.ModelViewSet):
+    queryset = Video.objects.all()
+    serializer_class = VideoSerializer
+
+
+# ViewSets define the view behavior.
+class PlioViewSet(viewsets.ModelViewSet):
+    queryset = Plio.objects.all()
+    serializer_class = PlioSerializer
+
+
 api_router = routers.DefaultRouter()
 api_router.register(r"organizations", OrganizationViewSet)
 api_router.register(r"users", UserViewSet)
+api_router.register(r"videos", VideoViewSet)
+api_router.register(r"plios", PlioViewSet)
 
 urlpatterns = [
     path("player/", views.redirect_home),
@@ -49,6 +65,10 @@ urlpatterns = [
     path("create_plio", views.create_plio),
     path("get_plio_config", views._get_plio_config),
     path("get_plios_df", views.get_plios_df),
+    path("videos/", views.video_list),
+    path("videos/<int:pk>/", views.video_detail),
+    path("plios/", views.plio_list),
+    path("plios/<int:pk>/", views.plio_detail),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     # separate app for tags

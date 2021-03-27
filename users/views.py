@@ -185,7 +185,7 @@ def remove_test_users(users_df: pd.DataFrame) -> pd.DataFrame:
 @csrf_exempt
 def user_list(request):
     """
-    List all code users, or create a new user.
+    List all users, or create a new user.
     """
     if request.method == "GET":
         users = User.objects.all()

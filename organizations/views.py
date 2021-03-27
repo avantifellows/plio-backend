@@ -10,7 +10,7 @@ from organizations.serializers import OrganizationSerializer
 @csrf_exempt
 def organization_list(request):
     """
-    List all code organizations, or create a new organization.
+    List all organizations, or create a new organization.
     """
     if request.method == "GET":
         organizations = Organization.objects.all()

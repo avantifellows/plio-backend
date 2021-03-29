@@ -78,7 +78,26 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
         ```sh
         python manage.py migrate_schemas --shared
         ```
-    - For seeding database and creating tenant organizations, visit the our [multitenancy](MULTITENANCY.md) guidelines.
+    - Create a public tenant in your database
+        - Get into python shell.
+            ```sh
+            python manage.py shell
+            ```
+        - Run the following commands to a create public tenant. This will be used by the appplication to determine what data to load in the default URL.
+            ```py
+            # create your public tenant
+            from organizations.models import Organization, Domain
+
+            tenant = Organization(schema_name='public', name='Plio', shortcode='plio')
+            tenant.save()
+
+            domain = Domain()
+            domain.domain = 'plio.in' # use domain.domain = '0.0.0.0' for development environment
+            domain.tenant = tenant
+            domain.is_primary = True
+            domain.save()
+            ```
+        - For more details on database seeding and creating tenant organizations, visit our [multitenancy](MULTITENANCY.md) guidelines.
 
 8. For **DEVELOPMENT PURPOSE** only, run the following command to install pre-commit
     ```sh

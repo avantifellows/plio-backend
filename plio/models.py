@@ -34,7 +34,7 @@ class Plio(models.Model):
         db_table = "plio"
 
     def __str__(self):
-        return "%d: %s" % (self.id, self.title)
+        return "%d: %s" % (self.id, self.name)
 
 
 class Item(models.Model):
@@ -42,7 +42,7 @@ class Item(models.Model):
     type = models.CharField(max_length=255)
     text = models.TextField()
     time = models.CharField(max_length=255)
-    meta = models.JSONField()
+    meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)
@@ -50,11 +50,14 @@ class Item(models.Model):
     class Meta:
         db_table = "item"
 
+    def __str__(self):
+        return "%d: %s - %s" % (self.id, self.plio.name, self.text)
+
 
 class Question(models.Model):
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
-    options = models.JSONField()
+    options = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)

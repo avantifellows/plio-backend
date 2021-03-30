@@ -21,8 +21,13 @@ from organizations.models import Organization
 from organizations.serializers import OrganizationSerializer
 from users.models import User
 from users.serializers import UserSerializer
-from plio.models import Video, Plio
-from plio.serializers import VideoSerializer, PlioSerializer
+from plio.models import Video, Plio, Item, Question
+from plio.serializers import (
+    VideoSerializer,
+    PlioSerializer,
+    ItemSerializer,
+    QuestionSerializer,
+)
 from experiments.models import Experiment
 from experiments.serializers import ExperimentSerializer
 from entries.models import Session, SessionAnswer, Event
@@ -54,6 +59,16 @@ class PlioViewSet(viewsets.ModelViewSet):
     serializer_class = PlioSerializer
 
 
+class ItemViewSet(viewsets.ModelViewSet):
+    queryset = Item.objects.all()
+    serializer_class = ItemSerializer
+
+
+class QuestionViewSet(viewsets.ModelViewSet):
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
+
+
 class ExperimentViewSet(viewsets.ModelViewSet):
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
@@ -79,6 +94,8 @@ api_router.register(r"organizations", OrganizationViewSet)
 api_router.register(r"users", UserViewSet)
 api_router.register(r"videos", VideoViewSet)
 api_router.register(r"plios", PlioViewSet)
+api_router.register(r"items", ItemViewSet)
+api_router.register(r"questions", QuestionViewSet)
 api_router.register(r"experiments", ExperimentViewSet)
 api_router.register(r"sessions", SessionViewSet)
 api_router.register(r"session-answers", SessionAnswerViewSet)
@@ -98,6 +115,10 @@ urlpatterns = [
     path("videos/<int:pk>/", views.video_detail),
     path("plios/", views.plio_list),
     path("plios/<int:pk>/", views.plio_detail),
+    path("items/", views.item_list),
+    path("items/<int:pk>/", views.item_detail),
+    path("questions/", views.question_list),
+    path("questions/<int:pk>/", views.question_detail),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     # separate app for tags

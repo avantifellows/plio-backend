@@ -13,6 +13,10 @@ from users.views import get_user_config, update_user_config
 from utils.s3 import get_default_user_config
 from utils.data import convert_objects_to_df
 
+from django.views.decorators.csrf import csrf_exempt
+from experiments.models import Experiment
+from experiments.serializers import ExperimentSerializer
+
 URL_PREFIX_GET_EXPERIMENT = "/get_experiment"
 URL_PREFIX_GET_ALL_EXPERIMENTS = "/get_experiments"
 
@@ -127,3 +131,49 @@ def fetch_all_experiments():
 
 def index(request):
     return redirect(FRONTEND_URL, permanent=True)
+
+
+@csrf_exempt
+def experiment_list(request):
+    """
+    List all experiments, or create a new experiment.
+    """
+    if request.method == "GET":
+        experiments = Experiment.objects.all()
+        serializer = ExperimentSerializer(experiments, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+    elif request.method == "POST":
+        data = JSONParser().parse(request)
+        serializer = ExperimentSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+        return JsonResponse(serializer.errors, status=400)
+
+
+@csrf_exempt
+def experiment_detail(request, pk):
+    """
+    Retrieve, update or delete a experiment.
+    """
+    try:
+        experiment = Experiment.objects.get(pk=pk)
+    except Experiment.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if request.method == "GET":
+        serializer = ExperimentSerializer(experiment)
+        return JsonResponse(serializer.data)
+
+    elif request.method == "PUT":
+        data = JSONParser().parse(request)
+        serializer = ExperimentSerializer(experiment, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data)
+        return JsonResponse(serializer.errors, status=400)
+
+    elif request.method == "DELETE":
+        experiment.delete()
+        return HttpResponse(status=204)

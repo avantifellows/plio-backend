@@ -23,30 +23,55 @@ from users.models import User
 from users.serializers import UserSerializer
 from plio.models import Video, Plio
 from plio.serializers import VideoSerializer, PlioSerializer
+from experiments.models import Experiment
+from experiments.serializers import ExperimentSerializer
+from entries.models import Session, SessionAnswer, Event
+from entries.serializers import (
+    SessionSerializer,
+    SessionAnswerSerializer,
+    EventSerializer,
+)
 from . import views
 
-# ViewSets define the view behavior.
+
 class OrganizationViewSet(viewsets.ModelViewSet):
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
 
 
-# ViewSets define the view behavior.
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
 
-# ViewSets define the view behavior.
 class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
 
 
-# ViewSets define the view behavior.
 class PlioViewSet(viewsets.ModelViewSet):
     queryset = Plio.objects.all()
     serializer_class = PlioSerializer
+
+
+class ExperimentViewSet(viewsets.ModelViewSet):
+    queryset = Experiment.objects.all()
+    serializer_class = ExperimentSerializer
+
+
+class SessionViewSet(viewsets.ModelViewSet):
+    queryset = Session.objects.all()
+    serializer_class = SessionSerializer
+
+
+class SessionAnswerViewSet(viewsets.ModelViewSet):
+    queryset = SessionAnswer.objects.all()
+    serializer_class = SessionAnswerSerializer
+
+
+class EventViewSet(viewsets.ModelViewSet):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
 
 
 api_router = routers.DefaultRouter()
@@ -54,6 +79,10 @@ api_router.register(r"organizations", OrganizationViewSet)
 api_router.register(r"users", UserViewSet)
 api_router.register(r"videos", VideoViewSet)
 api_router.register(r"plios", PlioViewSet)
+api_router.register(r"experiments", ExperimentViewSet)
+api_router.register(r"sessions", SessionViewSet)
+api_router.register(r"session-answers", SessionAnswerViewSet)
+api_router.register(r"events", EventViewSet)
 
 urlpatterns = [
     path("player/", views.redirect_home),

@@ -39,8 +39,8 @@ class PlioSerializer(serializers.ModelSerializer):
             "failsafe_url",
             "status",
             "is_public",
-            "created_by_id",
-            "video_id",
+            "created_by",
+            "video",
             "created_at",
             "updated_at",
         ]
@@ -55,7 +55,7 @@ class PlioSerializer(serializers.ModelSerializer):
         """
         Update and return an existing `Plio` instance, given the validated data.
         """
-        instance.video_id = validated_data.get("video_id", instance.video_id)
+        instance.video = validated_data.get("video", instance.video)
         instance.name = validated_data.get("name", instance.name)
         instance.uuid = validated_data.get("uuid", instance.uuid)
         instance.failsafe_url = validated_data.get(
@@ -63,8 +63,6 @@ class PlioSerializer(serializers.ModelSerializer):
         )
         instance.status = validated_data.get("status", instance.status)
         instance.is_public = validated_data.get("is_public", instance.is_public)
-        instance.created_by_id = validated_data.get(
-            "created_by_id", instance.created_by_id
-        )
+        instance.created_by = validated_data.get("created_by", instance.created_by)
         instance.save()
         return instance

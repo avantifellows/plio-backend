@@ -8,6 +8,10 @@ from rest_framework.decorators import api_view
 from plio.settings import DB_QUERIES_URL, FRONTEND_URL
 from utils.data import convert_objects_to_df
 
+from django.views.decorators.csrf import csrf_exempt
+from tags.models import Tag
+from tags.serializers import TagSerializer
+
 URL_PREFIX_GET_ALL_TAGS = "/get_tags"
 
 
@@ -37,3 +41,49 @@ def fetch_all_tags():
         return HttpResponseNotFound("<h1>An unknown error occurred</h1>")
 
     return json.loads(response.json())
+
+
+@csrf_exempt
+def tag_list(request):
+    """
+    List all tags, or create a new tag.
+    """
+    if request.method == "GET":
+        tags = Tag.objects.all()
+        serializer = TagSerializer(tags, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+    elif request.method == "POST":
+        data = JSONParser().parse(request)
+        serializer = TagSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data, status=201)
+        return JsonResponse(serializer.errors, status=400)
+
+
+@csrf_exempt
+def tag_detail(request, pk):
+    """
+    Retrieve, update or delete a tag.
+    """
+    try:
+        tag = Tag.objects.get(pk=pk)
+    except Tag.DoesNotExist:
+        return HttpResponse(status=404)
+
+    if request.method == "GET":
+        serializer = TagSerializer(tag)
+        return JsonResponse(serializer.data)
+
+    elif request.method == "PUT":
+        data = JSONParser().parse(request)
+        serializer = TagSerializer(tag, data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return JsonResponse(serializer.data)
+        return JsonResponse(serializer.errors, status=400)
+
+    elif request.method == "DELETE":
+        tag.delete()
+        return HttpResponse(status=204)

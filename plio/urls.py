@@ -30,6 +30,8 @@ from plio.serializers import (
 )
 from experiments.models import Experiment
 from experiments.serializers import ExperimentSerializer
+from tags.models import Tag
+from tags.serializers import TagSerializer
 from entries.models import Session, SessionAnswer, Event
 from entries.serializers import (
     SessionSerializer,
@@ -89,6 +91,11 @@ class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
 
 
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+
+
 api_router = routers.DefaultRouter()
 api_router.register(r"organizations", OrganizationViewSet)
 api_router.register(r"users", UserViewSet)
@@ -100,6 +107,7 @@ api_router.register(r"experiments", ExperimentViewSet)
 api_router.register(r"sessions", SessionViewSet)
 api_router.register(r"session-answers", SessionAnswerViewSet)
 api_router.register(r"events", EventViewSet)
+api_router.register(r"tags", TagViewSet)
 
 urlpatterns = [
     path("player/", views.redirect_home),

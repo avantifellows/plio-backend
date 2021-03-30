@@ -15,6 +15,13 @@ class User(AbstractUser):
     class Meta:
         db_table = "user"
 
+    @property
+    def name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    def __str__(self):
+        return "%d: %s" % (self.id, self.name)
+
 
 class UserMeta(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)

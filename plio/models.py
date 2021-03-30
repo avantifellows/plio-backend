@@ -12,6 +12,9 @@ class Video(models.Model):
     class Meta:
         db_table = "video"
 
+    def __str__(self):
+        return "%d: %s" % (self.id, self.title)
+
 
 class Plio(models.Model):
     video = models.ForeignKey(Video, on_delete=models.DO_NOTHING)
@@ -29,6 +32,9 @@ class Plio(models.Model):
 
     class Meta:
         db_table = "plio"
+
+    def __str__(self):
+        return "%d: %s" % (self.id, self.title)
 
 
 class Item(models.Model):

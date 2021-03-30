@@ -9,9 +9,9 @@ class SessionSerializer(serializers.ModelSerializer):
             "id",
             "retention",
             "has_video_played",
-            "experiment_id",
-            "plio_id",
-            "user_id",
+            "experiment",
+            "plio",
+            "user",
             "created_at",
             "updated_at",
         ]
@@ -30,11 +30,9 @@ class SessionSerializer(serializers.ModelSerializer):
         instance.has_video_played = validated_data.get(
             "has_video_played", instance.has_video_played
         )
-        instance.experiment_id = validated_data.get(
-            "experiment_id", instance.experiment_id
-        )
-        instance.plio_id = validated_data.get("plio_id", instance.plio_id)
-        instance.user_id = validated_data.get("user_id", instance.user_id)
+        instance.experiment = validated_data.get("experiment", instance.experiment)
+        instance.plio = validated_data.get("plio", instance.plio)
+        instance.user = validated_data.get("user", instance.user)
         instance.save()
         return instance
 
@@ -45,8 +43,8 @@ class SessionAnswerSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "answer",
-            "question_id",
-            "session_id",
+            "question",
+            "session",
             "created_at",
             "updated_at",
         ]
@@ -62,8 +60,8 @@ class SessionAnswerSerializer(serializers.ModelSerializer):
         Update and return an existing `SessionAnswer` instance, given the validated data.
         """
         instance.answer = validated_data.get("answer", instance.answer)
-        instance.question_id = validated_data.get("question_id", instance.question_id)
-        instance.session_id = validated_data.get("session_id", instance.session_id)
+        instance.question = validated_data.get("question", instance.question)
+        instance.session = validated_data.get("session", instance.session)
         instance.save()
         return instance
 
@@ -73,7 +71,7 @@ class EventSerializer(serializers.ModelSerializer):
         model = Event
         fields = [
             "id",
-            "session_id",
+            "session",
             "type",
             "player_time",
             "details",
@@ -91,7 +89,7 @@ class EventSerializer(serializers.ModelSerializer):
         """
         Update and return an existing `Event` instance, given the validated data.
         """
-        instance.session_id = validated_data.get("session_id", instance.session_id)
+        instance.session = validated_data.get("session", instance.session)
         instance.type = validated_data.get("type", instance.type)
         instance.player_time = validated_data.get("player_time", instance.player_time)
         instance.details = validated_data.get("details", instance.details)

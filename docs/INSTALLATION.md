@@ -18,7 +18,11 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
         ```sh
         psql
         ```
-     - You should be inside the PostgreSQL shell
+        If you get an error saying `error: psql: error: FATAL:  database "{USER_NAME}" does not exist`, run the following command before entering `psql`:
+        ```sh
+        createdb
+        ```
+     - If everything works correctly, you should be inside the PostgreSQL shell
 
 
 2. Windows

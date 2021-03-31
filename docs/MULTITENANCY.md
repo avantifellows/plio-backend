@@ -12,6 +12,7 @@ Run the following commands to create an organization from programmatically:
     ```
 
 2. Create a public tenant that will be the default one.
+
     ```py
     # create your public tenant
     from organizations.models import Organization, Domain
@@ -20,7 +21,7 @@ Run the following commands to create an organization from programmatically:
     tenant.save()
 
     domain = Domain()
-    domain.domain = 'plio.in'
+    domain.domain = 'plio.in' # use domain.domain = '0.0.0.0' for development environment
     domain.tenant = tenant
     domain.is_primary = True
     domain.save()

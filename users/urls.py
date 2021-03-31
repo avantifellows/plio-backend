@@ -7,6 +7,4 @@ urlpatterns = [
     path("update_config", views._update_user_config),
     path("login", views.login_user),
     path("get_df", views.get_df),
-    path("users/", views.user_list),
-    path("users/<int:pk>/", views.user_detail),
 ]

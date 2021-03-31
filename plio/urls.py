@@ -15,85 +15,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import routers, serializers, viewsets
-from users.models import User
-from organizations.models import Organization
-from organizations.serializers import OrganizationSerializer
-from users.models import User
-from users.serializers import UserSerializer
-from plio.models import Video, Plio, Item, Question
-from plio.serializers import (
-    VideoSerializer,
-    PlioSerializer,
-    ItemSerializer,
-    QuestionSerializer,
-)
-from experiments.models import Experiment
-from experiments.serializers import ExperimentSerializer
-from tags.models import Tag
-from tags.serializers import TagSerializer
-from entries.models import Session, SessionAnswer, Event
-from entries.serializers import (
-    SessionSerializer,
-    SessionAnswerSerializer,
-    EventSerializer,
-)
+from rest_framework import routers, serializers
+
+from tags.views import TagViewSet
+from users.views import UserViewSet
+from organizations.views import OrganizationViewSet
+from experiments.views import ExperimentViewSet
+from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
+from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
 from . import views
-
-
-class OrganizationViewSet(viewsets.ModelViewSet):
-    queryset = Organization.objects.all()
-    serializer_class = OrganizationSerializer
-
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-
-class VideoViewSet(viewsets.ModelViewSet):
-    queryset = Video.objects.all()
-    serializer_class = VideoSerializer
-
-
-class PlioViewSet(viewsets.ModelViewSet):
-    queryset = Plio.objects.all()
-    serializer_class = PlioSerializer
-
-
-class ItemViewSet(viewsets.ModelViewSet):
-    queryset = Item.objects.all()
-    serializer_class = ItemSerializer
-
-
-class QuestionViewSet(viewsets.ModelViewSet):
-    queryset = Question.objects.all()
-    serializer_class = QuestionSerializer
-
-
-class ExperimentViewSet(viewsets.ModelViewSet):
-    queryset = Experiment.objects.all()
-    serializer_class = ExperimentSerializer
-
-
-class SessionViewSet(viewsets.ModelViewSet):
-    queryset = Session.objects.all()
-    serializer_class = SessionSerializer
-
-
-class SessionAnswerViewSet(viewsets.ModelViewSet):
-    queryset = SessionAnswer.objects.all()
-    serializer_class = SessionAnswerSerializer
-
-
-class EventViewSet(viewsets.ModelViewSet):
-    queryset = Event.objects.all()
-    serializer_class = EventSerializer
-
-
-class TagViewSet(viewsets.ModelViewSet):
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
 
 
 api_router = routers.DefaultRouter()
@@ -119,16 +49,6 @@ urlpatterns = [
     path("create_plio", views.create_plio),
     path("get_plio_config", views._get_plio_config),
     path("get_plios_df", views.get_plios_df),
-    path("videos/", views.video_list),
-    path("videos/<int:pk>/", views.video_detail),
-    path("plios/", views.plio_list),
-    path("plios/<int:pk>/", views.plio_detail),
-    path("items/", views.item_list),
-    path("items/<int:pk>/", views.item_detail),
-    path("questions/", views.question_list),
-    path("questions/<int:pk>/", views.question_detail),
-    path("api/v1/", include(api_router.urls)),
-    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     # separate app for tags
     path("entries/", include("entries.urls")),
     # separate app for users
@@ -139,4 +59,7 @@ urlpatterns = [
     path("tags/", include("tags.urls")),
     # separate app for components
     path("components/", include("components.urls")),
+    # API routes
+    path("api/v1/", include(api_router.urls)),
+    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
 ]

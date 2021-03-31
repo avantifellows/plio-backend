@@ -15,7 +15,7 @@ from utils.security import hash_function
 from utils.cleanup import is_valid_user_id
 from utils.request import get_user_agent_info
 
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework import viewsets
 from entries.models import Session, SessionAnswer, Event
 from entries.serializers import (
     SessionSerializer,
@@ -112,139 +112,16 @@ def update_entry(request: Request):
     return JsonResponse({"result": result.json()}, status=result.status_code)
 
 
-@csrf_exempt
-def session_list(request):
-    """
-    List all sessions, or create a new session.
-    """
-    if request.method == "GET":
-        sessions = Session.objects.all()
-        serializer = SessionSerializer(sessions, many=True)
-        return JsonResponse(serializer.data, safe=False)
-
-    elif request.method == "POST":
-        data = JSONParser().parse(request)
-        serializer = SessionSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+class SessionViewSet(viewsets.ModelViewSet):
+    queryset = Session.objects.all()
+    serializer_class = SessionSerializer
 
 
-@csrf_exempt
-def session_detail(request, pk):
-    """
-    Retrieve, update or delete a session.
-    """
-    try:
-        session = Session.objects.get(pk=pk)
-    except Session.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == "GET":
-        serializer = SessionSerializer(session)
-        return JsonResponse(serializer.data)
-
-    elif request.method == "PUT":
-        data = JSONParser().parse(request)
-        serializer = SessionSerializer(session, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
-
-    elif request.method == "DELETE":
-        session.delete()
-        return HttpResponse(status=204)
+class SessionAnswerViewSet(viewsets.ModelViewSet):
+    queryset = SessionAnswer.objects.all()
+    serializer_class = SessionAnswerSerializer
 
 
-@csrf_exempt
-def session_answer_list(request):
-    """
-    List all session answers, or create a new session answer.
-    """
-    if request.method == "GET":
-        session_answers = SessionAnswer.objects.all()
-        serializer = SessionAnswerSerializer(session_answers, many=True)
-        return JsonResponse(serializer.data, safe=False)
-
-    elif request.method == "POST":
-        data = JSONParser().parse(request)
-        serializer = SessionAnswerSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
-
-
-@csrf_exempt
-def session_answer_detail(request, pk):
-    """
-    Retrieve, update or delete a session_answer.
-    """
-    try:
-        session_answer = SessionAnswer.objects.get(pk=pk)
-    except Session.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == "GET":
-        serializer = SessionAnswerSerializer(session_answer)
-        return JsonResponse(serializer.data)
-
-    elif request.method == "PUT":
-        data = JSONParser().parse(request)
-        serializer = SessionAnswerSerializer(session_answer, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
-
-    elif request.method == "DELETE":
-        session_answer.delete()
-        return HttpResponse(status=204)
-
-
-@csrf_exempt
-def event_list(request):
-    """
-    List all events, or create a new event.
-    """
-    if request.method == "GET":
-        events = Event.objects.all()
-        serializer = EventSerializer(events, many=True)
-        return JsonResponse(serializer.data, safe=False)
-
-    elif request.method == "POST":
-        data = JSONParser().parse(request)
-        serializer = EventSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
-
-
-@csrf_exempt
-def event_detail(request, pk):
-    """
-    Retrieve, update or delete a event.
-    """
-    try:
-        event = Event.objects.get(pk=pk)
-    except Event.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == "GET":
-        serializer = EventSerializer(event)
-        return JsonResponse(serializer.data)
-
-    elif request.method == "PUT":
-        data = JSONParser().parse(request)
-        serializer = EventSerializer(event, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
-
-    elif request.method == "DELETE":
-        event.delete()
-        return HttpResponse(status=204)
+class EventViewSet(viewsets.ModelViewSet):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer

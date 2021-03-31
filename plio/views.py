@@ -21,7 +21,7 @@ from utils.video import get_video_durations_from_ids
 from utils.cleanup import is_test_plio_id, is_test_plio_video
 from utils.request import get_user_agent_info
 
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework import viewsets
 from plio.models import Video, Plio, Item, Question
 from plio.serializers import (
     VideoSerializer,
@@ -300,185 +300,21 @@ def redirect_plio(request: Request, plio_id: str):
     return redirect(f"{FRONTEND_URL}/#/play/{plio_id}", permanent=True)
 
 
-@csrf_exempt
-def video_list(request):
-    """
-    List all videos, or create a new video.
-    """
-    if request.method == "GET":
-        videos = Video.objects.all()
-        serializer = VideoSerializer(videos, many=True)
-        return JsonResponse(serializer.data, safe=False)
-
-    elif request.method == "POST":
-        data = JSONParser().parse(request)
-        serializer = VideoSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+class VideoViewSet(viewsets.ModelViewSet):
+    queryset = Video.objects.all()
+    serializer_class = VideoSerializer
 
 
-@csrf_exempt
-def video_detail(request, pk):
-    """
-    Retrieve, update or delete a video.
-    """
-    try:
-        video = Video.objects.get(pk=pk)
-    except Video.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == "GET":
-        serializer = VideoSerializer(video)
-        return JsonResponse(serializer.data)
-
-    elif request.method == "PUT":
-        data = JSONParser().parse(request)
-        serializer = VideoSerializer(video, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
-
-    elif request.method == "DELETE":
-        video.delete()
-        return HttpResponse(status=204)
+class PlioViewSet(viewsets.ModelViewSet):
+    queryset = Plio.objects.all()
+    serializer_class = PlioSerializer
 
 
-@csrf_exempt
-def plio_list(request):
-    """
-    List all code plios, or create a new plio.
-    """
-    if request.method == "GET":
-        plios = Plio.objects.all()
-        serializer = PlioSerializer(plios, many=True)
-        return JsonResponse(serializer.data, safe=False)
-
-    elif request.method == "POST":
-        data = JSONParser().parse(request)
-        serializer = PlioSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+class ItemViewSet(viewsets.ModelViewSet):
+    queryset = Item.objects.all()
+    serializer_class = ItemSerializer
 
 
-@csrf_exempt
-def plio_detail(request, pk):
-    """
-    Retrieve, update or delete a plio.
-    """
-    try:
-        plio = Plio.objects.get(pk=pk)
-    except Plio.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == "GET":
-        serializer = PlioSerializer(plio)
-        return JsonResponse(serializer.data)
-
-    elif request.method == "PUT":
-        data = JSONParser().parse(request)
-        serializer = PlioSerializer(plio, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
-
-    elif request.method == "DELETE":
-        plio.delete()
-        return HttpResponse(status=204)
-
-
-@csrf_exempt
-def item_list(request):
-    """
-    List all code items, or create a new item.
-    """
-    if request.method == "GET":
-        items = Item.objects.all()
-        serializer = ItemSerializer(items, many=True)
-        return JsonResponse(serializer.data, safe=False)
-
-    elif request.method == "POST":
-        data = JSONParser().parse(request)
-        serializer = ItemSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
-
-
-@csrf_exempt
-def item_detail(request, pk):
-    """
-    Retrieve, update or delete an item.
-    """
-    try:
-        item = Item.objects.get(pk=pk)
-    except Item.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == "GET":
-        serializer = ItemSerializer(item)
-        return JsonResponse(serializer.data)
-
-    elif request.method == "PUT":
-        data = JSONParser().parse(request)
-        serializer = ItemSerializer(item, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
-
-    elif request.method == "DELETE":
-        item.delete()
-        return HttpResponse(status=204)
-
-
-@csrf_exempt
-def question_list(request):
-    """
-    List all code questions, or create a new question.
-    """
-    if request.method == "GET":
-        questions = Question.objects.all()
-        serializer = QuestionSerializer(questions, many=True)
-        return JsonResponse(serializer.data, safe=False)
-
-    elif request.method == "POST":
-        data = JSONParser().parse(request)
-        serializer = QuestionSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
-
-
-@csrf_exempt
-def question_detail(request, pk):
-    """
-    Retrieve, update or delete a question.
-    """
-    try:
-        question = Question.objects.get(pk=pk)
-    except Question.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == "GET":
-        serializer = QuestionSerializer(question)
-        return JsonResponse(serializer.data)
-
-    elif request.method == "PUT":
-        data = JSONParser().parse(request)
-        serializer = QuestionSerializer(question, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
-
-    elif request.method == "DELETE":
-        question.delete()
-        return HttpResponse(status=204)
+class QuestionViewSet(viewsets.ModelViewSet):
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer

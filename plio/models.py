@@ -19,7 +19,7 @@ class Video(models.Model):
 class Plio(models.Model):
     video = models.ForeignKey(Video, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=255)
-    uuid = models.CharField(max_length=20)
+    uuid = models.SlugField(unique=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING
     )

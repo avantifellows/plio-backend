@@ -10,7 +10,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "is_test",
-            "created_by_id",
+            "created_by",
             "created_at",
             "updated_at",
         ]
@@ -29,8 +29,6 @@ class ExperimentSerializer(serializers.ModelSerializer):
         instance.description = validated_data.get("description", instance.description)
         instance.is_test = validated_data.get("is_test", instance.is_test)
         instance.type = validated_data.get("type", instance.type)
-        instance.created_by_id = validated_data.get(
-            "created_by_id", instance.created_by_id
-        )
+        instance.created_by = validated_data.get("created_by", instance.created_by)
         instance.save()
         return instance

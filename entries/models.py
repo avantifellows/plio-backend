@@ -21,7 +21,7 @@ class Session(models.Model):
 class SessionAnswer(models.Model):
     session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
     question = models.ForeignKey(Question, on_delete=models.DO_NOTHING)
-    answer = models.TextField()
+    answer = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)
@@ -34,7 +34,7 @@ class Event(models.Model):
     session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     player_time = models.PositiveIntegerField()
-    details = models.JSONField()
+    details = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True)

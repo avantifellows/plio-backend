@@ -73,6 +73,7 @@ class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = [
+            "id",
             "plio",
             "type",
             "text",
@@ -105,6 +106,7 @@ class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
+            "id",
             "item",
             "type",
             "options",

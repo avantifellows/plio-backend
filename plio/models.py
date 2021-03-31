@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+import string
+import random
 
 
 class Video(models.Model):
@@ -35,6 +37,20 @@ class Plio(models.Model):
 
     def __str__(self):
         return "%d: %s" % (self.id, self.name)
+
+    def _generate_random_string(self):
+        return "".join(random.choices(string.ascii_lowercase, k=10))
+
+    def _generate_unique_uuid(self):
+        uuid = self._generate_random_string()
+        while Plio.objects.filter(uuid=uuid).exists():
+            uuid = self._generate_random_string()
+        return uuid
+
+    def save(self, *args, **kwargs):
+        if not self.uuid:
+            self.uuid = self._generate_unique_uuid()
+        super().save(*args, **kwargs)
 
 
 class Item(models.Model):

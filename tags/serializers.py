@@ -6,11 +6,13 @@ class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = [
+            "id",
             "name",
             "slug",
             "created_at",
             "updated_at",
         ]
+        read_only_fields = ["slug"]
 
     def create(self, validated_data):
         """
@@ -23,6 +25,5 @@ class TagSerializer(serializers.ModelSerializer):
         Update and return an existing `Tag` instance, given the validated data.
         """
         instance.name = validated_data.get("name", instance.name)
-        instance.slug = validated_data.get("slug", instance.slug)
         instance.save()
         return instance

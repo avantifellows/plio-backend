@@ -6,6 +6,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
         fields = ["id", "schema_name", "name", "shortcode"]
+        read_only_fields = ["schema_name"]
 
     def create(self, validated_data):
         """

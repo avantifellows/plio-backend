@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.text import slugify
 
 
 class Tag(models.Model):
@@ -9,6 +10,19 @@ class Tag(models.Model):
 
     class Meta:
         db_table = "tag"
+
+    def _generate_unique_slug(self):
+        unique_slug = slug = slugify(self.name)
+        num = 1
+        while Tag.objects.filter(slug=unique_slug).exists():
+            unique_slug = "{}-{}".format(slug, num)
+            num += 1
+        return unique_slug
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self._generate_unique_slug()
+        super().save(*args, **kwargs)
 
 
 class ModelHasTag(models.Model):

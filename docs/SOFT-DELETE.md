@@ -20,4 +20,4 @@ Plio uses the [Django Safedelete](https://pypi.org/project/django-safedelete/) p
     ```sh
     python manage.py migrate
     ```
-4. When deleting a row using Django's ORM, the row will not be deleted from the database. Instead the deleted column will not be nullable anymore and store the time of deletion of the row. The row will be filtered out from every operation of that model (LCRUD).
+4. When deleting a row using Django's ORM, the row will not be deleted from the database. Instead the `deleted` column will now store the time of deletion of the row. The row will be filtered out from every operation of that model (LCRUD).

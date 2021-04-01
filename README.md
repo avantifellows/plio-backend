@@ -14,3 +14,4 @@ Visit the [REST API guide](docs/REST-API.md) to connect your Plio's frontend set
 - [Pre-commit](docs/PRE-COMMIT.md)
 - [GitHub Workflows](docs/GITHUB-WORKFLOWS.md)
 - [Multitenancy](docs/MULTITENANCY.md)
+- [Soft Delete](docs/SOFT-DELETE.md)

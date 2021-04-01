@@ -13,7 +13,6 @@ The codebase uses various Django's concepts to provide a rich and meaningful RES
 2. [Serializers](https://www.django-rest-framework.org/api-guide/serializers/)
 3. [Routers](https://www.django-rest-framework.org/api-guide/routers/)
 4. [OpenAPI specifications](https://swagger.io/docs/specification/about/)
-5. [Soft deletion](https://en.wiktionary.org/wiki/soft_deletion)
 
 ### API Design
 Plio considers every entity in the models (or in database) as a resource. A resource can have the following operations (LCRUD) that can be run at corresponding route format & request method.

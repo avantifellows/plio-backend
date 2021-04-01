@@ -18,7 +18,7 @@ The codebase uses various Django's concepts to provide a rich and meaningful RES
 ### API Design
 Plio considers every entity in the models (or in database) as a resource. A resource can have the following operations (LCRUD) that can be run at corresponding route format & request method.
 
-| ACTION         | ROUTE FORMAT       | METHOD |
+| Action         | Route format       | Method |
 |----------------|--------------------|--------|
 | List           | `/{resource}/`     | GET    |
 | Create         | `/{resource}/`     | POST   |

@@ -5,7 +5,7 @@ This guide aims to provide details on how Plio is using the REST framework and p
 
 ### Running API locally
 1. Clone the project and start the Django server as mentioned in our [installation guide](INSTALLATION.md).
-2. Navigate to [0.0.0.0:8001/api/v1/docs]() in your browser and you should see the Plio's detailed API documentation.
+2. Navigate to [`0.0.0.0:8001/api/v1/docs`](0.0.0.0:8001/api/v1/docs ) in your browser and you should see the Plio's detailed API documentation.
 
 ### Pre-requisites for contributors
 The codebase uses various Django's concepts to provide a rich and meaningful REST API. Please make sure you have a basic understanding of the following concepts:

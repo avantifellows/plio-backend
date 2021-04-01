@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from experiments.models import Experiment
+from users.serializers import UserSerializer
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
@@ -16,20 +17,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def create(self, validated_data):
-        """
-        Create and return a new `Experiment` instance, given the validated data.
-        """
-        return Experiment.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        """
-        Update and return an existing `Experiment` instance, given the validated data.
-        """
-        instance.name = validated_data.get("name", instance.name)
-        instance.description = validated_data.get("description", instance.description)
-        instance.is_test = validated_data.get("is_test", instance.is_test)
-        instance.type = validated_data.get("type", instance.type)
-        instance.created_by = validated_data.get("created_by", instance.created_by)
-        instance.save()
-        return instance
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response["created_by"] = UserSerializer(instance.created_by).data
+        return response

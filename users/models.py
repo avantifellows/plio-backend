@@ -5,7 +5,7 @@ from organizations.models import Organization
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
-class User(AbstractUser, SafeDeleteModel):
+class User(SafeDeleteModel, AbstractUser):
     _safedelete_policy = SOFT_DELETE
 
     username = None

@@ -3,14 +3,14 @@ from django_tenants.models import TenantMixin, DomainMixin
 from django.utils.text import slugify
 import string
 import random
+from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
-class Organization(TenantMixin):
+class Organization(TenantMixin, SafeDeleteModel):
     name = models.CharField(max_length=255)
     shortcode = models.SlugField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField(null=True)
 
     auto_create_schema = True
 

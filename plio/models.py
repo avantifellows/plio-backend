@@ -2,14 +2,14 @@ from django.conf import settings
 from django.db import models
 import string
 import random
+from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
-class Video(models.Model):
+class Video(SafeDeleteModel):
     url = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "video"
@@ -18,7 +18,7 @@ class Video(models.Model):
         return "%d: %s" % (self.id, self.title)
 
 
-class Plio(models.Model):
+class Plio(SafeDeleteModel):
     video = models.ForeignKey(Video, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=255)
     uuid = models.SlugField(unique=True)
@@ -30,7 +30,6 @@ class Plio(models.Model):
     is_public = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "plio"
@@ -53,7 +52,7 @@ class Plio(models.Model):
         super().save(*args, **kwargs)
 
 
-class Item(models.Model):
+class Item(SafeDeleteModel):
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     text = models.TextField()
@@ -61,7 +60,6 @@ class Item(models.Model):
     meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "item"
@@ -70,13 +68,12 @@ class Item(models.Model):
         return "%d: %s - %s" % (self.id, self.plio.name, self.text)
 
 
-class Question(models.Model):
+class Question(SafeDeleteModel):
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     options = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    deleted_at = models.DateTimeField(null=True)
 
     class Meta:
         db_table = "question"

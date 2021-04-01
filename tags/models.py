@@ -1,13 +1,10 @@
 from django.db import models
 from django.utils.text import slugify
+from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
-class Tag(models.Model):
-    """
-    description: User description
-
-    List: sldfksdfjlk
-    """
+class Tag(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
 
     name = models.CharField(max_length=255)
     slug = models.SlugField()

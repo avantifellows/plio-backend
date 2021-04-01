@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     "django_s3_storage",
     "rest_framework",
     "drf_yasg",
+    "safedelete",
     "users",
     "plio",
     "organizations",

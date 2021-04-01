@@ -134,5 +134,16 @@ def index(request):
 
 
 class ExperimentViewSet(viewsets.ModelViewSet):
+    """
+    Experiment ViewSet description
+
+    list: List all experiments
+    retrieve: Retrieve an experiment
+    update: Update an experiment
+    create: Create an experiment
+    partial_update: Patch an experiment
+    destroy: Soft delete an experiment
+    """
+
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer

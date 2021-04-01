@@ -183,5 +183,16 @@ def remove_test_users(users_df: pd.DataFrame) -> pd.DataFrame:
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    """
+    User ViewSet description
+
+    list: List all users
+    retrieve: Retrieve a user
+    update: Update a user
+    create: Create a user
+    partial_update: Patch a user
+    destroy: Soft delete a user
+    """
+
     queryset = User.objects.all()
     serializer_class = UserSerializer

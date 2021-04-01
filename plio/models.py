@@ -43,15 +43,18 @@ class Plio(SafeDeleteModel):
         return "%d: %s" % (self.id, self.name)
 
     def _generate_random_string(self, length=10):
+        """Generates a random string of given length."""
         return "".join(random.choices(string.ascii_lowercase, k=length))
 
     def _generate_unique_uuid(self):
+        """Generates a unique uuid for the plio."""
         uuid = self._generate_random_string()
         while Plio.objects.filter(uuid=uuid).exists():
             uuid = self._generate_random_string()
         return uuid
 
     def save(self, *args, **kwargs):
+        """Plio save method. Before checking it creates a unique uuid for the plio if does not exist already."""
         if not self.uuid:
             self.uuid = self._generate_unique_uuid()
         super().save(*args, **kwargs)

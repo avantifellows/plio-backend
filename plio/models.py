@@ -38,8 +38,8 @@ class Plio(models.Model):
     def __str__(self):
         return "%d: %s" % (self.id, self.name)
 
-    def _generate_random_string(self):
-        return "".join(random.choices(string.ascii_lowercase, k=10))
+    def _generate_random_string(self, length=10):
+        return "".join(random.choices(string.ascii_lowercase, k=length))
 
     def _generate_unique_uuid(self):
         uuid = self._generate_random_string()

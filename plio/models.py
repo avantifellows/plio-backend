@@ -6,6 +6,8 @@ from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
 class Video(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     url = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -19,6 +21,8 @@ class Video(SafeDeleteModel):
 
 
 class Plio(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     video = models.ForeignKey(Video, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=255)
     uuid = models.SlugField(unique=True)
@@ -28,6 +32,7 @@ class Plio(SafeDeleteModel):
     failsafe_url = models.CharField(max_length=255, blank=True)
     status = models.CharField(max_length=255, blank=True)
     is_public = models.BooleanField(default=False)
+    config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -53,6 +58,8 @@ class Plio(SafeDeleteModel):
 
 
 class Item(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     text = models.TextField()
@@ -69,6 +76,8 @@ class Item(SafeDeleteModel):
 
 
 class Question(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     options = models.JSONField(null=True)

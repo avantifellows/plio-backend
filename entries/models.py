@@ -6,6 +6,8 @@ from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
 class Session(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     experiment = models.ForeignKey(Experiment, on_delete=models.DO_NOTHING)
@@ -19,6 +21,8 @@ class Session(SafeDeleteModel):
 
 
 class SessionAnswer(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
     question = models.ForeignKey(Question, on_delete=models.DO_NOTHING)
     answer = models.TextField(null=True)
@@ -30,6 +34,8 @@ class SessionAnswer(SafeDeleteModel):
 
 
 class Event(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
     player_time = models.PositiveIntegerField()

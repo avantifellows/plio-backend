@@ -12,6 +12,7 @@ class User(AbstractUser, SafeDeleteModel):
     email = models.EmailField(max_length=255, null=True, unique=True)
     phone = models.CharField(max_length=20, null=True)
     avatar_url = models.ImageField(upload_to="avatars/", null=True, blank=True)
+    config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     USERNAME_FIELD = "email"

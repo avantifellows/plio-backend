@@ -5,6 +5,8 @@ from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
 class Experiment(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     name = models.CharField(max_length=255)
     description = models.TextField()
     created_by = models.ForeignKey(

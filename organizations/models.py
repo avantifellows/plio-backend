@@ -7,6 +7,8 @@ from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
 class Organization(TenantMixin, SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE
+
     name = models.CharField(max_length=255)
     shortcode = models.SlugField()
     created_at = models.DateTimeField(auto_now_add=True)

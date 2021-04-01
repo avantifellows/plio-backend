@@ -18,6 +18,6 @@ Plio uses the [Django Safedelete](https://pypi.org/project/django-safedelete/) p
     ```
 3. Run the migrations. This will create a new DATETIME column `deleted` in the corresponding table.
     ```sh
-    python manage.py migrate.
+    python manage.py migrate
     ```
 4. When deleting a row using Django's ORM, the row will not be deleted from the database. Instead the deleted column will not be nullable anymore and store the time of deletion of the row. The row will be filtered out from every operation of that model (LCRUD).

@@ -3,6 +3,12 @@ from django.utils.text import slugify
 
 
 class Tag(models.Model):
+    """
+    description: User description
+
+    List: sldfksdfjlk
+    """
+
     name = models.CharField(max_length=255)
     slug = models.SlugField()
     created_at = models.DateTimeField(auto_now_add=True)

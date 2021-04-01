@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_s3_storage",
     "rest_framework",
+    "drf_yasg",
     "users",
     "plio",
     "organizations",

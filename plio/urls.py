@@ -25,6 +25,28 @@ from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
 from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
 from . import views
 
+from django.conf.urls import url
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Plio API",
+        default_version="v1",
+        description="Welcome to Plio's REST API documentation!",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="admin@plio.in"),
+        license=openapi.License(
+            name="MIT License",
+            url="https://github.com/avantifellows/plio-backend/blob/master/LICENSE",
+        ),
+        link="https://github.com/avantifellows/plio-backend",
+    ),
+    url="https://plio.in",
+    public=True,
+    permission_classes=[permissions.AllowAny],
+)
 
 api_router = routers.DefaultRouter()
 api_router.register(r"organizations", OrganizationViewSet)
@@ -62,4 +84,9 @@ urlpatterns = [
     # API routes
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
+    url(
+        r"^api/v1/docs/$",
+        schema_view.with_ui("redoc", cache_timeout=0),
+        name="schema-redoc",
+    ),
 ]

@@ -17,8 +17,8 @@ class Organization(TenantMixin):
     class Meta:
         db_table = "organization"
 
-    def _generate_random_string(self):
-        return "".join(random.choices(string.ascii_lowercase, k=10))
+    def _generate_random_string(self, length=10):
+        return "".join(random.choices(string.ascii_lowercase, k=length))
 
     def _generate_unique_schema_name(self):
         schema_name = self._generate_random_string()

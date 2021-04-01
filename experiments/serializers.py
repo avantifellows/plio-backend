@@ -10,6 +10,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "is_test",
+            "type",
             "created_by",
             "created_at",
             "updated_at",

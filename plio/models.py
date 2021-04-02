@@ -23,8 +23,8 @@ class Video(SafeDeleteModel):
 class Plio(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE
 
-    video = models.ForeignKey(Video, on_delete=models.DO_NOTHING)
-    name = models.CharField(max_length=255)
+    video = models.ForeignKey(Video, null=True, on_delete=models.DO_NOTHING)
+    name = models.CharField(max_length=255, null=True)
     uuid = models.SlugField(unique=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING
@@ -65,7 +65,6 @@ class Item(SafeDeleteModel):
 
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
-    text = models.TextField()
     time = models.CharField(max_length=255)
     meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -83,6 +82,7 @@ class Question(SafeDeleteModel):
 
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
+    text = models.TextField(null=True)
     options = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -13,6 +13,10 @@ from users.views import get_user_config, update_user_config
 from utils.s3 import get_default_user_config
 from utils.data import convert_objects_to_df
 
+from rest_framework import viewsets
+from experiments.models import Experiment
+from experiments.serializers import ExperimentSerializer
+
 URL_PREFIX_GET_EXPERIMENT = "/get_experiment"
 URL_PREFIX_GET_ALL_EXPERIMENTS = "/get_experiments"
 
@@ -127,3 +131,19 @@ def fetch_all_experiments():
 
 def index(request):
     return redirect(FRONTEND_URL, permanent=True)
+
+
+class ExperimentViewSet(viewsets.ModelViewSet):
+    """
+    Experiment ViewSet description
+
+    list: List all experiments
+    retrieve: Retrieve an experiment
+    update: Update an experiment
+    create: Create an experiment
+    partial_update: Patch an experiment
+    destroy: Soft delete an experiment
+    """
+
+    queryset = Experiment.objects.all()
+    serializer_class = ExperimentSerializer

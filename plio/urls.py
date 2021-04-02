@@ -15,7 +15,48 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework import routers, serializers, permissions
+from django.conf.urls import url
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from tags.views import TagViewSet
+from users.views import UserViewSet
+from organizations.views import OrganizationViewSet
+from experiments.views import ExperimentViewSet
+from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
+from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
 from . import views
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Plio API",
+        default_version="v1",
+        description="Welcome to Plio's REST API documentation!",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="admin@plio.in"),
+        license=openapi.License(
+            name="MIT License",
+            url="https://github.com/avantifellows/plio-backend/blob/master/LICENSE",
+        ),
+        link="https://github.com/avantifellows/plio-backend",
+    ),
+    url="https://plio.in",
+    public=True,
+    permission_classes=[permissions.AllowAny],
+)
+
+api_router = routers.DefaultRouter()
+api_router.register(r"organizations", OrganizationViewSet)
+api_router.register(r"users", UserViewSet)
+api_router.register(r"videos", VideoViewSet)
+api_router.register(r"plios", PlioViewSet)
+api_router.register(r"items", ItemViewSet)
+api_router.register(r"questions", QuestionViewSet)
+api_router.register(r"experiments", ExperimentViewSet)
+api_router.register(r"sessions", SessionViewSet)
+api_router.register(r"session-answers", SessionAnswerViewSet)
+api_router.register(r"events", EventViewSet)
+api_router.register(r"tags", TagViewSet)
 
 urlpatterns = [
     path("player/", views.redirect_home),
@@ -37,4 +78,12 @@ urlpatterns = [
     path("tags/", include("tags.urls")),
     # separate app for components
     path("components/", include("components.urls")),
+    # API routes
+    path("api/v1/", include(api_router.urls)),
+    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
+    url(
+        r"^api/v1/docs/$",
+        schema_view.with_ui("redoc", cache_timeout=0),
+        name="schema-redoc",
+    ),
 ]

@@ -21,6 +21,16 @@ from utils.video import get_video_durations_from_ids
 from utils.cleanup import is_test_plio_id, is_test_plio_video
 from utils.request import get_user_agent_info
 
+from rest_framework import viewsets
+from plio.models import Video, Plio, Item, Question
+from plio.serializers import (
+    VideoSerializer,
+    PlioSerializer,
+    ItemSerializer,
+    QuestionSerializer,
+)
+
+
 URL_PREFIX_GET_PLIO = "/get_plio"
 URL_PREFIX_GET_SESSION_DATA = "/get_session_data"
 URL_PREFIX_GET_PLIO_CONFIG = "/get_plio_config"
@@ -288,3 +298,67 @@ def redirect_home(request: Request):
 def redirect_plio(request: Request, plio_id: str):
     """Redirect to frontend plio page"""
     return redirect(f"{FRONTEND_URL}/#/play/{plio_id}", permanent=True)
+
+
+class VideoViewSet(viewsets.ModelViewSet):
+    """
+    Video ViewSet description
+
+    list: List all videos
+    retrieve: Retrieve a video
+    update: Update a video
+    create: Create a video
+    partial_update: Patch a video
+    destroy: Soft delete a video
+    """
+
+    queryset = Video.objects.all()
+    serializer_class = VideoSerializer
+
+
+class PlioViewSet(viewsets.ModelViewSet):
+    """
+    Plio ViewSet description
+
+    list: List all plios
+    retrieve: Retrieve a plio
+    update: Update a plio
+    create: Create a plio
+    partial_update: Patch a plio
+    destroy: Soft delete a plio
+    """
+
+    queryset = Plio.objects.all()
+    serializer_class = PlioSerializer
+
+
+class ItemViewSet(viewsets.ModelViewSet):
+    """
+    Item ViewSet description
+
+    list: List all items
+    retrieve: Retrieve an item
+    update: Update an item
+    create: Create an item
+    partial_update: Patch an item
+    destroy: Soft delete an item
+    """
+
+    queryset = Item.objects.all()
+    serializer_class = ItemSerializer
+
+
+class QuestionViewSet(viewsets.ModelViewSet):
+    """
+    Question ViewSet description
+
+    list: List all questions
+    retrieve: Retrieve a question
+    update: Update a question
+    create: Create a question
+    partial_update: Patch a question
+    destroy: Soft delete a question
+    """
+
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer

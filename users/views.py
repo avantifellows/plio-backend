@@ -14,6 +14,10 @@ from utils.data import convert_objects_to_df
 from utils.cleanup import is_valid_user_id
 from utils.security import hash_function
 
+from rest_framework import viewsets
+from users.models import User
+from users.serializers import UserSerializer
+
 URL_PREFIX_GET_USER_CONFIG = "/get_user_config"
 URL_PREFIX_UPDATE_USER_CONFIG = "/update_user_config"
 URL_PREFIX_GET_ALL_USERS = "/get_users"
@@ -176,3 +180,19 @@ def remove_test_users(users_df: pd.DataFrame) -> pd.DataFrame:
     """Removes known test users based on their IDs"""
     # currently only ensures that the user ID should be non-empty
     return users_df[users_df["id"].apply(is_valid_user_id)].reset_index(drop=True)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    User ViewSet description
+
+    list: List all users
+    retrieve: Retrieve a user
+    update: Update a user
+    create: Create a user
+    partial_update: Patch a user
+    destroy: Soft delete a user
+    """
+
+    queryset = User.objects.all()
+    serializer_class = UserSerializer

@@ -8,6 +8,10 @@ from rest_framework.decorators import api_view
 from plio.settings import DB_QUERIES_URL, FRONTEND_URL
 from utils.data import convert_objects_to_df
 
+from rest_framework import viewsets
+from tags.models import Tag
+from tags.serializers import TagSerializer
+
 URL_PREFIX_GET_ALL_TAGS = "/get_tags"
 
 
@@ -37,3 +41,19 @@ def fetch_all_tags():
         return HttpResponseNotFound("<h1>An unknown error occurred</h1>")
 
     return json.loads(response.json())
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    """
+    Tag ViewSet description
+
+    list: List all tags
+    retrieve: Retrieve a tag
+    update: Update a tag
+    create: Create a tag
+    partial_update: Patch a tag
+    destroy: Soft delete a tag
+    """
+
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer

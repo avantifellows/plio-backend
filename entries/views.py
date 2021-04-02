@@ -15,6 +15,14 @@ from utils.security import hash_function
 from utils.cleanup import is_valid_user_id
 from utils.request import get_user_agent_info
 
+from rest_framework import viewsets
+from entries.models import Session, SessionAnswer, Event
+from entries.serializers import (
+    SessionSerializer,
+    SessionAnswerSerializer,
+    EventSerializer,
+)
+
 URL_PREFIX_GET_ALL_ENTRIES = "/get_entries"
 URL_PREFIX_UPDATE_ENTRY = "/update_response_entry"
 
@@ -102,3 +110,51 @@ def update_entry(request: Request):
     result = requests.post(DB_QUERIES_URL + URL_PREFIX_UPDATE_ENTRY, json=params)
 
     return JsonResponse({"result": result.json()}, status=result.status_code)
+
+
+class SessionViewSet(viewsets.ModelViewSet):
+    """
+    Session ViewSet description
+
+    list: List all sessions
+    retrieve: Retrieve a session
+    update: Update a session
+    create: Create a session
+    partial_update: Patch a session
+    destroy: Soft delete a session
+    """
+
+    queryset = Session.objects.all()
+    serializer_class = SessionSerializer
+
+
+class SessionAnswerViewSet(viewsets.ModelViewSet):
+    """
+    SessionAnswer ViewSet description
+
+    list: List all session answers
+    retrieve: Retrieve a session answer
+    update: Update a session answer
+    create: Create a session answer
+    partial_update: Patch a session answer
+    destroy: Soft delete a session answer
+    """
+
+    queryset = SessionAnswer.objects.all()
+    serializer_class = SessionAnswerSerializer
+
+
+class EventViewSet(viewsets.ModelViewSet):
+    """
+    Event ViewSet description
+
+    list: List all events
+    retrieve: Retrieve a event
+    update: Update a event
+    create: Create a event
+    partial_update: Patch a event
+    destroy: Soft delete a event
+    """
+
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer

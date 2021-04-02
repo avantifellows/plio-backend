@@ -1,0 +1,53 @@
+{
+    "dev": {
+        "django_settings": "plio.settings",
+        "profile_name": "",
+        "project_name": "",
+        "runtime": "python3.8",
+        "s3_bucket": "",
+        "aws_region": "",
+        "environment_variables": {
+            "DJANGO_ENV": "staging",
+            "STATIC_BUCKET": "",
+            "DB_QUERIES_URL": "",
+            "CMS_TOKEN": "",
+            "DATABASE_HOST": "",
+            "DATABASE_PORT": "",
+            "DATABASE_NAME": "",
+            "DATABASE_USER": "",
+            "DATABASE_PASSWORD": ""
+        }
+    },
+    "prod": {
+        "django_settings": "plio.settings",
+        "profile_name": "",
+        "project_name": "",
+        "runtime": "python3.8",
+        "s3_bucket": "",
+        "aws_region": "",
+        "environment_variables": {
+            "DJANGO_ENV": "prod",
+            "STATIC_BUCKET": "",
+            "DB_QUERIES_URL": "",
+            "CMS_TOKEN": "",
+            "DATABASE_HOST": "",
+            "DATABASE_PORT": "",
+            "DATABASE_NAME": "",
+            "DATABASE_USER": "",
+            "DATABASE_PASSWORD": ""
+        }
+    },
+    "local": {
+        "environment_variables": {
+            "DJANGO_ENV": "local",
+            "STATIC_BUCKET": "local",
+            "DB_QUERIES_URL": "",
+            "CMS_TOKEN": "",
+            "DATABASE_HOST": "localhost",
+            "DATABASE_PORT": "5432",
+            "DATABASE_NAME": "",
+            "DATABASE_USER": "",
+            "DATABASE_PASSWORD": ""
+        }
+    }
+}

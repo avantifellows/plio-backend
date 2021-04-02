@@ -18,7 +18,11 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
         ```sh
         psql
         ```
-     - You should be inside the PostgreSQL shell
+        If you get an error saying `error: psql: error: FATAL:  database "{USER_NAME}" does not exist`, run the following command before entering `psql`:
+        ```sh
+        createdb
+        ```
+     - If everything works correctly, you should be inside the PostgreSQL shell
 
 
 2. Windows
@@ -67,18 +71,37 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
         CREATE USER DATABASE_USER WITH PASSWORD 'DATABASE_PASSWORD';
         ```
         You might see an error saying that an empty password is not allowed if you are using an empty password. The user would be created anyways.
-5. Set up your .env file by copying .env.example
+5. Set up your `zappa_settings.json` file by copying `zappa_settings.example.json` file
     ```sh
-    cp .env.example .env
+    cp zappa_settings.example.json zappa_settings.json
     ```
-6. Update variables in your `.env` file based on your settings.
+6. Update environment variables in your `zappa_settings.json` file based on your environment. For all available settings, see our [Zappa Settings guide](ZAPPA-SETTINGS.md).
 7. Database setup: Plio is a multi-tenant app that uses semi-isolated database structure: shared database, separate schemas. One database for all tenants, but one schema per tenant using the [django-tenants](https://django-tenants.readthedocs.io/en/latest/) package.
 
     - Run migrations to create the shared (public) schema
         ```sh
         python manage.py migrate_schemas --shared
         ```
-    - For seeding database and creating tenant organizations, visit the our [multitenancy](MULTITENANCY.md) guidelines.
+    - Create a public tenant in your database
+        - Get into python shell.
+            ```sh
+            python manage.py shell
+            ```
+        - Run the following commands to a create public tenant. This will be used by the appplication to determine what data to load in the default URL.
+            ```py
+            # create your public tenant
+            from organizations.models import Organization, Domain
+
+            tenant = Organization(schema_name='public', name='Plio', shortcode='plio')
+            tenant.save()
+
+            domain = Domain()
+            domain.domain = 'plio.in' # use domain.domain = '0.0.0.0' for development environment
+            domain.tenant = tenant
+            domain.is_primary = True
+            domain.save()
+            ```
+        - For more details on database seeding and creating tenant organizations, visit our [multitenancy](MULTITENANCY.md) guidelines.
 
 8. For **DEVELOPMENT PURPOSE** only, run the following command to install pre-commit
     ```sh

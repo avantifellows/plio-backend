@@ -1,5 +1,5 @@
 ## Soft Deletion
-When models are soft deleted, they are not actually removed from your database. Instead, a deleted attribute is set on the model indicating the date and time at which the model was "deleted".
+When models are soft deleted, they are not actually removed from your database. Instead, a `deleted` attribute is set on the model indicating the date and time at which the model was "deleted".
 
 Plio uses the [Django Safedelete](https://pypi.org/project/django-safedelete/) package to implement soft deletion on the models.
 

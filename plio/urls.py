@@ -81,6 +81,7 @@ urlpatterns = [
     # API routes
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
+    url(r"^auth/", include("rest_framework_social_oauth2.urls")),
     url(
         r"^api/v1/docs/$",
         schema_view.with_ui("redoc", cache_timeout=0),

@@ -47,7 +47,6 @@ class ItemSerializer(serializers.ModelSerializer):
             "id",
             "plio",
             "type",
-            "text",
             "time",
             "meta",
             "created_at",
@@ -66,6 +65,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "item",
+            "text",
             "type",
             "options",
             "created_at",

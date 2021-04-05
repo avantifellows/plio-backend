@@ -330,6 +330,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
     queryset = Plio.objects.all()
     serializer_class = PlioSerializer
+    lookup_field = "uuid"
 
 
 class ItemViewSet(viewsets.ModelViewSet):

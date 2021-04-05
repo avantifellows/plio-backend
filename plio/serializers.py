@@ -10,6 +10,7 @@ class VideoSerializer(serializers.ModelSerializer):
             "id",
             "url",
             "title",
+            "duration",
             "created_at",
             "updated_at",
         ]

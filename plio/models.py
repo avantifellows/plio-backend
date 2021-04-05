@@ -10,6 +10,7 @@ class Video(SafeDeleteModel):
 
     url = models.CharField(max_length=255)
     title = models.CharField(max_length=255)
+    duration = models.PositiveIntegerField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -21,16 +22,22 @@ class Video(SafeDeleteModel):
 
 
 class Plio(SafeDeleteModel):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    STATUS_CHOICES = [
+        (DRAFT, "Draft"),
+        (PUBLISHED, "Published"),
+    ]
     _safedelete_policy = SOFT_DELETE
 
-    video = models.ForeignKey(Video, on_delete=models.DO_NOTHING)
-    name = models.CharField(max_length=255)
+    video = models.ForeignKey(Video, null=True, on_delete=models.DO_NOTHING)
+    name = models.CharField(max_length=255, null=True)
     uuid = models.SlugField(unique=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING
     )
     failsafe_url = models.CharField(max_length=255, blank=True)
-    status = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=DRAFT)
     is_public = models.BooleanField(default=False)
     config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -65,8 +72,7 @@ class Item(SafeDeleteModel):
 
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
-    text = models.TextField()
-    time = models.CharField(max_length=255)
+    time = models.PositiveIntegerField()
     meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -83,6 +89,7 @@ class Question(SafeDeleteModel):
 
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255)
+    text = models.TextField(null=True)
     options = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

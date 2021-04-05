@@ -10,6 +10,7 @@ class VideoSerializer(serializers.ModelSerializer):
             "id",
             "url",
             "title",
+            "duration",
             "created_at",
             "updated_at",
         ]
@@ -47,7 +48,6 @@ class ItemSerializer(serializers.ModelSerializer):
             "id",
             "plio",
             "type",
-            "text",
             "time",
             "meta",
             "created_at",
@@ -66,6 +66,7 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "item",
+            "text",
             "type",
             "options",
             "created_at",

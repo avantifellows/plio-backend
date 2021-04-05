@@ -56,7 +56,11 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response["plio"] = PlioSerializer(instance.plio).data
+        if instance.type == "question":
+            # add the question details to the item response
+            response["details"] = QuestionSerializer(
+                instance.question_set.all()[0]
+            ).data
         return response
 
 
@@ -72,8 +76,3 @@ class QuestionSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response["item"] = ItemSerializer(instance.item).data
-        return response

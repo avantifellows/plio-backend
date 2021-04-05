@@ -22,9 +22,10 @@ class SessionSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response["experiment"] = ExperimentSerializer(instance.experiment).data
         response["plio"] = PlioSerializer(instance.plio).data
         response["user"] = UserSerializer(instance.user).data
+        if instance.experiment:
+            response["experiment"] = ExperimentSerializer(instance.experiment).data
         return response
 
 

@@ -114,10 +114,6 @@ AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.ModelBackend",
 )
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = (
-    "697723569161-1f1tsl548n8kmnulb5qsbcje4d2bpldp.apps.googleusercontent.com"
-)
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = "_99mLepwGiazm4clQ3xZnIIz"
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile",
@@ -303,3 +299,6 @@ AUTH_USER_MODEL = "users.User"
 DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 
 FRONTEND_URL = "https://app.plio.in"
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ["GOOGLE_OAUTH2_CLIENT_ID"]
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ["GOOGLE_OAUTH2_CLIENT_SECRET"]

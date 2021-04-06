@@ -15,7 +15,9 @@
             "DATABASE_PORT": "",
             "DATABASE_NAME": "",
             "DATABASE_USER": "",
-            "DATABASE_PASSWORD": ""
+            "DATABASE_PASSWORD": "",
+            "GOOGLE_OAUTH2_CLIENT_ID": "",
+            "GOOGLE_OAUTH2_CLIENT_SECRET": ""
         }
     },
     "prod": {
@@ -34,7 +36,9 @@
             "DATABASE_PORT": "",
             "DATABASE_NAME": "",
             "DATABASE_USER": "",
-            "DATABASE_PASSWORD": ""
+            "DATABASE_PASSWORD": "",
+            "GOOGLE_OAUTH2_CLIENT_ID": "",
+            "GOOGLE_OAUTH2_CLIENT_SECRET": ""
         }
     },
     "local": {
@@ -47,7 +51,9 @@
             "DATABASE_PORT": "5432",
             "DATABASE_NAME": "",
             "DATABASE_USER": "",
-            "DATABASE_PASSWORD": ""
+            "DATABASE_PASSWORD": "",
+            "GOOGLE_OAUTH2_CLIENT_ID": "",
+            "GOOGLE_OAUTH2_CLIENT_SECRET": ""
         }
     }
 }

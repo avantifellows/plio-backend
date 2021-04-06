@@ -16,4 +16,4 @@ Visit the [REST API guide](docs/REST-API.md) to connect your Plio's frontend set
 - [Multitenancy](docs/MULTITENANCY.md)
 - [Zappa Settings](docs/ZAPPA-SETTINGS.md)
 - [Soft Delete](docs/SOFT-DELETE.md)
-- [Google OAuth2](docs/auth/GOOGLE-OAUTH2.md)
+- [Google OAuth2](docs/oauth/GOOGLE-OAUTH2.md)

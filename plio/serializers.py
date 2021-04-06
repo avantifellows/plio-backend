@@ -73,6 +73,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             "text",
             "type",
             "options",
+            "correct_answer",
             "created_at",
             "updated_at",
         ]

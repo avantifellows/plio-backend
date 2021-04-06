@@ -345,8 +345,14 @@ class ItemViewSet(viewsets.ModelViewSet):
     destroy: Soft delete an item
     """
 
-    queryset = Item.objects.all()
     serializer_class = ItemSerializer
+
+    def get_queryset(self):
+        queryset = Item.objects.all()
+        plio_id = self.request.query_params.get("plio")
+        if plio_id is not None:
+            queryset = queryset.filter(plio__uuid=plio_id)
+        return queryset
 
 
 class QuestionViewSet(viewsets.ModelViewSet):

@@ -116,3 +116,7 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
 
     **Note:** In Windows (even if you're using WSL), if you want to see the static html/css on a browser or hit the API using PostMan, don't use `0.0.0.0:8001`, but use `127.0.0.1:8001` instead.
     > `0.0.0.0` is the invalid, un-routable address. [source](https://news.ycombinator.com/item?id=18978357)
+
+
+### Additional steps
+1. To enable Google sign-in support, visit [Google OAuth2 guide](oauth/GOOGLE-OAUTH2.md).

@@ -18,6 +18,7 @@ class Session(SafeDeleteModel):
 
     class Meta:
         db_table = "session"
+        ordering = ["-id"]
 
 
 class SessionAnswer(SafeDeleteModel):

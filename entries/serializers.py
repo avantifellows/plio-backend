@@ -20,6 +20,20 @@ class SessionSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def validate_plio(self, value):
+        """Ensure that a session is created only for a published plio"""
+        if value.status == "draft":
+            raise serializers.ValidationError(
+                "A session can only be created for a published plio"
+            )
+        return value
+
+    def create(self, validated_data):
+        """
+        Create and return a new `Session` instance, given the validated data.
+        """
+        return Session.objects.create(**validated_data)
+
     def to_representation(self, instance):
         response = super().to_representation(instance)
         response["plio"] = PlioSerializer(instance.plio).data

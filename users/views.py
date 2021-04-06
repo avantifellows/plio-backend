@@ -14,9 +14,20 @@ from utils.data import convert_objects_to_df
 from utils.cleanup import is_valid_user_id
 from utils.security import hash_function
 
-from rest_framework import viewsets
-from users.models import User
-from users.serializers import UserSerializer
+from rest_framework import viewsets, response, status
+from users.models import User, OneTimePassword
+from users.serializers import UserSerializer, OtpSerializer
+
+import datetime
+import string
+import random
+from django.core import serializers
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import login
+from oauth2_provider.models import AccessToken, Application, RefreshToken
+from braces.views import CsrfExemptMixin
+from oauth2_provider.views.mixins import OAuthLibMixin
+from oauth2_provider.settings import oauth2_settings
 
 URL_PREFIX_GET_USER_CONFIG = "/get_user_config"
 URL_PREFIX_UPDATE_USER_CONFIG = "/update_user_config"
@@ -196,3 +207,78 @@ class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+
+@api_view(["POST"])
+def request_otp(request):
+    otp = OneTimePassword()
+    otp.mobile = request.data["mobile"]
+    otp.otp = random.randint(100000, 999999)
+    otp.expires_at = datetime.datetime.now() + datetime.timedelta(seconds=30)
+    otp.save()
+
+    # send sms
+
+    return response.Response(OtpSerializer(otp).data)
+
+
+@api_view(["POST"])
+def verify_otp(request):
+    mobile = request.data["mobile"]
+    otp = request.data["otp"]
+    try:
+        # otp = OneTimePassword.objects.filter(mobile=mobile, otp=otp, expires_at__gte=datetime.datetime.now()).first()
+        otp = OneTimePassword.objects.filter(mobile=mobile).first()
+        if not otp:
+            raise OneTimePassword.DoesNotExist
+        otp.delete()
+
+        # find or create the user that has the same mobile number
+        user = User.objects.filter(mobile=mobile).first()
+        if not user:
+            user = User.objects.create_user(mobile=mobile)
+
+        # define the backend authenticator
+        user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
+        login(request, user)
+
+        expire_seconds = 3600
+        scopes = "read write"
+
+        application = Application.objects.get(name="plio-test")
+        expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
+        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+        # generate oauth2 access token
+        access_token = AccessToken.objects.create(
+            user=user,
+            application=application,
+            token=random_token,
+            expires=expires,
+            scope=scopes,
+        )
+
+        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+        # generate oauth2 refresh token
+        refresh_token = RefreshToken.objects.create(
+            user=user,
+            token=random_token,
+            access_token=access_token,
+            application=application,
+        )
+
+        token = {
+            "access_token": access_token.token,
+            "token_type": "Bearer",
+            "expires_in": expire_seconds,
+            "refresh_token": refresh_token.token,
+            "scope": scopes,
+        }
+
+        return response.Response(token, status=200)
+
+    except OneTimePassword.DoesNotExist:
+        return response.Response(
+            {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    return response.Response(UserSerializer(user).data)

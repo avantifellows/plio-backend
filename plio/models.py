@@ -81,7 +81,7 @@ class Item(SafeDeleteModel):
         db_table = "item"
 
     def __str__(self):
-        return "%d: %s - %s" % (self.id, self.plio.name, self.text)
+        return "%d: %s - %s" % (self.id, self.plio.name, self.type)
 
 
 class Question(SafeDeleteModel):

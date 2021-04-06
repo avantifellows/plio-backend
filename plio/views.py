@@ -349,9 +349,9 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Item.objects.all()
-        plioId = self.request.query_params.get("plio")
-        if plioId is not None:
-            queryset = queryset.filter(plio__uuid=plioId)
+        plio_id = self.request.query_params.get("plio")
+        if plio_id is not None:
+            queryset = queryset.filter(plio__uuid=plio_id)
         return queryset
 
 

@@ -6,7 +6,6 @@ from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
-from rest_framework.response import Response
 import pandas as pd
 from datetime import datetime
 
@@ -16,7 +15,7 @@ from utils.security import hash_function
 from utils.cleanup import is_valid_user_id
 from utils.request import get_user_agent_info
 
-from rest_framework import viewsets, serializers
+from rest_framework import viewsets
 from entries.models import Session, SessionAnswer, Event
 from entries.serializers import (
     SessionSerializer,

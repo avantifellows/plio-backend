@@ -284,7 +284,7 @@ def verify_otp(request):
 
     except OneTimePassword.DoesNotExist:
         return response.Response(
-            {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
+            {"detail": "unauthorized"}, status=status.HTTP_401_UNAUTHORIZED
         )
 
 

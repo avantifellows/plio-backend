@@ -28,6 +28,7 @@ from oauth2_provider.models import AccessToken, Application, RefreshToken
 from braces.views import CsrfExemptMixin
 from oauth2_provider.views.mixins import OAuthLibMixin
 from oauth2_provider.settings import oauth2_settings
+from .services import SnsService
 
 URL_PREFIX_GET_USER_CONFIG = "/get_user_config"
 URL_PREFIX_UPDATE_USER_CONFIG = "/update_user_config"
@@ -217,7 +218,11 @@ def request_otp(request):
     otp.expires_at = datetime.datetime.now() + datetime.timedelta(seconds=30)
     otp.save()
 
-    # send sms
+    sms = SnsService()
+    sms.publish(
+        otp.mobile,
+        f"Hello! Your OTP for Plio login is {otp.otp}. Please do not share it with anyone.",
+    )
 
     return response.Response(OtpSerializer(otp).data)
 

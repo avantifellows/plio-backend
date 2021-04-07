@@ -17,7 +17,10 @@
             "DATABASE_USER": "",
             "DATABASE_PASSWORD": "",
             "GOOGLE_OAUTH2_CLIENT_ID": "",
-            "GOOGLE_OAUTH2_CLIENT_SECRET": ""
+            "GOOGLE_OAUTH2_CLIENT_SECRET": "",
+            "AWS_ACCESS_KEY_ID": "",
+            "AWS_SECRET_ACCESS_KEY": "",
+            "AWS_REGION": ""
         }
     },
     "prod": {
@@ -38,7 +41,10 @@
             "DATABASE_USER": "",
             "DATABASE_PASSWORD": "",
             "GOOGLE_OAUTH2_CLIENT_ID": "",
-            "GOOGLE_OAUTH2_CLIENT_SECRET": ""
+            "GOOGLE_OAUTH2_CLIENT_SECRET": "",
+            "AWS_ACCESS_KEY_ID": "",
+            "AWS_SECRET_ACCESS_KEY": "",
+            "AWS_REGION": ""
         }
     },
     "local": {
@@ -53,7 +59,10 @@
             "DATABASE_USER": "",
             "DATABASE_PASSWORD": "",
             "GOOGLE_OAUTH2_CLIENT_ID": "",
-            "GOOGLE_OAUTH2_CLIENT_SECRET": ""
+            "GOOGLE_OAUTH2_CLIENT_SECRET": "",
+            "AWS_ACCESS_KEY_ID": "",
+            "AWS_SECRET_ACCESS_KEY": "",
+            "AWS_REGION": ""
         }
     }
 }

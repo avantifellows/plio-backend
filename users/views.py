@@ -232,8 +232,9 @@ def verify_otp(request):
     mobile = request.data["mobile"]
     otp = request.data["otp"]
     try:
-        # otp = OneTimePassword.objects.filter(mobile=mobile, otp=otp, expires_at__gte=datetime.datetime.now()).first()
-        otp = OneTimePassword.objects.filter(mobile=mobile).first()
+        otp = OneTimePassword.objects.filter(
+            mobile=mobile, otp=otp, expires_at__gte=datetime.datetime.now()
+        ).first()
         if not otp:
             raise OneTimePassword.DoesNotExist
         otp.delete()

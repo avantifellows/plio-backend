@@ -16,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined",
             "email",
-            "phone",
+            "mobile",
             "avatar_url",
             "config",
             "created_at",

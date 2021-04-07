@@ -218,11 +218,11 @@ def request_otp(request):
     otp.expires_at = datetime.datetime.now() + datetime.timedelta(seconds=30)
     otp.save()
 
-    # sms = SnsService()
-    # sms.publish(
-    #     otp.mobile,
-    #     f"Hello! Your OTP for Plio login is {otp.otp}. Please do not share it with anyone.",
-    # )
+    sms = SnsService()
+    sms.publish(
+        otp.mobile,
+        f"Hello! Your OTP for Plio login is {otp.otp}. Please do not share it with anyone.",
+    )
 
     return response.Response(OtpSerializer(otp).data)
 

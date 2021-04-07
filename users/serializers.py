@@ -26,12 +26,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class OtpSerializer(serializers.ModelSerializer):
-    # mobile = serializers.CharField(max_length=20)
-    # otp = serializers.CharField(max_length=10)
-    # expires_at = serializers.DateTimeField()
-    # created_at = serializers.DateTimeField()
-    # updated_at = serializers.DateTimeField()
-
     class Meta:
         model = OneTimePassword
         fields = [

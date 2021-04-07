@@ -24,7 +24,7 @@ This guide aims to provide details on how Plio is using the REST framework and p
    - `redirect_uris` should be left blank
    - `client_type` should be set to confidential
    - `authorization_grant_type` should be set to 'Resource owner password-based'
-   - name can be set to whatever you'd like
+   - name should be "plio" (all lowercase)
 4. Use the client id and client secret in your frontend application or Postman app to make API calls.
 
 ### API Design

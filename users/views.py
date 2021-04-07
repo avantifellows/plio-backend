@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
 from rest_framework.decorators import api_view
-from plio.settings import DB_QUERIES_URL, FRONTEND_URL
+from plio.settings import DB_QUERIES_URL, FRONTEND_URL, API_APPLICATION_NAME
 
 from utils.s3 import create_user_profile
 from utils.data import convert_objects_to_df
@@ -218,11 +218,11 @@ def request_otp(request):
     otp.expires_at = datetime.datetime.now() + datetime.timedelta(seconds=30)
     otp.save()
 
-    sms = SnsService()
-    sms.publish(
-        otp.mobile,
-        f"Hello! Your OTP for Plio login is {otp.otp}. Please do not share it with anyone.",
-    )
+    # sms = SnsService()
+    # sms.publish(
+    #     otp.mobile,
+    #     f"Hello! Your OTP for Plio login is {otp.otp}. Please do not share it with anyone.",
+    # )
 
     return response.Response(OtpSerializer(otp).data)
 
@@ -251,7 +251,7 @@ def verify_otp(request):
         expire_seconds = 3600
         scopes = "read write"
 
-        application = Application.objects.get(name="plio-test")
+        application = Application.objects.get(name=API_APPLICATION_NAME)
         expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
         random_token = "".join(random.choices(string.ascii_lowercase, k=30))
         # generate oauth2 access token

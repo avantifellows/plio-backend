@@ -56,11 +56,12 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
+        # add the question details to the item response if it exists
         if instance.type == "question":
-            # add the question details to the item response
-            response["details"] = QuestionSerializer(
-                instance.question_set.all()[0]
-            ).data
+            question = instance.question_set.all().first()
+            if question:
+                response["details"] = QuestionSerializer(question).data
+
         return response
 
 

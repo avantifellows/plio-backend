@@ -287,4 +287,13 @@ def verify_otp(request):
             {"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND
         )
 
-    return response.Response(UserSerializer(user).data)
+
+@api_view(["POST"])
+def get_by_access_token(request):
+    token = request.data["token"]
+    access_token = AccessToken.objects.filter(token=token).first()
+    if access_token:
+        user = User.objects.filter(id=access_token.user_id).first()
+        return response.Response(UserSerializer(user).data)
+
+    return response.Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)

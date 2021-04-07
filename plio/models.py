@@ -68,10 +68,14 @@ class Plio(SafeDeleteModel):
 
 
 class Item(SafeDeleteModel):
+    QUESTION = "question"
+    ITEM_CHOICES = [
+        (QUESTION, "Question"),
+    ]
     _safedelete_policy = SOFT_DELETE
 
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
-    type = models.CharField(max_length=255)
+    type = models.CharField(max_length=255, choices=ITEM_CHOICES, default=QUESTION)
     time = models.PositiveIntegerField()
     meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)

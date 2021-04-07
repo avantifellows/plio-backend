@@ -14,8 +14,8 @@ from utils.s3 import get_default_user_config
 from utils.data import convert_objects_to_df
 
 from rest_framework import viewsets
-from experiments.models import Experiment
-from experiments.serializers import ExperimentSerializer
+from experiments.models import Experiment, ExperimentPlio
+from experiments.serializers import ExperimentSerializer, ExperimentPlioSerializer
 
 URL_PREFIX_GET_EXPERIMENT = "/get_experiment"
 URL_PREFIX_GET_ALL_EXPERIMENTS = "/get_experiments"
@@ -105,34 +105,6 @@ def get_experiment(experiment_id):
     return data.json()["experiment"]
 
 
-@api_view(["GET"])
-def get_df(request):
-    """Returns a dataframe for all experiments"""
-    logging.info("Fetching all experiments df")
-    experiments = fetch_all_experiments()
-
-    # if the returned object is not dict, it will be some variant
-    # of HttpResponseNotFound, returning it if that's the case
-    if not isinstance(experiments, list):
-        return experiments
-
-    experiments_df = convert_objects_to_df(experiments)
-
-    return JsonResponse(experiments_df.to_dict())
-
-
-def fetch_all_experiments():
-    response = requests.get(DB_QUERIES_URL + URL_PREFIX_GET_ALL_EXPERIMENTS)
-    if response.status_code != 200:
-        return HttpResponseNotFound("<h1>An unknown error occurred</h1>")
-
-    return json.loads(response.json())
-
-
-def index(request):
-    return redirect(FRONTEND_URL, permanent=True)
-
-
 class ExperimentViewSet(viewsets.ModelViewSet):
     """
     Experiment ViewSet description
@@ -147,3 +119,19 @@ class ExperimentViewSet(viewsets.ModelViewSet):
 
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
+
+
+class ExperimentPlioViewSet(viewsets.ModelViewSet):
+    """
+    ExperimentPlio ViewSet description
+
+    list: List all experiment-plio pairs
+    retrieve: Retrieve a experiment-plio pair
+    update: Update an experiment-plio pair
+    create: Create an experiment-plio pair
+    partial_update: Patch an experiment-plio pair
+    destroy: Soft delete an experiment-plio pair
+    """
+
+    queryset = ExperimentPlio.objects.all()
+    serializer_class = ExperimentPlioSerializer

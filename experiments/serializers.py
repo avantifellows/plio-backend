@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from experiments.models import Experiment
+from experiments.models import Experiment, ExperimentPlio
 from users.serializers import UserSerializer
+from plio.serializers import PlioSerializer
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
@@ -20,4 +21,16 @@ class ExperimentSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         response = super().to_representation(instance)
         response["created_by"] = UserSerializer(instance.created_by).data
+        return response
+
+
+class ExperimentPlioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExperimentPlio
+        fields = ["id", "experiment", "plio", "split_percentage"]
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response["experiment"] = ExperimentSerializer(instance.experiment).data
+        response["plio"] = PlioSerializer(instance.plio).data
         return response

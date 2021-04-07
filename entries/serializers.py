@@ -14,32 +14,40 @@ class SessionSerializer(serializers.ModelSerializer):
             "retention",
             "has_video_played",
             "experiment",
+            "watch_time",
             "plio",
             "user",
             "created_at",
             "updated_at",
         ]
 
-    def validate_plio(self, value):
+    def validate_plio(self, plio):
         """Ensure that a session is created only for a published plio"""
-        if value.status == "draft":
+        if plio.status == "draft":
             raise serializers.ValidationError(
                 "A session can only be created for a published plio"
             )
-        return value
+        return plio
 
     def create(self, validated_data):
         """
         Create and return a new `Session` instance, given the validated data.
         """
         # fetch all past sessions for this user-plio combination
-        past_sessions = Session.objects.filter(
-            plio__id=validated_data["plio"].id
-        ).filter(user__id=validated_data["user"].id)
-        if past_sessions:
+        last_session = (
+            Session.objects.filter(plio_id=validated_data["plio"].id)
+            .filter(user_id=validated_data["user"].id)
+            .first()
+        )
+        if last_session:
+            last_session_data = SessionSerializer(last_session).data
             # add values for missing keys from the most recent session
-            last_session_data = SessionSerializer(past_sessions[0]).data
-            keys_to_check = ["retention", "has_video_played", "experiment"]
+            keys_to_check = [
+                "retention",
+                "has_video_played",
+                "experiment",
+                "watch_time",
+            ]
             for key in keys_to_check:
                 if key not in validated_data:
                     validated_data[key] = last_session_data[key]

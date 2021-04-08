@@ -3,6 +3,7 @@ from django.db import models
 import string
 import random
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from plio.config import plio_status_choices, item_type_choices, question_type_choices
 
 
 class Video(SafeDeleteModel):
@@ -22,12 +23,6 @@ class Video(SafeDeleteModel):
 
 
 class Plio(SafeDeleteModel):
-    DRAFT = "draft"
-    PUBLISHED = "published"
-    STATUS_CHOICES = [
-        (DRAFT, "Draft"),
-        (PUBLISHED, "Published"),
-    ]
     _safedelete_policy = SOFT_DELETE
 
     video = models.ForeignKey(Video, null=True, on_delete=models.DO_NOTHING)
@@ -37,7 +32,9 @@ class Plio(SafeDeleteModel):
         settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING
     )
     failsafe_url = models.CharField(max_length=255, blank=True)
-    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=DRAFT)
+    status = models.CharField(
+        max_length=255, choices=plio_status_choices, default="draft"
+    )
     is_public = models.BooleanField(default=False)
     config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -68,14 +65,12 @@ class Plio(SafeDeleteModel):
 
 
 class Item(SafeDeleteModel):
-    QUESTION = "question"
-    TYPE_CHOICES = [
-        (QUESTION, "Question"),
-    ]
     _safedelete_policy = SOFT_DELETE
 
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
-    type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=QUESTION)
+    type = models.CharField(
+        max_length=255, choices=item_type_choices, default="question"
+    )
     time = models.FloatField()
     meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -89,14 +84,12 @@ class Item(SafeDeleteModel):
 
 
 class Question(SafeDeleteModel):
-    MCQ = "mcq"
-    TYPE_CHOICES = [
-        (MCQ, "Multiple Choice Question"),
-    ]
     _safedelete_policy = SOFT_DELETE
 
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
-    type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=MCQ)
+    type = models.CharField(
+        max_length=255, choices=question_type_choices, default="mcq"
+    )
     text = models.TextField(blank=True, default="")
     options = models.JSONField(null=True)
     correct_answer = models.TextField(null=True)

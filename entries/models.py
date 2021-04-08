@@ -3,6 +3,7 @@ from django.db import models
 from plio.models import Plio, Question
 from experiments.models import Experiment
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from entries.config import event_type_choices
 
 
 class Session(SafeDeleteModel):
@@ -66,32 +67,10 @@ class SessionAnswer(SafeDeleteModel):
 
 
 class Event(SafeDeleteModel):
-    PLAYED = "played"
-    PAUSED = "paused"
-    ENTER_FS = "enter_fullscreen"
-    EXIT_FS = "exit_fullscreen"
-    OPTION_SELECT = "option_selected"
-    QUESTION_SKIP = "question_skipped"
-    QUESTION_ANSWER = "question_answered"
-    QUESTION_REVISE = "question_revised"
-    QUESTION_PROCEED = "question_proceed"
-    VIDEO_SEEKED = "video_seeked"
-    TYPE_CHOICES = [
-        (PLAYED, "Played"),
-        (PAUSED, "Paused"),
-        (ENTER_FS, "Enter Fullscreen"),
-        (EXIT_FS, "Exit Fullscreen"),
-        (OPTION_SELECT, "Option Selected"),
-        (QUESTION_SKIP, "Question Skipped"),
-        (QUESTION_ANSWER, "Question Answered"),
-        (QUESTION_REVISE, "Question Revised"),
-        (QUESTION_PROCEED, "Question Proceeded"),
-        (VIDEO_SEEKED, "Video Seeked"),
-    ]
     _safedelete_policy = SOFT_DELETE
 
     session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
-    type = models.CharField(max_length=255, choices=TYPE_CHOICES)
+    type = models.CharField(max_length=255, choices=event_type_choices)
     player_time = models.FloatField()
     details = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)

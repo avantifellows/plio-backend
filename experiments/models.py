@@ -2,13 +2,10 @@ from django.conf import settings
 from django.db import models
 from plio.models import Plio
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from experiments.config import experiment_type_choices
 
 
 class Experiment(SafeDeleteModel):
-    SPLIT_URL = "split-url"
-    EXPERIMENT_TYPE_CHOICES = [
-        (SPLIT_URL, "Split URL"),
-    ]
     _safedelete_policy = SOFT_DELETE
 
     name = models.CharField(max_length=255)
@@ -18,7 +15,7 @@ class Experiment(SafeDeleteModel):
     )
     is_test = models.BooleanField(default=False)
     type = models.CharField(
-        max_length=255, choices=EXPERIMENT_TYPE_CHOICES, default=SPLIT_URL
+        max_length=255, choices=experiment_type_choices, default="split_url"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

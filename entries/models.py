@@ -33,7 +33,7 @@ class Session(SafeDeleteModel):
         )
 
     @property
-    def last_event(self):
+    def last_global_event(self):
         """Returns the most recent event tied to a particular user-plio pair"""
         # find the most recent event for this session
         current_last_event = self.event_set.first()
@@ -50,7 +50,9 @@ class Session(SafeDeleteModel):
         # either return the most recent event tied to the last session or
         # the last_event property of the last session in case no new events are
         # tied to the last session
-        return self.last_session.event_set.first() or self.last_session.last_event
+        return (
+            self.last_session.event_set.first() or self.last_session.last_global_event
+        )
 
 
 class SessionAnswer(SafeDeleteModel):

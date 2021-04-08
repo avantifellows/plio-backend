@@ -96,7 +96,7 @@ class SessionSerializer(serializers.ModelSerializer):
         response["user"] = UserSerializer(instance.user).data
         if instance.experiment:
             response["experiment"] = ExperimentSerializer(instance.experiment).data
-        response["last_event"] = EventSerializer(instance.last_event).data
+        response["last_event"] = EventSerializer(instance.last_global_event).data
 
         # fetch and return all session answers tied to this session
         response["session_answers"] = instance.sessionanswer_set.values()

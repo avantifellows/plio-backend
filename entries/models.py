@@ -66,6 +66,7 @@ class SessionAnswer(SafeDeleteModel):
 
     class Meta:
         db_table = "session_answer"
+        ordering = ["item__time"]
 
 
 class Event(SafeDeleteModel):

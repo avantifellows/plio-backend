@@ -35,9 +35,13 @@ class Session(SafeDeleteModel):
     def last_event(self):
         """Returns the most recent event tied to a particular user-plio pair"""
         if not self.last_session:
+            # this is the first session for the user-plio pair - no last event
             return None
 
-        return self.last_session.event_set.first()
+        # either return the most recent event tied to the last session or
+        # the last_event property of the last session in case no new events are
+        # tied to the last session
+        return self.last_session.event_set.first() or self.last_session.last_event
 
 
 class SessionAnswer(SafeDeleteModel):

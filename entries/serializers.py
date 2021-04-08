@@ -60,6 +60,7 @@ class SessionSerializer(serializers.ModelSerializer):
         response["user"] = UserSerializer(instance.user).data
         if instance.experiment:
             response["experiment"] = ExperimentSerializer(instance.experiment).data
+        response["last_event"] = EventSerializer(instance.last_event).data
         return response
 
 
@@ -94,8 +95,3 @@ class EventSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response["session"] = SessionSerializer(instance.session).data
-        return response

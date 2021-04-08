@@ -37,6 +37,8 @@ class Session(SafeDeleteModel):
         if not self.last_session:
             return None
 
+        return self.last_session.event_set.first()
+
 
 class SessionAnswer(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE

@@ -6,7 +6,8 @@ import pandas as pd
 from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.http import response, HttpResponseBadRequest, request
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from plio.settings import DB_QUERIES_URL, FRONTEND_URL, API_APPLICATION_NAME
 
 from utils.s3 import create_user_profile
@@ -211,6 +212,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def request_otp(request):
     otp = OneTimePassword()
     otp.mobile = request.data["mobile"]
@@ -228,6 +230,7 @@ def request_otp(request):
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def verify_otp(request):
     mobile = request.data["mobile"]
     otp = request.data["otp"]

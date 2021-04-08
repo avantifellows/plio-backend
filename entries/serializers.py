@@ -1,9 +1,9 @@
 from rest_framework import serializers
+from plio.models import Item
+from plio.serializers import PlioSerializer, ItemSerializer, QuestionSerializer
 from entries.models import Session, SessionAnswer, Event
-from plio.serializers import PlioSerializer
 from experiments.serializers import ExperimentSerializer
 from users.serializers import UserSerializer
-from plio.serializers import QuestionSerializer
 
 
 class SessionSerializer(serializers.ModelSerializer):
@@ -33,6 +33,7 @@ class SessionSerializer(serializers.ModelSerializer):
         """
         Create and return a new `Session` instance, given the validated data.
         """
+
         # fetch all past sessions for this user-plio combination
         last_session = (
             Session.objects.filter(plio_id=validated_data["plio"].id)
@@ -52,7 +53,42 @@ class SessionSerializer(serializers.ModelSerializer):
                 if key not in validated_data:
                     validated_data[key] = last_session_data[key]
 
-        return Session.objects.create(**validated_data)
+        # get the newly created session object
+        session = Session.objects.create(**validated_data)
+
+        # will store the values for creating the session answers
+        session_answers = []
+
+        # create the session answers
+        if last_session:
+            # copy last session answers
+            keys_to_copy = ["question", "answer"]
+            last_session_answers = last_session.sessionanswer_set.values(*keys_to_copy)
+
+            for session_answer in last_session_answers:
+                session_answer["session"] = session.id
+                session_answers.append(session_answer)
+
+        else:
+            # create new empty session answers
+            items = Item.objects.filter(plio_id=validated_data["plio"].id).filter(
+                type="question"
+            )
+            for item in ItemSerializer(items, many=True).data:
+                session_answers.append(
+                    {
+                        "question": item["details"]["id"],
+                        "session": session.id,
+                    }
+                )
+
+        # create the session answers
+        for session_answer in session_answers:
+            serializer = SessionAnswerSerializer(data=session_answer)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        return session
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
@@ -60,6 +96,10 @@ class SessionSerializer(serializers.ModelSerializer):
         response["user"] = UserSerializer(instance.user).data
         if instance.experiment:
             response["experiment"] = ExperimentSerializer(instance.experiment).data
+        response["last_event"] = EventSerializer(instance.last_global_event).data
+
+        # fetch and return all session answers tied to this session
+        response["session_answers"] = instance.sessionanswer_set.values()
         return response
 
 
@@ -75,12 +115,6 @@ class SessionAnswerSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response["question"] = QuestionSerializer(instance.question).data
-        response["session"] = SessionSerializer(instance.session).data
-        return response
-
 
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
@@ -94,8 +128,3 @@ class EventSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response["session"] = SessionSerializer(instance.session).data
-        return response

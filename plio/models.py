@@ -69,13 +69,13 @@ class Plio(SafeDeleteModel):
 
 class Item(SafeDeleteModel):
     QUESTION = "question"
-    ITEM_TYPE_CHOICES = [
+    TYPE_CHOICES = [
         (QUESTION, "Question"),
     ]
     _safedelete_policy = SOFT_DELETE
 
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
-    type = models.CharField(max_length=255, choices=ITEM_TYPE_CHOICES, default=QUESTION)
+    type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=QUESTION)
     time = models.PositiveIntegerField()
     meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -90,13 +90,13 @@ class Item(SafeDeleteModel):
 
 class Question(SafeDeleteModel):
     MCQ = "mcq"
-    QUESTION_TYPE_CHOICES = [
+    TYPE_CHOICES = [
         (MCQ, "Multiple Choice Question"),
     ]
     _safedelete_policy = SOFT_DELETE
 
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
-    type = models.CharField(max_length=255, choices=QUESTION_TYPE_CHOICES, default=MCQ)
+    type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=MCQ)
     text = models.TextField(blank=True, default="")
     options = models.JSONField(null=True)
     correct_answer = models.TextField(null=True)

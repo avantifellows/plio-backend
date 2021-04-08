@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from plio.models import Item
-from plio.serializers import PlioSerializer, ItemSerializer
-from plio.serializers import QuestionSerializer
+from plio.serializers import PlioSerializer, ItemSerializer, QuestionSerializer
 from entries.models import Session, SessionAnswer, Event
 from experiments.serializers import ExperimentSerializer
 from users.serializers import UserSerializer
@@ -63,25 +62,19 @@ class SessionSerializer(serializers.ModelSerializer):
         # create the session answers
         if last_session:
             # copy last session answers
-            last_session_answers = SessionAnswerSerializer(
-                last_session.sessionanswer_set.all(), many=True
-            ).data
             keys_to_copy = ["question", "answer"]
-            for last_session_answer in last_session_answers:
-                session_answer = {"session": session.id}
-                for key in keys_to_copy:
-                    session_answer[key] = last_session_answer[key]
+            last_session_answers = last_session.sessionanswer_set.values(*keys_to_copy)
 
+            for session_answer in last_session_answers:
+                session_answer["session"] = session.id
                 session_answers.append(session_answer)
 
         else:
             # create new empty session answers
-            items = Item.objects.filter(plio_id=validated_data["plio"].id)
+            items = Item.objects.filter(plio_id=validated_data["plio"].id).filter(
+                type="question"
+            )
             for item in ItemSerializer(items, many=True).data:
-                # answers are only valid for type = question
-                if item["type"] != "question":
-                    continue
-
                 session_answers.append(
                     {
                         "question": item["details"]["id"],
@@ -106,9 +99,7 @@ class SessionSerializer(serializers.ModelSerializer):
         response["last_event"] = EventSerializer(instance.last_event).data
 
         # fetch and return all session answers tied to this session
-        response["session_answers"] = SessionAnswerSerializer(
-            instance.sessionanswer_set.all(), many=True
-        ).data
+        response["session_answers"] = instance.sessionanswer_set.values()
         return response
 
 

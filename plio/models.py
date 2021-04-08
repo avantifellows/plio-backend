@@ -10,7 +10,7 @@ class Video(SafeDeleteModel):
 
     url = models.CharField(max_length=255)
     title = models.CharField(max_length=255, null=True)
-    duration = models.PositiveIntegerField(null=True)
+    duration = models.FloatField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -76,7 +76,7 @@ class Item(SafeDeleteModel):
 
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     type = models.CharField(max_length=255, choices=TYPE_CHOICES, default=QUESTION)
-    time = models.PositiveIntegerField()
+    time = models.FloatField()
     meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

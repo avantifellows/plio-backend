@@ -329,7 +329,7 @@ class ItemViewSet(viewsets.ModelViewSet):
         queryset = Item.objects.all()
         plio_id = self.request.query_params.get("plio")
         if plio_id is not None:
-            queryset = queryset.filter(plio__uuid=plio_id)
+            queryset = queryset.filter(plio__uuid=plio_id).order_by("time")
         return queryset
 
 

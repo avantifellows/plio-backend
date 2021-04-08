@@ -61,6 +61,11 @@ class SessionSerializer(serializers.ModelSerializer):
         if instance.experiment:
             response["experiment"] = ExperimentSerializer(instance.experiment).data
         response["last_event"] = EventSerializer(instance.last_event).data
+
+        # fetch and return all session answers tied to this session
+        response["session_answers"] = SessionAnswerSerializer(
+            instance.sessionanswer_set.all(), many=True
+        ).data
         return response
 
 
@@ -75,12 +80,6 @@ class SessionAnswerSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response["question"] = QuestionSerializer(instance.question).data
-        response["session"] = SessionSerializer(instance.session).data
-        return response
 
 
 class EventSerializer(serializers.ModelSerializer):

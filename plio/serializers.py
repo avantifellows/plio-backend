@@ -61,7 +61,8 @@ class ItemSerializer(serializers.ModelSerializer):
             question = instance.question_set.all().first()
             if question:
                 response["details"] = QuestionSerializer(question).data
-
+            else:
+                response["details"] = {}
         return response
 
 

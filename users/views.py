@@ -287,9 +287,9 @@ def verify_otp(request):
         )
 
 
-@api_view(["POST"])
+@api_view(["GET"])
 def get_by_access_token(request):
-    token = request.data["token"]
+    token = request.query_params["token"]
     access_token = AccessToken.objects.filter(token=token).first()
     if access_token:
         user = User.objects.filter(id=access_token.user_id).first()

@@ -1,4 +1,5 @@
 event_type_choices = [
+    ("ready", "Player Ready"),
     ("played", "Played"),
     ("paused", "Paused"),
     ("enter_fullscreen", "Enter Fullscreen"),

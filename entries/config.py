@@ -10,6 +10,7 @@ event_type_choices = [
     ("question_answered", "Question Answered"),
     ("question_revised", "Question Revised"),
     ("question_proceed", "Question Proceeded"),
+    ("video_seeking", "Video Seeking"),
     ("video_seeked", "Video Seeked"),
     ("watching", "Watching"),
 ]

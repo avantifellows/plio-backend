@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from plio.models import Plio, Question
+from plio.models import Plio, Item
 from experiments.models import Experiment
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
 from entries.config import event_type_choices
@@ -59,13 +59,14 @@ class SessionAnswer(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE
 
     session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
-    question = models.ForeignKey(Question, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     answer = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "session_answer"
+        ordering = ["item__time"]
 
 
 class Event(SafeDeleteModel):

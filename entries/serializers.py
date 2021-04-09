@@ -62,7 +62,7 @@ class SessionSerializer(serializers.ModelSerializer):
         # create the session answers
         if last_session:
             # copy last session answers
-            keys_to_copy = ["question", "answer"]
+            keys_to_copy = ["item", "answer"]
             last_session_answers = last_session.sessionanswer_set.values(*keys_to_copy)
 
             for session_answer in last_session_answers:
@@ -71,13 +71,11 @@ class SessionSerializer(serializers.ModelSerializer):
 
         else:
             # create new empty session answers
-            items = Item.objects.filter(plio_id=validated_data["plio"].id).filter(
-                type="question"
-            )
-            for item in ItemSerializer(items, many=True).data:
+            items = Item.objects.filter(plio_id=validated_data["plio"].id).values("id")
+            for item in items:
                 session_answers.append(
                     {
-                        "question": item["details"]["id"],
+                        "item": item["id"],
                         "session": session.id,
                     }
                 )
@@ -109,7 +107,7 @@ class SessionAnswerSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "answer",
-            "question",
+            "item",
             "session",
             "created_at",
             "updated_at",

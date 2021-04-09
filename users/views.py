@@ -4,8 +4,7 @@ import math
 import logging
 import pandas as pd
 from django.shortcuts import redirect
-from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
-from django.http import response, HttpResponseBadRequest, request
+from django.http import HttpResponseNotFound, JsonResponse
 from rest_framework.decorators import api_view
 from plio.settings import DB_QUERIES_URL, FRONTEND_URL, API_APPLICATION_NAME
 
@@ -21,13 +20,8 @@ from users.serializers import UserSerializer, OtpSerializer
 import datetime
 import string
 import random
-from django.core import serializers
-from rest_framework.authtoken.models import Token
 from django.contrib.auth import login
 from oauth2_provider.models import AccessToken, Application, RefreshToken
-from braces.views import CsrfExemptMixin
-from oauth2_provider.views.mixins import OAuthLibMixin
-from oauth2_provider.settings import oauth2_settings
 from .services import SnsService
 
 URL_PREFIX_GET_USER_CONFIG = "/get_user_config"
@@ -280,7 +274,7 @@ def verify_otp(request):
             "scope": scopes,
         }
 
-        return response.Response(token, status=200)
+        return response.Response(token, status=status.HTTP_200_OK)
 
     except OneTimePassword.DoesNotExist:
         return response.Response(

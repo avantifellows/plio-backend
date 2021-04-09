@@ -72,6 +72,8 @@ class User(SafeDeleteModel, AbstractUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
+    organizations = models.ManyToManyField(Organization, through="OrganizationUser")
+
     objects = UserManager()
 
     class Meta:
@@ -118,7 +120,7 @@ class OrganizationUser(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
     organization = models.ForeignKey(Organization, on_delete=models.DO_NOTHING)
     is_owner = models.BooleanField(default=False)
-    role_id = models.ForeignKey(Role, on_delete=models.DO_NOTHING)
+    role = models.ForeignKey(Role, on_delete=models.DO_NOTHING)
 
     class Meta:
         db_table = "organization_user"

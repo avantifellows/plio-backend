@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from users.models import User, OneTimePassword
+from users.models import User, OneTimePassword, Role
+from organizations.serializers import OrganizationSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -21,8 +22,27 @@ class UserSerializer(serializers.ModelSerializer):
             "config",
             "created_at",
             "updated_at",
+            "organizations",
         ]
         extra_kwargs = {"password": {"write_only": True}}
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response["organizations"] = OrganizationSerializer(
+            instance.organizations, many=True
+        ).data
+        return response
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = [
+            "id",
+            "name",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class OtpSerializer(serializers.ModelSerializer):

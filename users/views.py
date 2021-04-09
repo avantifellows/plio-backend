@@ -6,7 +6,12 @@ import pandas as pd
 from django.shortcuts import redirect
 from django.http import HttpResponseNotFound, JsonResponse
 from rest_framework.decorators import api_view
-from plio.settings import DB_QUERIES_URL, FRONTEND_URL, API_APPLICATION_NAME
+from plio.settings import (
+    DB_QUERIES_URL,
+    FRONTEND_URL,
+    API_APPLICATION_NAME,
+    OAUTH2_PROVIDER,
+)
 
 from utils.s3 import create_user_profile
 from utils.data import convert_objects_to_df
@@ -242,8 +247,8 @@ def verify_otp(request):
         user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
         login(request, user)
 
-        expire_seconds = 3600
-        scopes = "read write"
+        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
+        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
 
         application = Application.objects.get(name=API_APPLICATION_NAME)
         expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)

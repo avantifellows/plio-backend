@@ -5,7 +5,7 @@ event_type_choices = [
     ("enter_fullscreen", "Enter Fullscreen"),
     ("exit_fullscreen", "Exit Fullscreen"),
     ("option_selected", "Option Selected"),
-    ("question_opened", "Question Opened"),
+    ("item_opened", "Item Opened"),
     ("question_skipped", "Question Skipped"),
     ("question_answered", "Question Answered"),
     ("question_revised", "Question Revised"),

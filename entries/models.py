@@ -13,7 +13,7 @@ class Session(SafeDeleteModel):
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
     experiment = models.ForeignKey(Experiment, on_delete=models.DO_NOTHING, null=True)
     retention = models.TextField(default="")
-    watch_time = models.PositiveIntegerField(default=0)
+    watch_time = models.FloatField(default=0)
     has_video_played = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

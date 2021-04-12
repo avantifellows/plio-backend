@@ -56,6 +56,9 @@ SHARED_APPS = (
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.admin",
+    "oauth2_provider",
+    "social_django",
+    "rest_framework_social_oauth2",
 )
 
 TENANT_APPS = (
@@ -85,19 +88,36 @@ INSTALLED_APPS = [
     "experiments",
     "tags",
     "entries",
+    "oauth2_provider",
+    "social_django",
+    "rest_framework_social_oauth2",
 ]
 
 TENANT_MODEL = "organizations.Organization"
 TENANT_DOMAIN_MODEL = "organizations.Domain"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
+        "rest_framework_social_oauth2.authentication.SocialAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
         # "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
     ],
     "UNAUTHENTICATED_USER": None,
 }
+
+AUTHENTICATION_BACKENDS = (
+    "social_core.backends.google.GoogleOAuth2",
+    "rest_framework_social_oauth2.backends.DjangoOAuth2",
+    "django.contrib.auth.backends.ModelBackend",
+)
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
+]
 
 MIDDLEWARE = [
     "django_tenants.middleware.main.TenantMainMiddleware",
@@ -128,6 +148,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "social_django.context_processors.backends",
+                "social_django.context_processors.login_redirect",
             ],
         },
     },
@@ -277,3 +299,19 @@ AUTH_USER_MODEL = "users.User"
 DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 
 FRONTEND_URL = "https://app.plio.in"
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ["GOOGLE_OAUTH2_CLIENT_ID"]
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ["GOOGLE_OAUTH2_CLIENT_SECRET"]
+
+AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
+AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
+AWS_REGION = os.environ["AWS_REGION"]
+
+API_APPLICATION_NAME = "plio"
+
+OAUTH2_PROVIDER = {
+    "ACCESS_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24,  # 1 day
+    "DEFAULT_SCOPES": ["read", "write"],
+}
+
+OTP_EXPIRE_SECONDS = 30

@@ -20,7 +20,7 @@ from django.conf.urls import url
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from tags.views import TagViewSet
-from users.views import UserViewSet
+from users.views import UserViewSet, request_otp, verify_otp, get_by_access_token
 from organizations.views import OrganizationViewSet
 from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
 from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
@@ -77,8 +77,12 @@ urlpatterns = [
     # separate app for components
     path("components/", include("components.urls")),
     # API routes
+    path("api/v1/otp/request/", request_otp),
+    path("api/v1/otp/verify/", verify_otp),
+    path("api/v1/users/token/", get_by_access_token),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
+    url(r"^auth/", include("rest_framework_social_oauth2.urls")),
     url(
         r"^api/v1/docs/$",
         schema_view.with_ui("redoc", cache_timeout=0),

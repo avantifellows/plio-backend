@@ -63,6 +63,7 @@ SHARED_APPS = (
 
 TENANT_APPS = (
     "django.contrib.contenttypes",
+    "rest_framework",
     "plio",
     "experiments",
     "tags",
@@ -130,6 +131,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "request_logging.middleware.LoggingMiddleware",
+    "organizations.middleware.OrganizationTenantMiddleware",
 ]
 
 ROOT_URLCONF = "plio.urls"

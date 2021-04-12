@@ -1,5 +1,5 @@
 ## Multitenancy
-Plio uses the [django-tenants-schemas](https://django-tenant-schemas.readthedocs.io/en/latest/install.html) package to implement multitenancy.
+Plio uses the [django-tenants](https://django-tenants.readthedocs.io/en/latest/) package to implement multitenancy.
 
 This guide aims to provide details on how Plio is using multi-tenancy and pre-requisites for someone contributing to the code.
 

@@ -62,20 +62,10 @@ api_router.register(r"tags", TagViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("get_plio", views.get_plio),
-    path("create_plio", views.create_plio),
-    path("get_plio_config", views._get_plio_config),
-    path("get_plios_df", views.get_plios_df),
-    # separate app for tags
-    path("entries/", include("entries.urls")),
     # separate app for users
     path("users/", include("users.urls")),
     # separate app for experiments
     path("experiments/", include("experiments.urls")),
-    # separate app for tags
-    path("tags/", include("tags.urls")),
-    # separate app for components
-    path("components/", include("components.urls")),
     # API routes
     path("api/v1/otp/request/", request_otp),
     path("api/v1/otp/verify/", verify_otp),

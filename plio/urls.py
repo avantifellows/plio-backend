@@ -60,7 +60,7 @@ api_router.register(r"tags", TagViewSet)
 
 urlpatterns = [
     path("player/", views.redirect_home),
-    path("player/<str:plio_id>", views.redirect_plio),
+    path("player/<str:plio_id>/", views.redirect_plio),
     path("admin/", admin.site.urls),
     path("", views.index),
     path("plios_list", views.get_plios_list),
@@ -79,9 +79,9 @@ urlpatterns = [
     # separate app for components
     path("components/", include("components.urls")),
     # API routes
-    path("api/v1/otp/request", request_otp),
-    path("api/v1/otp/verify", verify_otp),
-    path("api/v1/users/token", get_by_access_token),
+    path("api/v1/otp/request/", request_otp),
+    path("api/v1/otp/verify/", verify_otp),
+    path("api/v1/users/token/", get_by_access_token),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     url(r"^auth/", include("rest_framework_social_oauth2.urls")),

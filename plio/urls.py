@@ -22,7 +22,7 @@ from drf_yasg import openapi
 from tags.views import TagViewSet
 from users.views import UserViewSet, request_otp, verify_otp, get_by_access_token
 from organizations.views import OrganizationViewSet
-from experiments.views import ExperimentViewSet
+from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
 from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
 from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
 from . import views
@@ -50,20 +50,18 @@ api_router.register(r"organizations", OrganizationViewSet)
 api_router.register(r"users", UserViewSet)
 api_router.register(r"videos", VideoViewSet)
 api_router.register(r"plios", PlioViewSet)
-api_router.register(r"items", ItemViewSet)
+# https://stackoverflow.com/questions/48548622/base-name-argument-not-specified-and-could-not-automatically-determine-the-name
+api_router.register(r"items", ItemViewSet, basename="items")
 api_router.register(r"questions", QuestionViewSet)
 api_router.register(r"experiments", ExperimentViewSet)
+api_router.register(r"experiment-plios", ExperimentPlioViewSet)
 api_router.register(r"sessions", SessionViewSet)
 api_router.register(r"session-answers", SessionAnswerViewSet)
 api_router.register(r"events", EventViewSet)
 api_router.register(r"tags", TagViewSet)
 
 urlpatterns = [
-    path("player/", views.redirect_home),
-    path("player/<str:plio_id>", views.redirect_plio),
     path("admin/", admin.site.urls),
-    path("", views.index),
-    path("plios_list", views.get_plios_list),
     path("get_plio", views.get_plio),
     path("create_plio", views.create_plio),
     path("get_plio_config", views._get_plio_config),
@@ -79,9 +77,9 @@ urlpatterns = [
     # separate app for components
     path("components/", include("components.urls")),
     # API routes
-    path("api/v1/otp/request", request_otp),
-    path("api/v1/otp/verify", verify_otp),
-    path("api/v1/users/token", get_by_access_token),
+    path("api/v1/otp/request/", request_otp),
+    path("api/v1/otp/verify/", verify_otp),
+    path("api/v1/users/token/", get_by_access_token),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     url(r"^auth/", include("rest_framework_social_oauth2.urls")),

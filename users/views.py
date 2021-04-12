@@ -4,11 +4,16 @@ import math
 import logging
 import pandas as pd
 from django.shortcuts import redirect
-from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
-from django.http import response, HttpResponseBadRequest, request
+from django.http import HttpResponseNotFound, JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
-from plio.settings import DB_QUERIES_URL, FRONTEND_URL, API_APPLICATION_NAME
+from plio.settings import (
+    DB_QUERIES_URL,
+    FRONTEND_URL,
+    API_APPLICATION_NAME,
+    OAUTH2_PROVIDER,
+    OTP_EXPIRE_SECONDS,
+)
 
 from utils.s3 import create_user_profile
 from utils.data import convert_objects_to_df
@@ -22,13 +27,8 @@ from users.serializers import UserSerializer, OtpSerializer
 import datetime
 import string
 import random
-from django.core import serializers
-from rest_framework.authtoken.models import Token
 from django.contrib.auth import login
 from oauth2_provider.models import AccessToken, Application, RefreshToken
-from braces.views import CsrfExemptMixin
-from oauth2_provider.views.mixins import OAuthLibMixin
-from oauth2_provider.settings import oauth2_settings
 from .services import SnsService
 
 URL_PREFIX_GET_USER_CONFIG = "/get_user_config"
@@ -217,7 +217,9 @@ def request_otp(request):
     otp = OneTimePassword()
     otp.mobile = request.data["mobile"]
     otp.otp = random.randint(100000, 999999)
-    otp.expires_at = datetime.datetime.now() + datetime.timedelta(seconds=30)
+    otp.expires_at = datetime.datetime.now() + datetime.timedelta(
+        seconds=OTP_EXPIRE_SECONDS
+    )
     otp.save()
 
     sms = SnsService()
@@ -251,8 +253,8 @@ def verify_otp(request):
         user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
         login(request, user)
 
-        expire_seconds = 3600
-        scopes = "read write"
+        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
+        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
 
         application = Application.objects.get(name=API_APPLICATION_NAME)
         expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
@@ -283,7 +285,7 @@ def verify_otp(request):
             "scope": scopes,
         }
 
-        return response.Response(token, status=200)
+        return response.Response(token, status=status.HTTP_200_OK)
 
     except OneTimePassword.DoesNotExist:
         return response.Response(
@@ -291,12 +293,14 @@ def verify_otp(request):
         )
 
 
-@api_view(["POST"])
+@api_view(["GET"])
 def get_by_access_token(request):
-    token = request.data["token"]
+    token = request.query_params["token"]
     access_token = AccessToken.objects.filter(token=token).first()
     if access_token:
         user = User.objects.filter(id=access_token.user_id).first()
         return response.Response(UserSerializer(user).data)
 
-    return response.Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+    return response.Response(
+        {"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND
+    )

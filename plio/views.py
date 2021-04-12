@@ -278,28 +278,6 @@ def get_plio_config(plio_id: str):
     return plio_config.json()["plio_config"]
 
 
-def index(request: Request):
-    """Renders home page for backend"""
-    plios = get_all_plios()
-
-    # if the returned object is not dict, it will be some variant
-    # of HttpResponseNotFound, returning it if that's the case
-    if not isinstance(plios, list):
-        return plios
-
-    return render(request, "index.html", {"all_plios": plios})
-
-
-def redirect_home(request: Request):
-    """Redirect to frontend home"""
-    return redirect(FRONTEND_URL, permanent=True)
-
-
-def redirect_plio(request: Request, plio_id: str):
-    """Redirect to frontend plio page"""
-    return redirect(f"{FRONTEND_URL}/#/play/{plio_id}", permanent=True)
-
-
 class VideoViewSet(viewsets.ModelViewSet):
     """
     Video ViewSet description
@@ -345,8 +323,14 @@ class ItemViewSet(viewsets.ModelViewSet):
     destroy: Soft delete an item
     """
 
-    queryset = Item.objects.all()
     serializer_class = ItemSerializer
+
+    def get_queryset(self):
+        queryset = Item.objects.all()
+        plio_id = self.request.query_params.get("plio")
+        if plio_id is not None:
+            queryset = queryset.filter(plio__uuid=plio_id).order_by("time")
+        return queryset
 
 
 class QuestionViewSet(viewsets.ModelViewSet):

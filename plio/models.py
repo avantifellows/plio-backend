@@ -3,14 +3,15 @@ from django.db import models
 import string
 import random
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from plio.config import plio_status_choices, item_type_choices, question_type_choices
 
 
 class Video(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE
 
     url = models.CharField(max_length=255)
-    title = models.CharField(max_length=255)
-    duration = models.PositiveIntegerField(null=True)
+    title = models.CharField(max_length=255, null=True)
+    duration = models.FloatField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -22,22 +23,18 @@ class Video(SafeDeleteModel):
 
 
 class Plio(SafeDeleteModel):
-    DRAFT = "draft"
-    PUBLISHED = "published"
-    STATUS_CHOICES = [
-        (DRAFT, "Draft"),
-        (PUBLISHED, "Published"),
-    ]
     _safedelete_policy = SOFT_DELETE
 
     video = models.ForeignKey(Video, null=True, on_delete=models.DO_NOTHING)
-    name = models.CharField(max_length=255, null=True)
+    name = models.CharField(max_length=255, blank=True, default="")
     uuid = models.SlugField(unique=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING
     )
     failsafe_url = models.CharField(max_length=255, blank=True)
-    status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=DRAFT)
+    status = models.CharField(
+        max_length=255, choices=plio_status_choices, default="draft"
+    )
     is_public = models.BooleanField(default=False)
     config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -71,8 +68,10 @@ class Item(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE
 
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
-    type = models.CharField(max_length=255)
-    time = models.PositiveIntegerField()
+    type = models.CharField(
+        max_length=255, choices=item_type_choices, default="question"
+    )
+    time = models.FloatField()
     meta = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -81,16 +80,19 @@ class Item(SafeDeleteModel):
         db_table = "item"
 
     def __str__(self):
-        return "%d: %s - %s" % (self.id, self.plio.name, self.text)
+        return "%d: %s - %s" % (self.id, self.plio.name, self.type)
 
 
 class Question(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE
 
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
-    type = models.CharField(max_length=255)
-    text = models.TextField(null=True)
+    type = models.CharField(
+        max_length=255, choices=question_type_choices, default="mcq"
+    )
+    text = models.TextField(blank=True, default="")
     options = models.JSONField(null=True)
+    correct_answer = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

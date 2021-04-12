@@ -11,6 +11,7 @@ from plio.settings import (
     FRONTEND_URL,
     API_APPLICATION_NAME,
     OAUTH2_PROVIDER,
+    OTP_EXPIRE_SECONDS,
 )
 
 from utils.s3 import create_user_profile
@@ -214,7 +215,9 @@ def request_otp(request):
     otp = OneTimePassword()
     otp.mobile = request.data["mobile"]
     otp.otp = random.randint(100000, 999999)
-    otp.expires_at = datetime.datetime.now() + datetime.timedelta(seconds=30)
+    otp.expires_at = datetime.datetime.now() + datetime.timedelta(
+        seconds=OTP_EXPIRE_SECONDS
+    )
     otp.save()
 
     sms = SnsService()
@@ -295,4 +298,6 @@ def get_by_access_token(request):
         user = User.objects.filter(id=access_token.user_id).first()
         return response.Response(UserSerializer(user).data)
 
-    return response.Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+    return response.Response(
+        {"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND
+    )

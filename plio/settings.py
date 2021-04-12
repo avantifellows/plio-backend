@@ -313,3 +313,5 @@ OAUTH2_PROVIDER = {
     "ACCESS_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24,  # 1 day
     "DEFAULT_SCOPES": ["read", "write"],
 }
+
+OTP_EXPIRE_SECONDS = 30

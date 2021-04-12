@@ -18,7 +18,7 @@ This guide aims to provide details on how Plio is using the REST framework and p
     python manage.py createsuperuser
     ```
 2. Login to Django admin dashboard from `http://0.0.0.0:8001/admin` and enter your credentials.
-  3. Add a new Application using the Add button next to `Applications` under `DJANGO OAUTH TOOLKIT` with the following configuration:
+3. Add a new Application using the Add button next to `Applications` under `DJANGO OAUTH TOOLKIT` with the following configuration:
    - `client_id` and `client_secret` should be left unchanged
    - user should be your superuser ID
    - `redirect_uris` should be left blank

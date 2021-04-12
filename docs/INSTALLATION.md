@@ -107,7 +107,8 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
     ```sh
     pre-commit install
     ```
-9. Start the python server
+9. Set up either [OTP functionality](ONE-TIME-PIN.md) or [Google sign-in](oauth/GOOGLE-OAUTH2.md) for users to be able to log in.
+10. Start the python server
     ```sh
     export DJANGO_ENV=local && python manage.py runserver 0.0.0.0:8001
     ```
@@ -119,4 +120,5 @@ Plio backend uses Postgres SQL database. Use the instructions below to set up th
 
 
 ### Additional steps
-1. To enable Google sign-in support, visit [Google OAuth2 guide](oauth/GOOGLE-OAUTH2.md).
+1. To enable OTP support, visit [One Time Pin guide](ONE-TIME-PIN.md).
+2. To enable Google sign-in support, visit [Google OAuth2 guide](oauth/GOOGLE-OAUTH2.md).

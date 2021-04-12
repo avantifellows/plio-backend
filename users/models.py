@@ -8,32 +8,31 @@ from safedelete.models import SafeDeleteModel, SafeDeleteManager, SOFT_DELETE
 class UserManager(SafeDeleteManager):
     def create_user(
         self,
-        email,
-        phone=None,
+        email=None,
+        mobile=None,
         password=None,
         is_admin=False,
         is_staff=False,
         is_active=True,
     ):
-        if not email:
-            raise ValueError("User must have an email")
-
-        user = self.model(email=self.normalize_email(email))
-        user.phone = phone
+        user = self.model()
+        if email:
+            user.email = self.normalize_email(email)
+        user.mobile = mobile
         user.is_superuser = is_admin
         user.is_staff = is_staff
         user.is_active = is_active
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, phone=None, password=None, **extra_fields):
+    def create_superuser(self, email, mobile=None, password=None, **extra_fields):
         if not email:
             raise ValueError("User must have an email")
         if not password:
             raise ValueError("User must have a password")
 
         user = self.model(email=self.normalize_email(email))
-        user.phone = phone
+        user.mobile = mobile
         user.set_password(password)
         user.is_superuser = True
         user.is_staff = True
@@ -64,7 +63,8 @@ class User(SafeDeleteModel, AbstractUser):
 
     username = None
     email = models.EmailField(max_length=255, null=True, unique=True)
-    phone = models.CharField(max_length=20, null=True)
+    password = models.CharField(max_length=128, null=True)
+    mobile = models.CharField(max_length=20, null=True)
     avatar_url = models.ImageField(upload_to="avatars/", null=True, blank=True)
     config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -122,3 +122,14 @@ class OrganizationUser(models.Model):
 
     class Meta:
         db_table = "organization_user"
+
+
+class OneTimePassword(models.Model):
+    mobile = models.CharField(max_length=20)
+    otp = models.CharField(max_length=10)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "one_time_password"

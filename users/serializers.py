@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import User
+from users.models import User, OneTimePassword
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,10 +16,22 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "date_joined",
             "email",
-            "phone",
+            "mobile",
             "avatar_url",
             "config",
             "created_at",
             "updated_at",
         ]
         extra_kwargs = {"password": {"write_only": True}}
+
+
+class OtpSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OneTimePassword
+        fields = [
+            "id",
+            "mobile",
+            "expires_at",
+            "created_at",
+            "updated_at",
+        ]

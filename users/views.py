@@ -4,19 +4,31 @@ import math
 import logging
 import pandas as pd
 from django.shortcuts import redirect
-from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
-from django.http import response, HttpResponseBadRequest, request
+from django.http import HttpResponseNotFound, JsonResponse
 from rest_framework.decorators import api_view
-from plio.settings import DB_QUERIES_URL, FRONTEND_URL
+from plio.settings import (
+    DB_QUERIES_URL,
+    FRONTEND_URL,
+    API_APPLICATION_NAME,
+    OAUTH2_PROVIDER,
+    OTP_EXPIRE_SECONDS,
+)
 
 from utils.s3 import create_user_profile
 from utils.data import convert_objects_to_df
 from utils.cleanup import is_valid_user_id
 from utils.security import hash_function
 
-from rest_framework import viewsets
-from users.models import User
-from users.serializers import UserSerializer
+from rest_framework import viewsets, response, status
+from users.models import User, OneTimePassword
+from users.serializers import UserSerializer, OtpSerializer
+
+import datetime
+import string
+import random
+from django.contrib.auth import login
+from oauth2_provider.models import AccessToken, Application, RefreshToken
+from .services import SnsService
 
 URL_PREFIX_GET_USER_CONFIG = "/get_user_config"
 URL_PREFIX_UPDATE_USER_CONFIG = "/update_user_config"
@@ -196,3 +208,96 @@ class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+
+@api_view(["POST"])
+def request_otp(request):
+    otp = OneTimePassword()
+    otp.mobile = request.data["mobile"]
+    otp.otp = random.randint(100000, 999999)
+    otp.expires_at = datetime.datetime.now() + datetime.timedelta(
+        seconds=OTP_EXPIRE_SECONDS
+    )
+    otp.save()
+
+    sms = SnsService()
+    sms.publish(
+        otp.mobile,
+        f"Hello! Your OTP for Plio login is {otp.otp}. Please do not share it with anyone.",
+    )
+
+    return response.Response(OtpSerializer(otp).data)
+
+
+@api_view(["POST"])
+def verify_otp(request):
+    mobile = request.data["mobile"]
+    otp = request.data["otp"]
+    try:
+        otp = OneTimePassword.objects.filter(
+            mobile=mobile, otp=otp, expires_at__gte=datetime.datetime.now()
+        ).first()
+        if not otp:
+            raise OneTimePassword.DoesNotExist
+        otp.delete()
+
+        # find or create the user that has the same mobile number
+        user = User.objects.filter(mobile=mobile).first()
+        if not user:
+            user = User.objects.create_user(mobile=mobile)
+
+        # define the backend authenticator
+        user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
+        login(request, user)
+
+        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
+        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
+
+        application = Application.objects.get(name=API_APPLICATION_NAME)
+        expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
+        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+        # generate oauth2 access token
+        access_token = AccessToken.objects.create(
+            user=user,
+            application=application,
+            token=random_token,
+            expires=expires,
+            scope=scopes,
+        )
+
+        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+        # generate oauth2 refresh token
+        refresh_token = RefreshToken.objects.create(
+            user=user,
+            token=random_token,
+            access_token=access_token,
+            application=application,
+        )
+
+        token = {
+            "access_token": access_token.token,
+            "token_type": "Bearer",
+            "expires_in": expire_seconds,
+            "refresh_token": refresh_token.token,
+            "scope": scopes,
+        }
+
+        return response.Response(token, status=status.HTTP_200_OK)
+
+    except OneTimePassword.DoesNotExist:
+        return response.Response(
+            {"detail": "unauthorized"}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+
+@api_view(["GET"])
+def get_by_access_token(request):
+    token = request.query_params["token"]
+    access_token = AccessToken.objects.filter(token=token).first()
+    if access_token:
+        user = User.objects.filter(id=access_token.user_id).first()
+        return response.Response(UserSerializer(user).data)
+
+    return response.Response(
+        {"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND
+    )

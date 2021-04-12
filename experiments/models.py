@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from plio.models import Plio
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from experiments.config import experiment_type_choices
 
 
 class Experiment(SafeDeleteModel):
@@ -13,7 +14,9 @@ class Experiment(SafeDeleteModel):
         settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING
     )
     is_test = models.BooleanField(default=False)
-    type = models.CharField(max_length=255)
+    type = models.CharField(
+        max_length=255, choices=experiment_type_choices, default="split_url"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -21,10 +24,10 @@ class Experiment(SafeDeleteModel):
         db_table = "experiment"
 
 
-class ExperimentPlio(models.Model):
+class ExperimentPlio(SafeDeleteModel):
     experiment = models.ForeignKey(Experiment, on_delete=models.DO_NOTHING)
     plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
-    split_percentage = models.CharField(max_length=255)
+    split_percentage = models.FloatField()
 
     class Meta:
         db_table = "experiment_plio"

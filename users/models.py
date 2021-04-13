@@ -66,7 +66,7 @@ class User(SafeDeleteModel, AbstractUser):
     password = models.CharField(max_length=128, null=True)
     mobile = models.CharField(max_length=20, null=True)
     avatar_url = models.ImageField(upload_to="avatars/", null=True, blank=True)
-    config = models.JSONField(null=True)
+    config = models.JSONField(null=True, default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     USERNAME_FIELD = "email"

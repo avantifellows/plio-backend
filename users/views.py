@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 from django.shortcuts import redirect
 from django.http import HttpResponseNotFound, JsonResponse
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from plio.settings import (
     DB_QUERIES_URL,
     FRONTEND_URL,
@@ -112,6 +112,27 @@ class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    @action(detail=True, methods=["patch", "get"])
+    def config(self, request, pk=True):
+        user = self.get_object()
+        if request.method == "GET":
+            return response.Response(user.config)
+
+        if request.method == "PATCH":
+            if "config" in request.data:
+                user.config = request.data["config"]
+                serializer = UserSerializer(user)
+                if serializer.is_valid:
+                    user.save()
+                    return response.Response({"status": "config set"})
+                else:
+                    return response.Response(
+                        serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                    )
+            return response.Response(
+                {"detail": "config not provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 @api_view(["POST"])

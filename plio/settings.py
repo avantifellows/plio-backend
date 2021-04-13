@@ -321,3 +321,9 @@ OTP_EXPIRE_SECONDS = 30
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "organization",
 ]
+
+DEFAULT_ROLES = [
+    {"name": "super-admin"},
+    {"name": "org-admin"},
+    {"name": "org-view"},
+]

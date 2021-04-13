@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import connection
 from django_tenants.middleware import TenantMainMiddleware
 from django_tenants.utils import get_public_schema_name, get_tenant_model

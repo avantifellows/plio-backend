@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from plio.models import Video, Plio, Item, Question
+from users.models import User
 from users.serializers import UserSerializer
 
 
@@ -17,6 +18,10 @@ class VideoSerializer(serializers.ModelSerializer):
 
 
 class PlioSerializer(serializers.ModelSerializer):
+    created_by = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), default=serializers.CurrentUserDefault()
+    )
+
     class Meta:
         model = Plio
         fields = [

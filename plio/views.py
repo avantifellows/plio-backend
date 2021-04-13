@@ -306,9 +306,15 @@ class PlioViewSet(viewsets.ModelViewSet):
     destroy: Soft delete a plio
     """
 
-    queryset = Plio.objects.all()
     serializer_class = PlioSerializer
     lookup_field = "uuid"
+
+    def get_queryset(self):
+        queryset = Plio.objects.filter(created_by=self.request.user)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
 
 class ItemViewSet(viewsets.ModelViewSet):

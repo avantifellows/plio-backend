@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import routers, serializers, permissions
+from rest_framework import routers, permissions
 from django.conf.urls import url
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -25,7 +25,6 @@ from organizations.views import OrganizationViewSet
 from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
 from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
 from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
-from . import views
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -62,20 +61,10 @@ api_router.register(r"tags", TagViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("get_plio", views.get_plio),
-    path("create_plio", views.create_plio),
-    path("get_plio_config", views._get_plio_config),
-    path("get_plios_df", views.get_plios_df),
-    # separate app for tags
-    path("entries/", include("entries.urls")),
     # separate app for users
     path("users/", include("users.urls")),
     # separate app for experiments
     path("experiments/", include("experiments.urls")),
-    # separate app for tags
-    path("tags/", include("tags.urls")),
-    # separate app for components
-    path("components/", include("components.urls")),
     # API routes
     path("api/v1/otp/request/", request_otp),
     path("api/v1/otp/verify/", verify_otp),

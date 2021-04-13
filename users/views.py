@@ -120,19 +120,16 @@ class UserViewSet(viewsets.ModelViewSet):
             return response.Response(user.config)
 
         if request.method == "PATCH":
-            if "config" in request.data:
-                user.config = request.data["config"]
-                serializer = UserSerializer(user)
-                if serializer.is_valid:
-                    user.save()
-                    return response.Response({"status": "config set"})
-                else:
-                    return response.Response(
-                        serializer.errors, status=status.HTTP_400_BAD_REQUEST
-                    )
-            return response.Response(
-                {"detail": "config not provided"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            if "config" not in request.data:
+                return response.Response(
+                    {"detail": "config not provided"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.config = request.data["config"]
+            serializer = UserSerializer(user)
+            serializer.is_valid(raise_exception=True)
+            user.save()
+            return response.Response({"status": "config set"})
 
 
 @api_view(["POST"])

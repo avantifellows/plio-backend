@@ -120,15 +120,23 @@ class UserViewSet(viewsets.ModelViewSet):
             return response.Response(user.config)
 
         if request.method == "PATCH":
+            # config is not passed
             if "config" not in request.data:
                 return response.Response(
                     {"detail": "config not provided"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            user.config = request.data["config"]
-            serializer = UserSerializer(user)
+
+            # other keys apart from config are also passed
+            if len(request.data.keys()) > 1:
+                return response.Response(
+                    {"detail": "extra keys apart from config are not allowed"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            serializer = UserSerializer(user, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
-            user.save()
+            serializer.save()
             return response.Response({"status": "config set"})
 
 

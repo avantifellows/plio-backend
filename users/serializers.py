@@ -24,6 +24,12 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {"password": {"write_only": True}}
 
+    def validate_config(self, config):
+        """Validates the config value for the user"""
+        if not isinstance(config, dict):
+            raise serializers.ValidationError("Config should be a dictionary")
+        return config
+
 
 class OtpSerializer(serializers.ModelSerializer):
     class Meta:

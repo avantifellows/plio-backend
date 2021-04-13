@@ -1,17 +1,12 @@
 import requests
 import random
-import logging
-import json
 from os.path import basename
 from typing import Dict
-from django.shortcuts import redirect
-from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
-from django.http import response, HttpResponseBadRequest, request
+from django.http import HttpResponseNotFound, JsonResponse
 from rest_framework.decorators import api_view
-from plio.settings import DB_QUERIES_URL, FRONTEND_URL
+from plio.settings import DB_QUERIES_URL
 from users.views import get_user_config, update_user_config
 from utils.s3 import get_default_user_config
-from utils.data import convert_objects_to_df
 
 from rest_framework import viewsets
 from experiments.models import Experiment, ExperimentPlio

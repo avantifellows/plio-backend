@@ -117,8 +117,14 @@ class ExperimentViewSet(viewsets.ModelViewSet):
     destroy: Soft delete an experiment
     """
 
-    queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
+
+    def get_queryset(self):
+        queryset = Experiment.objects.filter(created_by=self.request.user)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
 
 
 class ExperimentPlioViewSet(viewsets.ModelViewSet):

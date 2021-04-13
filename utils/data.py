@@ -4,10 +4,8 @@ from typing import List, Dict
 from os.path import splitext, basename
 import pandas as pd
 from tqdm import tqdm
-from datetime import datetime, timezone
 
 from plio.settings import CMS_URL, CMS_TOKEN, GET_CMS_PROBLEM_URL
-from .time import convert_to_ist
 
 
 def convert_objects_to_df(objects: List):

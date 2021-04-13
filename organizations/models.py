@@ -1,6 +1,5 @@
 from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
-from django.utils.text import slugify
 import string
 import random
 from safedelete.models import SafeDeleteModel, SOFT_DELETE

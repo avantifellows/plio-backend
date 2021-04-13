@@ -1,23 +1,12 @@
 from plio.settings import DB_QUERIES_URL
-from typing import Dict, List, Any
-from os.path import splitext, basename
 import requests
 
 import boto3
-import botocore
 import json
-import os
-import gzip
-
-import datetime
-from django.conf import settings
 
 DEFAULT_BUCKET = "plio-data"
 CREATE_USER_PATH = "/create_user"
 GET_DEFAULT_USER_CONFIG_PATH = "/get_default_user_config"
-
-# Look in zappa_settings.json if you want to change this URL
-DB_QUERIES_URL = settings.DB_QUERIES_URL
 
 
 def get_resource(

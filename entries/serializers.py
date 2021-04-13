@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from plio.models import Item
-from plio.serializers import PlioSerializer, ItemSerializer, QuestionSerializer
+from plio.serializers import PlioSerializer
 from entries.models import Session, SessionAnswer, Event
 from experiments.serializers import ExperimentSerializer
 from users.serializers import UserSerializer

@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import routers, serializers, permissions
+from rest_framework import routers, permissions
 from django.conf.urls import url
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -25,7 +25,6 @@ from organizations.views import OrganizationViewSet
 from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
 from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
 from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
-from . import views
 
 schema_view = get_schema_view(
     openapi.Info(

@@ -35,7 +35,7 @@ class Plio(SafeDeleteModel):
     status = models.CharField(
         max_length=255, choices=plio_status_choices, default="draft"
     )
-    is_public = models.BooleanField(default=False)
+    is_public = models.BooleanField(default=True)
     config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -1,6 +1,7 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from plio.models import Video, Plio, Item, Question
 from plio.serializers import (
     VideoSerializer,
@@ -31,28 +32,44 @@ class PlioViewSet(viewsets.ModelViewSet):
     Plio ViewSet description
 
     list: List all plios
-    retrieve: Retrieve a plio
+    retrieve: Retrieve a plio's details based on authenticated user
     update: Update a plio
     create: Create a plio
     partial_update: Patch a plio
     destroy: Soft delete a plio
+    play: Retrieve a plio in order to play
     """
 
     serializer_class = PlioSerializer
     lookup_field = "uuid"
 
-    @action(detail=False)
+    def get_queryset(self):
+        queryset = Plio.objects.filter(created_by=self.request.user)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=False, permission_classes=[IsAuthenticated])
     def list_uuid(self, request):
         # retrieve a list of all plio uuids
         q = self.get_queryset().values_list("uuid", flat=True)
         return Response(list(q))
 
-    def get_queryset(self):
-        queryset = Plio.objects.all()
-        user_id = self.request.query_params.get("user")
-        if user_id is not None:
-            queryset = queryset.filter(created_by__id=user_id)
-        return queryset
+    @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
+    def play(self, request, uuid):
+        queryset = Plio.objects.filter(uuid=uuid)
+        queryset = queryset.filter(is_public=True) | queryset.filter(
+            created_by=self.request.user
+        )
+        plio = queryset.first()
+        if not plio:
+            return Response(
+                {"detail": "Plio not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = self.get_serializer(plio, many=False)
+        return Response(serializer.data)
 
 
 class ItemViewSet(viewsets.ModelViewSet):

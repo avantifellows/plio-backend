@@ -4,9 +4,14 @@ from plio.serializers import PlioSerializer
 from entries.models import Session, SessionAnswer, Event
 from experiments.serializers import ExperimentSerializer
 from users.serializers import UserSerializer
+from users.models import User
 
 
 class SessionSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), default=serializers.CurrentUserDefault()
+    )
+
     class Meta:
         model = Session
         fields = [

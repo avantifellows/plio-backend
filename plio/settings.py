@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 import os
 import logging
 import json
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +64,7 @@ SHARED_APPS = (
 
 TENANT_APPS = (
     "django.contrib.contenttypes",
+    "rest_framework",
     "plio",
     "experiments",
     "tags",
@@ -102,8 +104,7 @@ REST_FRAMEWORK = {
         "rest_framework_social_oauth2.authentication.SocialAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
-        # "rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly"
+        "rest_framework.permissions.IsAuthenticated",
     ],
     "UNAUTHENTICATED_USER": None,
 }
@@ -131,6 +132,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "request_logging.middleware.LoggingMiddleware",
+    "organizations.middleware.OrganizationTenantMiddleware",
 ]
 
 ROOT_URLCONF = "plio.urls"
@@ -314,4 +316,14 @@ OAUTH2_PROVIDER = {
     "DEFAULT_SCOPES": ["read", "write"],
 }
 
-OTP_EXPIRE_SECONDS = 30
+OTP_EXPIRE_SECONDS = 300
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "organization",
+]
+
+DEFAULT_ROLES = [
+    {"name": "super-admin"},
+    {"name": "org-admin"},
+    {"name": "org-view"},
+]

@@ -2,9 +2,14 @@ from rest_framework import serializers
 from experiments.models import Experiment, ExperimentPlio
 from users.serializers import UserSerializer
 from plio.serializers import PlioSerializer
+from users.models import User
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
+    created_by = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), default=serializers.CurrentUserDefault()
+    )
+
     class Meta:
         model = Experiment
         fields = [

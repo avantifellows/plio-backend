@@ -1,5 +1,5 @@
 ## Multitenancy
-Plio uses the [django-tenants-schemas](https://django-tenant-schemas.readthedocs.io/en/latest/install.html) package to implement multitenancy.
+Plio uses the [django-tenants](https://django-tenants.readthedocs.io/en/latest/) package to implement multitenancy.
 
 This guide aims to provide details on how Plio is using multi-tenancy and pre-requisites for someone contributing to the code.
 
@@ -26,6 +26,7 @@ Run the following commands to create an organization from programmatically:
     domain.is_primary = True
     domain.save()
     ```
+    If you face an error when running this step locally saying "permission denied for database plio", it is likely because the database user does not have permission to create new schema. It is likely going to be fixed by changing the `DATABASE_USER` in `zappa_settings.json` to your laptop's username.
 
 3. Create a tenant organization that will have it's own schema.
     ```py

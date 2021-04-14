@@ -35,6 +35,9 @@ class Organization(TenantMixin, SafeDeleteModel):
             self.schema_name = self._generate_unique_schema_name()
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"{self.shortcode}: {self.name}"
+
 
 class Domain(DomainMixin):
     pass

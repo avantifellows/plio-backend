@@ -146,7 +146,7 @@ def request_otp(request):
     sms = SnsService()
     sms.publish(
         otp.mobile,
-        f"Hello! Your OTP for Plio login is {otp.otp}. Please do not share it with anyone.",
+        f"Hello! Your OTP for Plio login is {otp.otp}. It is valid for the next 5 minutes. Please do not share it with anyone.",
     )
 
     return Response(OtpSerializer(otp).data)

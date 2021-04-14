@@ -26,8 +26,7 @@ Run the following commands to create an organization from programmatically:
     domain.is_primary = True
     domain.save()
     ```
-    If you face an error when running this step locally saying "permission denied for database plio", it is likely because the database user does not permission to create new schema. It is likely going to be fixed by changing the
-    `DATABASE_USER` in `zappa_settings.json` to your laptop's username.
+    If you face an error when running this step locally saying "permission denied for database plio", it is likely because the database user does not have permission to create new schema. It is likely going to be fixed by changing the `DATABASE_USER` in `zappa_settings.json` to your laptop's username.
 
 3. Create a tenant organization that will have it's own schema.
     ```py

@@ -1,4 +1,6 @@
 from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from plio.models import Video, Plio, Item, Question
 from plio.serializers import (
     VideoSerializer,
@@ -39,6 +41,12 @@ class PlioViewSet(viewsets.ModelViewSet):
     queryset = Plio.objects.all()
     serializer_class = PlioSerializer
     lookup_field = "uuid"
+
+    @action(detail=False)
+    def list_uuid(self, request):
+        # retrieve a list of all plio uuids
+        q = self.get_queryset().values_list("uuid", flat=True)
+        return Response(list(q))
 
 
 class ItemViewSet(viewsets.ModelViewSet):

@@ -1,4 +1,7 @@
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db.models import Count
 from entries.models import Session, SessionAnswer, Event
 from entries.serializers import (
     SessionSerializer,
@@ -19,8 +22,21 @@ class SessionViewSet(viewsets.ModelViewSet):
     destroy: Soft delete a session
     """
 
-    queryset = Session.objects.all()
     serializer_class = SessionSerializer
+
+    @action(detail=False)
+    def unique_users(self, request):
+        # return number of unique user ids for the queried Session
+        q = self.get_queryset().annotate(Count("user__id", distinct=True))
+        return Response(len(q))
+
+    def get_queryset(self):
+        # Filter the Sessions based on a particular plio uuid
+        queryset = Session.objects.all()
+        plio_id = self.request.query_params.get("plio")
+        if plio_id is not None:
+            queryset = queryset.filter(plio__uuid=plio_id)
+        return queryset
 
 
 class SessionAnswerViewSet(viewsets.ModelViewSet):

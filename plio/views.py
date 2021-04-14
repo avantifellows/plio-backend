@@ -38,7 +38,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     destroy: Soft delete a plio
     """
 
-    queryset = Plio.objects.all()
     serializer_class = PlioSerializer
     lookup_field = "uuid"
 
@@ -47,6 +46,13 @@ class PlioViewSet(viewsets.ModelViewSet):
         # retrieve a list of all plio uuids
         q = self.get_queryset().values_list("uuid", flat=True)
         return Response(list(q))
+
+    def get_queryset(self):
+        queryset = Plio.objects.all()
+        user_id = self.request.query_params.get("user")
+        if user_id is not None:
+            queryset = queryset.filter(created_by__id=user_id)
+        return queryset
 
 
 class ItemViewSet(viewsets.ModelViewSet):

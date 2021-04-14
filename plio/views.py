@@ -32,7 +32,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     Plio ViewSet description
 
     list: List all plios
-    retrieve: Retrieve a plio details based on authenticated user
+    retrieve: Retrieve a plio's details based on authenticated user
     update: Update a plio
     create: Create a plio
     partial_update: Patch a plio
@@ -56,13 +56,13 @@ class PlioViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(is_public=True) | queryset.filter(
             created_by=self.request.user
         )
-        queryset = queryset.first()
-        if not queryset:
+        plio = queryset.first()
+        if not plio:
             return Response(
                 {"detail": "Plio not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = self.get_serializer(queryset, many=False)
+        serializer = self.get_serializer(plio, many=False)
         return Response(serializer.data)
 
 

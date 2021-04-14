@@ -19,8 +19,14 @@ class SessionViewSet(viewsets.ModelViewSet):
     destroy: Soft delete a session
     """
 
-    queryset = Session.objects.all()
     serializer_class = SessionSerializer
+
+    def get_queryset(self):
+        queryset = Session.objects.filter(user=self.request.user)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class SessionAnswerViewSet(viewsets.ModelViewSet):

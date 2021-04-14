@@ -1,6 +1,8 @@
 import requests
 from django.http import HttpResponseNotFound, JsonResponse
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.permissions import AllowAny
+
 from plio.settings import (
     DB_QUERIES_URL,
     API_APPLICATION_NAME,
@@ -131,6 +133,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def request_otp(request):
     otp = OneTimePassword()
     otp.mobile = request.data["mobile"]
@@ -143,13 +146,14 @@ def request_otp(request):
     sms = SnsService()
     sms.publish(
         otp.mobile,
-        f"Hello! Your OTP for Plio login is {otp.otp}. Please do not share it with anyone.",
+        f"Hello! Your OTP for Plio login is {otp.otp}. It is valid for the next 5 minutes. Please do not share it with anyone.",
     )
 
     return Response(OtpSerializer(otp).data)
 
 
 @api_view(["POST"])
+@permission_classes([AllowAny])
 def verify_otp(request):
     mobile = request.data["mobile"]
     otp = request.data["otp"]

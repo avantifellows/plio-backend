@@ -1,4 +1,7 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from plio.models import Video, Plio, Item, Question
 from plio.serializers import (
     VideoSerializer,
@@ -29,11 +32,12 @@ class PlioViewSet(viewsets.ModelViewSet):
     Plio ViewSet description
 
     list: List all plios
-    retrieve: Retrieve a plio
+    retrieve: Retrieve a plio details based on authenticated user
     update: Update a plio
     create: Create a plio
     partial_update: Patch a plio
     destroy: Soft delete a plio
+    play: Retrieve a plio in order to play
     """
 
     serializer_class = PlioSerializer
@@ -45,6 +49,21 @@ class PlioViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+    @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
+    def play(self, request, uuid):
+        queryset = Plio.objects.filter(uuid=uuid)
+        queryset = queryset.filter(is_public=True) | queryset.filter(
+            created_by=self.request.user
+        )
+        queryset = queryset.first()
+        if not queryset:
+            return Response(
+                {"detail": "Plio not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = self.get_serializer(queryset, many=False)
+        return Response(serializer.data)
 
 
 class ItemViewSet(viewsets.ModelViewSet):

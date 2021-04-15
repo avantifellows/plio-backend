@@ -61,10 +61,6 @@ api_router.register(r"tags", TagViewSet)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    # separate app for users
-    path("users/", include("users.urls")),
-    # separate app for experiments
-    path("experiments/", include("experiments.urls")),
     # API routes
     path("api/v1/otp/request/", request_otp),
     path("api/v1/otp/verify/", verify_otp),

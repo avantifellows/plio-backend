@@ -27,10 +27,10 @@ class SessionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Session.objects.filter(user=self.request.user)
 
-        # Filter the Sessions based on a particular plio uuid
-        plio_id = self.request.query_params.get("plio")
-        if plio_id is not None:
-            queryset = queryset.filter(plio__uuid=plio_id)
+        # filter the sessions based on a particular plio uuid
+        plio_uuid = self.request.query_params.get("plio")
+        if plio_uuid is not None:
+            queryset = queryset.filter(plio__uuid=plio_uuid)
         return queryset
 
     def perform_create(self, serializer):
@@ -38,9 +38,8 @@ class SessionViewSet(viewsets.ModelViewSet):
 
     @action(detail=False)
     def unique_users(self, request):
-        # return number of unique user ids for the queried Session
-        q = self.get_queryset().annotate(Count("user__id", distinct=True))
-        return Response(len(q))
+        """Returns the number of unique user ids across all the sessions"""
+        return Response(self.get_queryset().aggregate(Count("user__id", distinct=True))['user__id__count'])
 
 
 class SessionAnswerViewSet(viewsets.ModelViewSet):

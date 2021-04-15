@@ -52,9 +52,9 @@ class PlioViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, permission_classes=[IsAuthenticated])
     def list_uuid(self, request):
-        # retrieve a list of all plio uuids
-        q = self.get_queryset().values_list("uuid", flat=True)
-        return Response(list(q))
+        """Retrieves a list of UUIDs for all the plios"""
+        value_queryset = self.get_queryset().values_list("uuid", flat=True)
+        return Response(list(value_queryset))
 
     @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
     def play(self, request, uuid):

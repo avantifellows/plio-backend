@@ -1,6 +1,6 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from plio.models import Video, Plio, Item, Question
 from plio.serializers import (
@@ -49,6 +49,12 @@ class PlioViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+    @action(detail=False, permission_classes=[IsAuthenticated])
+    def list_uuid(self, request):
+        """Retrieves a list of UUIDs for all the plios"""
+        value_queryset = self.get_queryset().values_list("uuid", flat=True)
+        return Response(list(value_queryset))
 
     @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
     def play(self, request, uuid):

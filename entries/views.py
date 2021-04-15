@@ -1,4 +1,7 @@
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db.models import Count
 from entries.models import Session, SessionAnswer, Event
 from entries.serializers import (
     SessionSerializer,
@@ -23,10 +26,24 @@ class SessionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Session.objects.filter(user=self.request.user)
+
+        # filter the sessions based on a particular plio uuid
+        plio_uuid = self.request.query_params.get("plio")
+        if plio_uuid is not None:
+            queryset = queryset.filter(plio__uuid=plio_uuid)
         return queryset
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False)
+    def unique_users(self, request):
+        """Returns the number of unique user ids across all the sessions"""
+        return Response(
+            self.get_queryset().aggregate(Count("user__id", distinct=True))[
+                "user__id__count"
+            ]
+        )
 
 
 class SessionAnswerViewSet(viewsets.ModelViewSet):

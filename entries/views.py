@@ -39,7 +39,11 @@ class SessionViewSet(viewsets.ModelViewSet):
     @action(detail=False)
     def unique_users(self, request):
         """Returns the number of unique user ids across all the sessions"""
-        return Response(self.get_queryset().aggregate(Count("user__id", distinct=True))['user__id__count'])
+        return Response(
+            self.get_queryset().aggregate(Count("user__id", distinct=True))[
+                "user__id__count"
+            ]
+        )
 
 
 class SessionAnswerViewSet(viewsets.ModelViewSet):

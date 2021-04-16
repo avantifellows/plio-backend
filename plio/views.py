@@ -68,20 +68,19 @@ class PlioViewSet(viewsets.ModelViewSet):
                 {"detail": "Plio not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = self.get_serializer(plio, many=False)
+        serializer = self.get_serializer(plio)
         return Response(serializer.data)
 
     @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
-        queryset = Plio.objects.filter(uuid=uuid).first()
-        queryset.pk = None
-        queryset.uuid = None
-        queryset.status = "draft"
-        queryset.save()
-
-        serializer = self.get_serializer(queryset, many=False)
-        return Response(serializer.data)
+        plio = self.get_object()
+        # django will auto-generated the key when setting the new key to None
+        plio.pk = None
+        plio.uuid = None
+        plio.status = "draft"  # a duplicated plio will always be in "draft" mode
+        plio.save()  # .save() will create a new instance of the model
+        return Response(self.get_serializer(plio).data)
 
 
 class ItemViewSet(viewsets.ModelViewSet):
@@ -108,11 +107,10 @@ class ItemViewSet(viewsets.ModelViewSet):
     @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
     def duplicate(self, request, pk):
         """Creates a clone of the item with the given pk"""
-        queryset = self.get_queryset().filter(pk=pk).first()
-        queryset.pk = None
-        queryset.save()
-        serializer = self.get_serializer(queryset, many=False)
-        return Response(serializer.data)
+        item = self.get_object()
+        item.pk = None
+        item.save()
+        return Response(self.get_serializer(item).data)
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
@@ -133,8 +131,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
     def duplicate(self, request, pk):
         """Creates a clone of the question with the given pk"""
-        queryset = Question.objects.filter(pk=pk).first()
-        queryset.pk = None
-        queryset.save()
-        serializer = self.get_serializer(queryset, many=False)
-        return Response(serializer.data)
+        question = self.get_object()
+        question.pk = None
+        question.save()
+        return Response(self.get_serializer(question).data)

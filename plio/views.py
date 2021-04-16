@@ -71,6 +71,18 @@ class PlioViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(plio, many=False)
         return Response(serializer.data)
 
+    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    def duplicate(self, request, uuid):
+        """Creates a clone of the plio with the given uuid"""
+        queryset = Plio.objects.filter(uuid=uuid).first()
+        queryset.pk = None
+        queryset.uuid = None
+        queryset.status = "draft"
+        queryset.save()
+
+        serializer = self.get_serializer(queryset, many=False)
+        return Response(serializer.data)
+
 
 class ItemViewSet(viewsets.ModelViewSet):
     """
@@ -93,6 +105,15 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(plio__uuid=plio_id).order_by("time")
         return queryset
 
+    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    def duplicate(self, request, pk):
+        """Creates a clone of the item with the given pk"""
+        queryset = self.get_queryset().filter(pk=pk).first()
+        queryset.pk = None
+        queryset.save()
+        serializer = self.get_serializer(queryset, many=False)
+        return Response(serializer.data)
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
     """
@@ -108,3 +129,12 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
+
+    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    def duplicate(self, request, pk):
+        """Creates a clone of the question with the given pk"""
+        queryset = Question.objects.filter(pk=pk).first()
+        queryset.pk = None
+        queryset.save()
+        serializer = self.get_serializer(queryset, many=False)
+        return Response(serializer.data)

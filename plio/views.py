@@ -75,11 +75,11 @@ class PlioViewSet(viewsets.ModelViewSet):
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
         plio = self.get_object()
-        # django will auto-generated the key when setting the new key to None
+        # django will auto-generate the key when the key is set to None
         plio.pk = None
         plio.uuid = None
         plio.status = "draft"  # a duplicated plio will always be in "draft" mode
-        plio.save()  # .save() will create a new instance of the model
+        plio.save()
         return Response(self.get_serializer(plio).data)
 
 

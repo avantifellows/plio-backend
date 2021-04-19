@@ -1,13 +1,8 @@
 # base image
 FROM python:3.8
-# setup environment variable
-ENV DOCKERHOME=/projects/plio/backend
-
-# set work directory
-RUN mkdir -p $DOCKERHOME
 
 # where your code lives
-WORKDIR $DOCKERHOME
+WORKDIR /app
 
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -23,4 +18,4 @@ RUN pip install -r requirements.txt
 # # port where the Django app runs
 EXPOSE ${APP_PORT}
 
-ENTRYPOINT ["/projects/plio/backend/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]

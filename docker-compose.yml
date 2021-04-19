@@ -16,14 +16,13 @@ services: # the different images that will be running as containers
     restart: "on-failure"
   web: # service name
     build: . #build the image for the web service from the dockerfile in parent directory.
-    # command directive passes the parameters to the service and they will be executed by the service. In this example, these are django commands which will be executed in the container where django lives.
     volumes:
-      - .:/projects/plio/backend # map data and files from parent directory in host to plio directory in docker container
+      - .:/app # map data and files from parent directory in host to plio directory in docker container
     env_file: # file where env variables are stored. Used as best practice so as not to expose secret keys
       - .env # name of the env file
-    image: plio # name of the image
+    image: plio-backend # name of the image
     ports:
-        - "${APP_PORT}:${APP_PORT}"
+      - "${APP_PORT}:${APP_PORT}"
     restart: "on-failure"
     depends_on: # cannot start if db service is not up and running
       - db

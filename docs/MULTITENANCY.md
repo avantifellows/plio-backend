@@ -13,6 +13,8 @@ Run the following commands to create an organization from programmatically:
 
 2. Create a public tenant that will be the default one.
 
+    **Note:** Public tenant is already created when docker container is initialized through Django fixtures. Please refer `entrypoint.sh` and `organizations/fixtures/default_tenant.yaml` files.
+
     ```py
     # create your public tenant
     from organizations.models import Organization, Domain
@@ -26,7 +28,6 @@ Run the following commands to create an organization from programmatically:
     domain.is_primary = True
     domain.save()
     ```
-    If you face an error when running this step locally saying "permission denied for database plio", it is likely because the database user does not have permission to create new schema. It is likely going to be fixed by changing the `DATABASE_USER` in `zappa_settings.json` to your laptop's username.
 
 3. Create a tenant organization that will have it's own schema.
     ```py

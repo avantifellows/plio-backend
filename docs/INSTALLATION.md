@@ -15,27 +15,15 @@ Download docker for your operating system: https://docs.docker.com/get-docker/
     ```sh
     docker --version
     ```
-3. Build the image and run the containers using just one command:
-    #### Development
-    ```sh
-    pip install -r requirements-dev.txt
-    ```
-
-    #### Production
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-    In case of errors in macOS venv, run the following commands to configure OpenSSL properly:
-    ```sh
-    export LDFLAGS="-L/usr/local/opt/openssl/lib"
-    export CPPFLAGS="-I/usr/local/opt/openssl/include"
-    ```
-4. Set up your `.env` file by copying `.env.example` file
+3. Set up your `.env` file by copying `.env.example` file
     ```sh
     cp .env.example .env
     ```
-5. Update environment variables in your `.env` file based on your environment. For all available settings, see our [Environment variables guide](ENV.md).
+4. Update environment variables in your `.env` file based on your environment. For all available settings, see our [Environment variables guide](ENV.md).
+5. Build the docker image and run the containers using just one command:
+    ```sh
+    docker-compose up -d --build
+    ```
 6. For **DEVELOPMENT PURPOSE** only, run the following command to install pre-commit
     ```sh
     pre-commit install

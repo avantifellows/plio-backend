@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from organizations.models import Organization
 from safedelete.models import SafeDeleteModel, SafeDeleteManager, SOFT_DELETE
+from .config import user_status_choices
 
 
 class UserManager(SafeDeleteManager):
@@ -67,6 +68,9 @@ class User(SafeDeleteModel, AbstractUser):
     mobile = models.CharField(max_length=20, null=True)
     avatar_url = models.ImageField(upload_to="avatars/", null=True, blank=True)
     config = models.JSONField(null=True, default=dict)
+    status = models.CharField(
+        max_length=255, choices=user_status_choices, default="waitlist"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     USERNAME_FIELD = "email"

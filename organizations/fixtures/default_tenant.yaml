@@ -1,0 +1,14 @@
+- model: organizations.Organization
+  pk: 1
+  fields:
+    schema_name: public
+    name: Plio
+    shortcode: plio
+    created_at: "2021-04-01T00:00:00Z"
+    updated_at: "2021-04-01T00:00:00Z"
+- model: organizations.Domain
+  pk: 1
+  fields:
+    domain: 0.0.0.0
+    is_primary: True
+    tenant_id: 1

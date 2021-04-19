@@ -1,0 +1,37 @@
+version: '3.7'
+
+services: # the different images that will be running as containers
+  db: # service name
+    image: postgres:11-alpine # image name of the postgres database. during build, this will be pulled from dockerhub and a container spun up from it
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+      - POSTGRES_DB=${DB_NAME}
+      - PGPORT=${DB_PORT}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    restart: "on-failure"
+  web: # service name
+    build: . #build the image for the web service from the dockerfile in parent directory.
+    # command directive passes the parameters to the service and they will be executed by the service. In this example, these are django commands which will be executed in the container where django lives.
+    command: sh -c "python manage.py makemigrations &&
+                    python manage.py migrate &&
+                    python manage.py runserver 0.0.0.0:${APP_PORT}"
+    volumes:
+      - .:/plio # map data and files from parent directory in host to plio directory in docker container
+      - static_volume:/home/app/plio/static
+    env_file: # file where env variables are stored. Used as best practice so as not to expose secret keys
+      - .env # name of the env file
+    image: plio # name of the image
+    ports:
+        - "${APP_PORT}:${APP_PORT}"
+    restart: "on-failure"
+    depends_on: # cannot start if db service is not up and running
+      - db
+
+volumes:
+  postgres_data:
+  static_volume:

@@ -15,7 +15,7 @@ This guide aims to provide details on how Plio is using the REST framework and p
 ### Creating API credentials
 1. Create a super user for your backend application. It will ask to set the super user credentials.
     ```sh
-    python manage.py createsuperuser
+    docker-compose exec web python manage.py createsuperuser
     ```
 2. Login to Django admin dashboard from `http://0.0.0.0:8001/admin` and enter your credentials.
 3. Add a new Application using the Add button next to `Applications` under `DJANGO OAUTH TOOLKIT` with the following configuration:

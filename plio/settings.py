@@ -12,12 +12,10 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 
 import os
 import logging
-import json
 from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -230,57 +228,12 @@ USE_L10N = True
 
 USE_TZ = True
 
-# Load zappa environment settings
-json_data = open("zappa_settings.json")
-
-if "DJANGO_ENV" in os.environ and os.environ["DJANGO_ENV"] in ["staging", "prod"]:
-    if os.environ["DJANGO_ENV"] == "staging":
-        zappa_key = "dev"
-    else:
-        zappa_key = "prod"
-
-    env_vars = json.load(json_data)[zappa_key]["environment_variables"]
-
-    # The AWS region to connect to.
-    AWS_REGION = "ap-south-1"
-
-    # The AWS access key to use.
-    AWS_ACCESS_KEY_ID = "AKIARUBOPCTSWO57EU4K"
-
-    # The AWS secret access key to use.
-    AWS_SECRET_ACCESS_KEY = "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"
-
-    DEFAULT_FILE_STORAGE = "django_s3_storage.storage.S3Storage"
-    STATICFILES_STORAGE = "django_s3_storage.storage.StaticS3Storage"
-
-    # From AF S3 account
-    AWS_S3_PUBLIC_URL = "d3onnhzpzthjtl.cloudfront.net"
-    AWS_S3_BUCKET_NAME_STATIC = "plio-static"
-
-    # Depending on environment.
-    AWS_S3_KEY_PREFIX_STATIC = os.environ.get("STATIC_BUCKET")
-    AWS_S3_BUCKET_AUTH = False
-
-    AWS_S3_MAX_AGE_SECONDS = 60 * 60 * 24 * 365  # 1 year
-
-    STATIC_URL = f"{AWS_S3_PUBLIC_URL}/{AWS_S3_KEY_PREFIX_STATIC}/"
-
-else:
-    # Local development
-    env_vars = json.load(json_data)["local"]["environment_variables"]
-
-    STATIC_URL = "/static/"
-
-for key, val in env_vars.items():
-    os.environ[key] = val
-
 STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "plio", "static"),
 ]
 
-DB_QUERIES_URL = os.environ["DB_QUERIES_URL"]
 CMS_URL = "https://cms.peerlearning.com/api"
 CMS_TOKEN = os.environ["CMS_TOKEN"]
 GET_CMS_PROBLEM_URL = "/problems"

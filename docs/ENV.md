@@ -3,6 +3,9 @@
 This guide explains all the available configurations in your `.env` file so that you can configure your environments accordingly.
 
 ### Django settings
+#### `APP_ENV`
+Environment mode for the app. Possible values are: local, staging or production.
+
 #### `SECRET_KEY`
 Used by Django. It should be a secret value and shouldn't be added to git.
 

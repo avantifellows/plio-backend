@@ -11,7 +11,7 @@ Download docker for your operating system: https://docs.docker.com/get-docker/
     git clone https://github.com/avantifellows/plio-backend.git
     cd plio-backend
     ```
-2. Make sure Docker Desktop application is running and docker version is giving a proper output.
+2. For **DEVELOPMENT PURPOSE** only, make sure Docker Desktop application is running and docker version is giving a proper output.
     ```sh
     docker --version
     ```

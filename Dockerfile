@@ -15,7 +15,7 @@ COPY entrypoint.sh .
 
 # run this command to install all dependencies
 RUN pip install -r requirements.txt
-# # port where the Django app runs
+# port where the Django app runs
 EXPOSE ${APP_PORT}
 
 ENTRYPOINT ["/app/entrypoint.sh"]

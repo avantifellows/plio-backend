@@ -32,7 +32,7 @@ Run the following commands to create an organization from programmatically:
 3. Create a tenant organization that will have it's own schema.
     ```py
     # create your first real tenant
-    tenant = Organization(schema_name='avantifellows', name='Avanti Fellows', shortcode='af')
+    tenant = Organization(name='Avanti Fellows', shortcode='af')
     tenant.save()
 
     domain = Domain()
@@ -53,5 +53,5 @@ Run the following commands to create an organization from programmatically:
     SELECT tablename FROM pg_catalog.pg_tables where schemaname='public';
 
     -- view tables in tenant organization schema
-    SELECT tablename FROM pg_catalog.pg_tables where schemaname='avantifellows';
+    SELECT tablename FROM pg_catalog.pg_tables where schemaname='generated_schema_name';
     ```

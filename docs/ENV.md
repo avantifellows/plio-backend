@@ -3,6 +3,9 @@
 This guide explains all the available configurations in your `.env` file so that you can configure your environments accordingly.
 
 ### Django settings
+#### `APP_ENV`
+Environment mode for the app. Possible values are: local, staging or production.
+
 #### `SECRET_KEY`
 Used by Django. It should be a secret value and shouldn't be added to git.
 
@@ -19,7 +22,7 @@ Database engine for Plio. It should always be `django_tenants.postgresql_backend
 
 #### `DB_HOST`
 The database host.
-1. If you're using Docker, the db host should be same as the dockerized database service mentioned in `docker-compose.yml` file (which is equal to `db`).
+1. If you're using Docker, the db host should be same as the dockerized database service mentioned in `docker-compose.yml` file (which is equal to `db`). If you want to connect to the docker database directly, use "localhost" as database host in connection settings.
 2. If you're using a remote database, set it accordingly.
 
 #### `DB_NAME`

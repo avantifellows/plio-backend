@@ -11,6 +11,10 @@ jobs:
     name: Deploy
     runs-on: ubuntu-latest
 
+    environment:
+      name: Staging
+      url: 'http://staging-backend.plio.in'
+
     steps:
     - name: Checkout
       uses: actions/checkout@v2

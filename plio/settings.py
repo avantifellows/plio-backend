@@ -221,10 +221,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-if "APP_ENV" in os.environ and os.environ.get("APP_ENV") in ["staging", "production"]:
-    DEFAULT_FILE_STORAGE = "django_s3_storage.storage.S3Storage"
-    STATICFILES_STORAGE = "django_s3_storage.storage.StaticS3Storage"
-
 # From AF S3 account
 AWS_S3_PUBLIC_URL = "d3onnhzpzthjtl.cloudfront.net"
 AWS_S3_BUCKET_NAME_STATIC = "plio-static"

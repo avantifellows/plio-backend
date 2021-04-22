@@ -15,6 +15,9 @@ services: # the different images that will be running as containers
       - postgres_data:/var/lib/postgresql/data/
     restart: "on-failure"
   web: # service name
+    # allows one to attach the terminal of a running container for debugging
+    stdin_open: true
+    tty: true
     build: . # build the image for the web service from the dockerfile in parent directory.
     volumes:
       - .:/app # map data and files from parent directory in host to plio directory in docker container

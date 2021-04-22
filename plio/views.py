@@ -4,7 +4,6 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Count, Q
 from plio.models import Video, Plio, Item, Question
-from organizations.models import Organization
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
 from entries.models import Session
@@ -49,8 +48,8 @@ class PlioViewSet(viewsets.ModelViewSet):
     lookup_field = "uuid"
 
     def get_queryset(self):
-        organization_shortcode = (
-            OrganizationTenantMiddleware.get_organization_shortcode(self, self.request)
+        organization_shortcode = OrganizationTenantMiddleware.get_organization(
+            self.request
         )
 
         # personal workspace
@@ -58,8 +57,12 @@ class PlioViewSet(viewsets.ModelViewSet):
             return Plio.objects.filter(created_by=self.request.user)
 
         # organizational workspace
-        if self.request.user.is_authenticated and self.is_user_in_org(
-            organization_shortcode
+        if (
+            self.request.user.is_authenticated
+            and OrganizationUser.objects.filter(
+                organization__shortcode=organization_shortcode,
+                user=self.request.user.id,
+            ).exists()
         ):
             # user should be authenticated and a part of the org
             return Plio.objects.filter(
@@ -80,10 +83,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         """Retrieves a list of UUIDs for all the plios"""
         queryset = self.get_queryset()
         if not queryset or not queryset.exists():
-            return Response(
-                {"detail": "No plios found"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response([])
         return Response(list(queryset.values_list("uuid", flat=True)))
 
     @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
@@ -121,15 +121,6 @@ class PlioViewSet(viewsets.ModelViewSet):
                 "user__id__count"
             ]
         )
-
-    def is_user_in_org(self, organization_shortcode):
-        org = Organization.objects.filter(shortcode=organization_shortcode)
-        if org:
-            org_id = org.first().id
-            return OrganizationUser.objects.filter(
-                organization=org_id, user=self.request.user.id
-            ).exists()
-        return False
 
 
 class ItemViewSet(viewsets.ModelViewSet):

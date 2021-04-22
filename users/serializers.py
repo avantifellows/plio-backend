@@ -23,6 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "organizations",
+            "status",
         ]
         extra_kwargs = {"password": {"write_only": True}}
 

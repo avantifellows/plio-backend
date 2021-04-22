@@ -2,7 +2,9 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Count
 from plio.models import Video, Plio, Item, Question
+from entries.models import Session
 from plio.serializers import (
     VideoSerializer,
     PlioSerializer,
@@ -68,8 +70,29 @@ class PlioViewSet(viewsets.ModelViewSet):
                 {"detail": "Plio not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        serializer = self.get_serializer(plio, many=False)
+        serializer = self.get_serializer(plio)
         return Response(serializer.data)
+
+    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    def duplicate(self, request, uuid):
+        """Creates a clone of the plio with the given uuid"""
+        plio = self.get_object()
+        # django will auto-generate the key when the key is set to None
+        plio.pk = None
+        plio.uuid = None
+        plio.status = "draft"  # a duplicated plio will always be in "draft" mode
+        plio.save()
+        return Response(self.get_serializer(plio).data)
+
+    @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
+    def unique_users(self, request, uuid):
+        """Returns the number of unique users who have watched the specified plio"""
+        session_queryset = Session.objects.filter(plio__uuid=uuid)
+        return Response(
+            session_queryset.aggregate(Count("user__id", distinct=True))[
+                "user__id__count"
+            ]
+        )
 
 
 class ItemViewSet(viewsets.ModelViewSet):
@@ -93,6 +116,31 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(plio__uuid=plio_id).order_by("time")
         return queryset
 
+    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    def duplicate(self, request, pk):
+        """
+        Creates a clone of the item with the given pk and links it to the plio
+        that's provided in the payload
+        """
+        item = self.get_object()
+        item.pk = None
+        plio_id = self.request.data.get("plioId")
+        if not plio_id:
+            return Response(
+                {"detail": "Plio id not passed in the payload."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        plio = Plio.objects.filter(id=plio_id).first()
+        if not plio:
+            return Response(
+                {"detail": "Specified plio not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        item.plio = plio
+        item.save()
+        return Response(self.get_serializer(item).data)
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
     """
@@ -108,3 +156,27 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
+
+    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    def duplicate(self, request, pk):
+        """
+        Creates a clone of the question with the given pk and links it to the item
+        that is provided in the payload
+        """
+        question = self.get_object()
+        question.pk = None
+        item_id = self.request.data.get("itemId")
+        if not item_id:
+            return Response(
+                {"details": "Item id not passed in the payload"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        item = Item.objects.filter(id=item_id).first()
+        if not item:
+            return Response(
+                {"detail": "Specified item not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        question.item = item
+        question.save()
+        return Response(self.get_serializer(question).data)

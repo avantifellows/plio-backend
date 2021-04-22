@@ -17,7 +17,6 @@ from corsheaders.defaults import default_headers
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
@@ -221,22 +220,14 @@ USE_L10N = True
 
 USE_TZ = True
 
-# From AF S3 account
-AWS_S3_PUBLIC_URL = "d3onnhzpzthjtl.cloudfront.net"
-AWS_S3_BUCKET_NAME_STATIC = "plio-static"
-
-AWS_S3_BUCKET_AUTH = False
-AWS_S3_MAX_AGE_SECONDS = 60 * 60 * 24 * 365  # 1 year
+STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 STATIC_URL = "/static/"
-
-STATIC_ROOT = os.path.join(BASE_DIR, "static/")
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "plio", "static"),
 ]
 
-DB_QUERIES_URL = ""
 CMS_URL = "https://cms.peerlearning.com/api"
 CMS_TOKEN = os.environ["CMS_TOKEN"]
 GET_CMS_PROBLEM_URL = "/problems"

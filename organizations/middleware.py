@@ -8,13 +8,18 @@ class OrganizationTenantMiddleware(TenantMainMiddleware):
     Sets connection to either public or tenant schema based on `ORGANIZATION` HTTP header value.
     """
 
+    @staticmethod
+    def get_organization(request):
+        """
+        Returns the value of the `ORGANIZATION` HTTP header
+        """
+        return request.META.get("HTTP_ORGANIZATION", get_public_schema_name())
+
     def get_tenant(self, tenant_model, request):
         """
         Determines tenant by the value of the `ORGANIZATION` HTTP header.
         """
-        organization_shortcode = request.META.get(
-            "HTTP_ORGANIZATION", get_public_schema_name()
-        )
+        organization_shortcode = self.get_organization(request)
         return tenant_model.objects.filter(shortcode=organization_shortcode).first()
 
     def process_request(self, request):

@@ -2,7 +2,7 @@
 
 on:
   push:
-    branches: [ "feature/deployment" ]
+    branches: [ "shift-do-db" ]
 
 name: Deploy to ECS - staging
 

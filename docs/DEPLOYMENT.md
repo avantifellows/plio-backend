@@ -22,7 +22,7 @@ Deploying on AWS requires a basic understanding of the following tools and servi
 #### Staging
 Setting up staging environment on AWS is pretty straightforward.
 1. Login to your AWS console.
-2. Go to VPC.
+2. Go to VPC. (skip this step if you've already created a VPC when setting up backend repository)
    1. Create a new VPC.
    2. Name it `plio-staging-vpc`.
    3. In IPv4 CIDR block, enter `10.0.0.0/28`.
@@ -53,7 +53,7 @@ Setting up staging environment on AWS is pretty straightforward.
    5. Use `.env.example` file to set all the required environment variables for your container.
    6. Save the container definition and the task definition.
    7. You will see the new task definition within the list.
-8. Go to clusters and create a new cluster with name `plio-staging-cluster`.
+8. Go to clusters and create a new cluster with name `plio-staging-cluster`. (skip this step if you've already created a VPC when setting up backend repository)
    1. Use `Networking only` option
    2. Create a new VPC for your cluster.
    3. Click on create button.
@@ -75,11 +75,11 @@ Setting up staging environment on AWS is pretty straightforward.
    14. Review and create service.
 10. Next, go to your GitHub repository and create a new environment from settings tab.
     1. Name the environment as `Staging`.
-    2. Make sure you have added the following GitHub secrets. If not, add these as your environment secrets.
+    2. Make sure you have added the following GitHub secrets on repository level. If not, add these as your environment secrets.
        - AWS_ACCESS_KEY_ID
        - AWS_SECRET_ACCESS_KEY
        - AWS_REGION
-11. Once done, make some changes to the code so that the GitHub workflow `deploy_to_ecr_staging.yml` gets triggered.
+11. Once done, make some changes to the code so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
 
 
 #### Production

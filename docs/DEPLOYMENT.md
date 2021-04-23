@@ -73,7 +73,13 @@ Setting up staging environment on AWS is pretty straightforward.
    12. Inside "Container to Load Balancer", click on Add to load balancer option and select `plio-backend-staging` in the target group.
    13. For auto-scaling, go with "Do not adjust the service's desired count" for staging.
    14. Review and create service.
-10. Once done, make some changes to the code so that the GitHub workflow `deploy_to_ecr_staging.yml` gets triggered.
+10. Next, go to your GitHub repository and create a new environment from settings tab.
+    1. Name the environment as `Staging`.
+    2. Make sure you have added the following GitHub secrets. If not, add these as your environment secrets.
+       - AWS_ACCESS_KEY_ID
+       - AWS_SECRET_ACCESS_KEY
+       - AWS_REGION
+11. Once done, make some changes to the code so that the GitHub workflow `deploy_to_ecr_staging.yml` gets triggered.
 
 
 #### Production

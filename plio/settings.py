@@ -215,10 +215,10 @@ if "DJANGO_ENV" in os.environ and os.environ["DJANGO_ENV"] in ["staging", "prod"
     AWS_REGION = "ap-south-1"
 
     # The AWS access key to use.
-    AWS_ACCESS_KEY_ID = "AKIARUBOPCTSWO57EU4K"
+    AWS_ACCESS_KEY_ID = ""
 
     # The AWS secret access key to use.
-    AWS_SECRET_ACCESS_KEY = "wlkhlaeo0j8vqfM8A+kxfIUiGWRtFmjlCTxmlyJR"
+    AWS_SECRET_ACCESS_KEY = ""
 
     DEFAULT_FILE_STORAGE = "django_s3_storage.storage.S3Storage"
     STATICFILES_STORAGE = "django_s3_storage.storage.StaticS3Storage"

@@ -22,7 +22,7 @@ Deploying on AWS requires a basic understanding of the following tools and servi
 #### Staging
 Setting up staging environment on AWS is pretty straightforward.
 1. Login to your AWS console.
-2. Go to VPC. (skip this step if you've already created a VPC when setting up backend repository)
+2. Go to VPC. (skip this step if you've already created a VPC when setting up frontend repository)
    1. Create a new VPC.
    2. Name it `plio-staging-vpc`.
    3. In IPv4 CIDR block, enter `10.0.0.0/28`.

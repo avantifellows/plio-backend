@@ -106,3 +106,8 @@ Setting up staging environment on AWS is pretty straightforward.
 Setting up a production environment on AWS is same as staging. Take care of the following things:
 1. Rename all services to have `plio-backend-production` or similar naming convention.
 2. Go with auto-scaling option when creating a new service from ECS.
+
+
+#### Continuous Delivery process
+![Overview of Continuous Delivery process](./images/aws-gh-cd.png)
+An overview of how continuous delivery cycle works in Plio with GitHub action and Amazon ECR & ECS.

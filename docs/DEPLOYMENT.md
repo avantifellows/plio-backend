@@ -46,6 +46,7 @@ Setting up staging environment on AWS is pretty straightforward.
    ```sh
    psql -h your-db-instance-endpoint.aws-region.rds.amazonaws.com -p 5432 -U master_username
    ```
+   16. Once you are logged in into the PSQL CLI, you can run all the SQL commands to create a new database, user, grant privileges etc.
 4. Create a new Elastic IP by going to EC2 dashboard and navigating to Elastic IP section.
    1. Click on Allocate Elastic IP address and click on Allocate button.
    2. You will see a new IP address in the IPs list. Name it `plio-backend-staging`.

@@ -9,8 +9,8 @@ from plio.settings import (
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from users.models import User, OneTimePassword
-from users.serializers import UserSerializer, OtpSerializer
+from users.models import User, OneTimePassword, OrganizationUser
+from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 
 import datetime
 import string
@@ -60,6 +60,22 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response({"status": "config set"})
+
+
+class OrganizationUserViewSet(viewsets.ModelViewSet):
+    """
+    OrganizationUser ViewSet description
+
+    list: List all organization users
+    retrieve: Retrieve an organization user
+    update: Update an organization user
+    create: Create an organization user
+    partial_update: Patch an organization user
+    destroy: Soft delete an organization user
+    """
+
+    queryset = OrganizationUser.objects.all()
+    serializer_class = OrganizationUserSerializer
 
 
 @api_view(["POST"])

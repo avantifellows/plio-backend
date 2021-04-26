@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from users.models import User, OneTimePassword, Role
+from users.models import User, OneTimePassword, Role, OrganizationUser
 from organizations.serializers import OrganizationSerializer
 
 
@@ -61,4 +61,15 @@ class OtpSerializer(serializers.ModelSerializer):
             "expires_at",
             "created_at",
             "updated_at",
+        ]
+
+
+class OrganizationUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrganizationUser
+        fields = [
+            "user",
+            "organization",
+            "is_owner",
+            "role",
         ]

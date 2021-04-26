@@ -70,6 +70,7 @@ TENANT_APPS = (
 )
 
 INSTALLED_APPS = [
+    "channels",
     "django_tenants",
     "corsheaders",
     "django.contrib.admin",
@@ -194,6 +195,7 @@ LOGGING = {
 }
 
 WSGI_APPLICATION = "plio.wsgi.application"
+ASGI_APPLICATION = "plio.asgi.application"
 
 
 # Password validation
@@ -282,3 +284,13 @@ DEFAULT_ROLES = [
     {"name": "org-admin"},
     {"name": "org-view"},
 ]
+
+CHANNEL_LAYERS = {
+    "default": {
+        # Method 1: Via redis lab
+        # Method 2: Via local Redis
+        # Method 3: Via In-memory channel layer
+        # Using this method.
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    },
+}

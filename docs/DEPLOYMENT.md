@@ -27,7 +27,7 @@ Setting up staging environment on AWS is pretty straightforward.
    2. Name it `plio-staging-vpc`.
    3. In IPv4 CIDR block, enter `10.0.0.0/28`.
    4. Click on create button. You will see the new VPC under the list of VPCs.
-3. Set up database through RDS.
+3. Set up the database. Click on `Databases` on the AWS RDS page.
    1. Click on create database.
    2. Use "Standard create" in database creation method.
    3. Use Postgres12 in the DB engine.
@@ -39,8 +39,8 @@ Setting up staging environment on AWS is pretty straightforward.
    9. For Availability and Durability, use multi-AZ deployment if you need. Take a note that this may almost double your monthly expense.
    10. Under VPC settings, select the VPC created in previous step.
    11. In case you prefer to connect to your database directly from your machine, set the public access to "Yes".
-   12. Under additional configuration, set initial database name as `plio`. This will create an empty database.
-   13. Create the RDS instance by clicking on "Create Database" button.
+   12. Under additional configuration, set initial database name as `plio_staging`. This will create an empty database.
+   13. Finally, create the RDS instance by clicking on "Create Database" button.
    14. You will see the new RDS instance in the list of RDS instances. Click on your DB instance to see the connectivity settings.
    15. To connect to RDS from command line, run the following command (this will work if you've set public access to yes):
    ```sh

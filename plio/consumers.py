@@ -8,21 +8,18 @@ class UserConsumer(WebsocketConsumer):
     """
     Defines a general consumer for the User model
     """
+
     def connect(self):
-        self.group_name = 'users'
+        self.group_name = "users"
         # Join users group
-        async_to_sync(self.channel_layer.group_add)(
-            self.group_name,
-            self.channel_name
-        )
+        async_to_sync(self.channel_layer.group_add)(self.group_name, self.channel_name)
         # accept the connection
         self.accept()
 
     def disconnect(self, close_code):
         # Leave users group
         async_to_sync(self.channel_layer.group_discard)(
-            self.group_name,
-            self.channel_name
+            self.group_name, self.channel_name
         )
 
     def receive(self, data):
@@ -32,7 +29,5 @@ class UserConsumer(WebsocketConsumer):
     def send_user(self, event):
         # serialize the recieved User instance
         # and send it over the websocket
-        user_instance = event['data']
-        self.send(json.dumps({
-            'user': UserSerializer(user_instance).data
-        }))
+        user_instance = event["data"]
+        self.send(json.dumps({"user": UserSerializer(user_instance).data}))

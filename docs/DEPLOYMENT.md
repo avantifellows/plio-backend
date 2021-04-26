@@ -73,25 +73,25 @@ Setting up staging environment on AWS is pretty straightforward.
    6. Save the container definition and the task definition.
    7. You will see the new task definition within the list.
 9.  Go to clusters and create a new cluster with name `plio-staging-cluster`. (skip this step if you've already created a VPC when setting up backend repository)
-   8. Use `Networking only` option
-   9. Create a new VPC for your cluster.
-   10. Click on create button.
-   11. You will see the new cluster within the list of clusters.
+   1. Use `Networking only` option
+   2. Create a new VPC for your cluster.
+   3. Click on create button.
+   4. You will see the new cluster within the list of clusters.
 10. Get into `plio-staging-cluster` and create a new service.
-   12. Set launch type to Fargate. We'll use serverless deployments for Plio.
-   13. Name the service as `plio-staging-backend`.
-   14. Under task definition, select `plio-backend-staging` and use latest revision.
-   15. Number of tasks to be one.
-   16. Service type to be `REPLICA`.
-   17. Minimum healthy percentage should be 100 and maximum percent to be 200.
-   18. Deployment type to be `rolling update`.
-   19. Keep other values as default.
-   20. Use the Cluster VPC and the subnet that you configured with Elastic IP.
-   21. Auto-assign public IP to have `ENABLED`.
-   22. Under load balancing, select the Network Load Balancing option and select the `plio-backend-staging` load balancer.
-   23. Inside "Container to Load Balancer", click on Add to load balancer option and select `plio-backend-staging` in the target group.
-   24. For auto-scaling, go with "Do not adjust the service's desired count" for staging.
-   25. Review and create service.
+   1. Set launch type to Fargate. We'll use serverless deployments for Plio.
+   2. Name the service as `plio-staging-backend`.
+   3. Under task definition, select `plio-backend-staging` and use latest revision.
+   4. Number of tasks to be one.
+   5. Service type to be `REPLICA`.
+   6. Minimum healthy percentage should be 100 and maximum percent to be 200.
+   7. Deployment type to be `rolling update`.
+   8. Keep other values as default.
+   9. Use the Cluster VPC and the subnet that you configured with Elastic IP.
+   10. Auto-assign public IP to have `ENABLED`.
+   11. Under load balancing, select the Network Load Balancing option and select the `plio-backend-staging` load balancer.
+   12. Inside "Container to Load Balancer", click on Add to load balancer option and select `plio-backend-staging` in the target group.
+   13. For auto-scaling, go with "Do not adjust the service's desired count" for staging.
+   14. Review and create service.
 11. Next, go to your GitHub repository and create a new environment from settings tab.
     1. Name the environment as `Staging`.
     2. Make sure you have added the following GitHub secrets on repository level. If not, add these as your environment secrets.

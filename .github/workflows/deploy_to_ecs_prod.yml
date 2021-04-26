@@ -2,9 +2,9 @@
 
 on:
   push:
-    branches: ["master"]
+    branches: ["feature/deployment"]
 
-name: Deploy to ECS - staging
+name: Deploy to ECS - production
 
 jobs:
   deploy:
@@ -13,8 +13,8 @@ jobs:
 
     # uses GitHub environment
     environment:
-      name: Staging
-      url: "http://staging-backend.plio.in"
+      name: Production
+      url: "http://backend.plio.in"
 
     steps:
       - name: Checkout
@@ -39,7 +39,7 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: plio-backend-staging
+          ECR_REPOSITORY: plio-backend-production
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build a docker container and push it to ECR
@@ -51,7 +51,7 @@ jobs:
       # Download the task definition created at AWS ECS
       - name: Download task definition
         run: |
-          aws ecs describe-task-definition --task-definition plio-backend-staging --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition plio-backend-production --query taskDefinition > task-definition.json
 
       # Creates a new revision of the task definition with latest image id.
       - name: Fill in the new image ID in the Amazon ECS task definition
@@ -59,15 +59,17 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
-          container-name: plio-backend-staging
+          container-name: plio-backend-production
           image: ${{ steps.build-image.outputs.image }}
 
-      # Uses the ECS service for backend to create a new task from the new task definition. The new task is created while the previous task is already running. This happens based on the minimum healthy percentage and maximum percentage configured during service creation.
+      # Uses the ECS service for backend to create a new task from the new task definition. The new
+      # task is created while the previous task is already running. This happens based on the minimum
+      # healthy percentage and maximum percentage configured during service creation.
       # After service completion and stability, it removes the previous task from older task definition.
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: plio-backend-staging
-          cluster: plio-staging-cluster
+          service: plio-backend-production
+          cluster: plio-production-cluster
           wait-for-service-stability: true

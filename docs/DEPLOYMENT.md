@@ -56,8 +56,9 @@ Setting up staging environment on AWS is pretty straightforward.
    1. Create a new target group.
    2. Choose target type to be `IP addresses`.
    3. Name the target group as `plio-backend-staging`.
-   4. Select the `plio-staging-vpc` for the target group VPC.
-   5. Proceed to create target group. You will see target group in the list.
+   4. Set the protocol to `TCP` and port to `80`.
+   5. Select the `plio-staging-vpc` for the target group VPC.
+   6. Proceed to create target group. You will see target group in the list.
 6. Go to Load Balancers.
    1. Create a new load balancer.
    2. Select Network Load Balancer option. We use NLB for easy support of web socket connections.
@@ -82,15 +83,15 @@ Setting up staging environment on AWS is pretty straightforward.
    3. Click on create button.
    4. You will see the new cluster within the list of clusters.
 10. Get into `plio-staging-cluster` and create a new service.
-   1. Set launch type to Fargate. We'll use serverless deployments for Plio.
-   2. Name the service as `plio-backend-staging`.
-   3. Under task definition, select `plio-backend-staging` and use latest revision.
-   4. Set the number of tasks to be one.
-   5. Service type to be `REPLICA`.
-   6. Minimum healthy percentage should be 100 and maximum percent to be 200. Minimum healthy percentage defines the percentage of tasks that should be running at all times. Maximum percent defines how many additional tasks the service can create in parallel to running tasks, before killing the running tasks.
-   7. Deployment type to be `rolling update`.
-   8. Keep other values as default.
-   9. Use the Cluster VPC and the subnet that you configured with Elastic IP.
+   1.  Set launch type to Fargate. We'll use serverless deployments for Plio.
+   2.  Name the service as `plio-backend-staging`.
+   3.  Under task definition, select `plio-backend-staging` and use latest revision.
+   4.  Set the number of tasks to be one.
+   5.  Service type to be `REPLICA`.
+   6.  Minimum healthy percentage should be 100 and maximum percent to be 200. Minimum healthy percentage defines the percentage of tasks that should be running at all times. Maximum percent defines how many additional tasks the service can create in parallel to running tasks, before killing the running tasks.
+   7.  Deployment type to be `rolling update`.
+   8.  Keep other values as default.
+   9.  Use the Cluster VPC and the subnet that you configured with Elastic IP.
    10. Auto-assign public IP to have `ENABLED`. Otherwise, it makes the task accessible only through VPC and not public.
    11. Under load balancing, select the Network Load Balancing option and select the `plio-backend-staging` load balancer.
    12. Inside "Container to Load Balancer", click on `Add to load balancer option` and select `plio-backend-staging` in the target group.

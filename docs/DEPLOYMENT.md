@@ -110,6 +110,22 @@ Setting up staging environment on AWS is pretty straightforward.
 Setting up a production environment on AWS is same as staging. Take care of the following things:
 1. Rename all services to have `plio-backend-production` or similar naming convention.
 2. Go with auto-scaling option when creating a new service from ECS.
+   1. When creating a service or when updating it, navigate to the service auto-scaling section.
+   2. Select "Configure Service Auto Scaling to adjust your service's desired count".
+   3. Set minimum number of tasks to `1`. This is the minimum count of running tasks when scale-in operation happen.
+   4. Set desired number of tasks to `1`. This may come pre-populated if you had set it before.
+   5. Set maximum number of tasks to `2` or more based on your desired need. This is the maximum count of total running tasks in case of scale-out operation.
+   6. In IAM role for Service Auto Scaling, select `AWSServiceRoleForApplicationAutoScaling_ECSService`.
+   7. Click on "Add scaling policy".
+   8. Select policy type to "Target tracking".
+   9. Set policy name to `plio-backend-production-autoscaling-cpu`.
+   10. In ECS service metric, select the option for average CPU utilization.
+   11. Target value should be `60` (or as per your requirement). This is the threshold value when the service will trigger a new event and perform scale-out operation.
+   12. Scale-out & Scale-in cooldown period to be `300` seconds.
+   13. Disable scale-in to remain unchecked.
+   14. Save the scaling policy.
+   15. Create or update the service name.
+   16. Use [k6.io](https://k6.io/) or other load testing tool to check if auto-scaling is working fine or not. You can lower down the target threshold for testing purposes.
 
 
 #### Continuous Delivery process

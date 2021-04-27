@@ -2,7 +2,7 @@
 
 on:
   push:
-    branches: ["feature/deployment"]
+    branches: ["release"]
 
 name: Deploy to ECS - production
 

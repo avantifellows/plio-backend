@@ -39,7 +39,36 @@ Follow the steps below to set up the staging environment on AWS.
    4. Click on create button. You will see the new VPC under the list of VPCs.
    5. Check out this [AWS guide for more details on VPC](https://docs.aws.amazon.com/vpc/latest/userguide/working-with-vpcs.html).
 
-3. Set up the database. Click on `Databases` on the AWS RDS page.
+3. You'll need to attach an Internet Gateway to this VPC.
+
+   1. Click on `Internet Gateways` in the VPC Dashboard.
+   2. Select `Create internet Gateaway`.
+   3. Name it as `plio-staging` and save it.
+   4. Click on `Attach to a VPC` in the next page and select the VPC created above.
+
+4. Next, you'll need to attach Subnets to the VPC created above.
+
+   1.  Click on `Subnets` in the VPC Dashboard.
+   2. Click on `Create Subnet`.
+   3. Choose the VPC created above as VPC ID.
+   4. Enter the `Subnet name` as `plio-staging-1`.
+   5. Either choose the `Availability Zone` if you have a preference or leave it to the default
+   6. Under `IPv4 CIDR block`, add a range of IPv4s that belong to your subnet. If you followed the steps above exactly, you can set this value as `10.0.0.0/24`. This will reserve the IPs `10.0.0.0` to `10.0.0.255` to this Subnet.
+   7. If you want to, you can create more subnets using `Add new subnet`  but it's not needed going forward. If you do choose to do so, you'll need to choose a different non-overlapping range of IPv4s for the `IPv4 CIDR block` option - for example, you could set it to: `10.0.1.0/24` to reserve the  IPs `10.0.1.0` to `10.0.1.255`.
+   8. Finally, create the subnet.
+
+5. You need to update your `Route Tables` to give make your subnets publicly accessible.
+
+   1. Click on `Route Tables` in the VPC Dashboard
+   2. Select the entry corresponding to the VPC you created above.
+   3. Navigate to the `Routes` tab.
+   4. Click on `Edit routes`.
+   5. Click on `Add route`.
+   6. Add `0.0.0.0/0` as the `Destination`.
+   7. Select `Internet Gateway` under `Target` and link to the Internet Gateway you created above.
+   8. Click on `Save routes`.
+
+6. Set up the database. Click on `Databases` on the AWS RDS page.
    1. Click on `Create Database`.
    2. Use `Standard create` the in database creation method.
    3. Use Postgres12 in the DB engine.
@@ -60,12 +89,12 @@ Follow the steps below to set up the staging environment on AWS.
    ```
    16. Once you are logged in into the PSQL CLI, you can run all the SQL commands to create a new database, user, grant privileges etc.
 
-4. Create a new Elastic IP by going to EC2 dashboard and navigating to the `Elastic IP` section.
+7. Create a new Elastic IP by going to EC2 dashboard and navigating to the `Elastic IP` section.
    1. Click on `Allocate Elastic IP address` and click on `Allocate` .
    2. You will see a new IP address in the IPs list. Name it `plio-backend-staging`.
    3. This will be used in later steps to give the load balancer a permanent IP address.
 
-5. Go to Target groups.
+8. Go to Target groups.
    1. Create a new target group.
    2. Choose target type to be `IP addresses`.
    3. Name the target group as `plio-backend-staging`.
@@ -74,7 +103,7 @@ Follow the steps below to set up the staging environment on AWS.
    6. In the next step, add an IP address in the `IP` text area - the IP address should belong to your VPC - if you followed the steps above exactly, you can use any IP address between `10.0.0.0` to `10.0.255.255`.
    7. Proceed to create the target group. You will see the created target group in the list of all target groups.
 
-6. Go to Load Balancers (LBs).
+9. Go to Load Balancers (LBs).
    1. Create a new load balancer.
    2. Select `Network Load Balancer` option. We use NLB for easy support of web socket connections.
    3. Name the LB as `plio-backend-staging`.
@@ -83,27 +112,27 @@ Follow the steps below to set up the staging environment on AWS.
    6. Under listeners and routing, select the target group `plio-backend-staging` for TCP port 80.
    7. Proceed to create the load balancer. You will see the created load balancer in the list of all load balancers.
 
-7. Go to ECR and create a new repository named `plio-backend-staging` and set the settings as per your needs.
+10. Go to ECR and create a new repository named `plio-backend-staging` and set the settings as per your needs.
 
-8. Now go to ECS and create a new task definition
+11. Now go to ECS and create a new task definition
 
-   1. Select Fargate and name the task definition as `plio-backend-staging`.
-   2. Set the task role as `ecsTaskExecutionRole`.
-   3. Set the task memory and task CPU based on your needs. Good defaults to use are: 2 GB for memory and 0.5 vCPU.
-   4. Create a new container with name `plio-backend-staging`.
-   5. In the image field, you can just type in `image_arn`. This is not a valid entry and just a placeholder for now as it'll be replaced by the actual image ARN once the GitHub workflow triggers.
-   6. Enter port `80` in the port mapping field.
-   7. Use the `.env.example` file to set all the required environment variables for your container in the `Environment Variables` section.
-   8. Save the container definition and the task definition.
-   9. You will see the new task definition within the list of all task definitions.
+    1. Select Fargate and name the task definition as `plio-backend-staging`.
+    2. Set the task role as `ecsTaskExecutionRole`.
+    3. Set the task memory and task CPU based on your needs. Good defaults to use are: 2 GB for memory and 0.5 vCPU.
+    4. Create a new container with name `plio-backend-staging`.
+    5. In the image field, you can just type in `image_arn`. This is not a valid entry and just a placeholder for now as it'll be replaced by the actual image ARN once the GitHub workflow triggers.
+    6. Enter port `80` in the port mapping field.
+    7. Use the `.env.example` file to set all the required environment variables for your container in the `Environment Variables` section.
+    8. Save the container definition and the task definition.
+    9. You will see the new task definition within the list of all task definitions.
 
-9. Go to `Clusters` and create a new cluster with the name `plio-staging-cluster`. (skip this step if you've already created a VPC when setting up the frontend repository)
-   1. Select `Networking only`. We will go with serverless deployment so that we don't worry about managing our own server instances.
-   2. Don't create a new VPC for your cluster. We'll use the VPC created in previous step in the next step of creating a service.
-   3. Click on the create button.
-   4. You will see the new cluster within the list of clusters.
+12. Go to `Clusters` and create a new cluster with the name `plio-staging-cluster`. (skip this step if you've already created a VPC when setting up the frontend repository)
+    1. Select `Networking only`. We will go with serverless deployment so that we don't worry about managing our own server instances.
+    2. Don't create a new VPC for your cluster. We'll use the VPC created in previous step in the next step of creating a service.
+    3. Click on the create button.
+    4. You will see the new cluster within the list of clusters.
 
-10. Get into `plio-staging-cluster` and create a new service.
+13. Get into `plio-staging-cluster` and create a new service.
 
        1. Set launch type to Fargate. We'll use serverless deployments for Plio.
        2. Name the service as `plio-backend-staging`.
@@ -120,16 +149,16 @@ Follow the steps below to set up the staging environment on AWS.
        13. For auto-scaling, go with `Do not adjust the service's desired count`  for staging.
        14. Review and create the service.
 
-11. Next, go to your GitHub repository and create a new environment from the settings tab.
+14. Next, go to your GitHub repository and create a new environment from the settings tab.
     1. Name the environment as `Staging`.
     2. Make sure you have added the following GitHub secrets on repository level. If not, add these as your environment secrets.
        - AWS_ACCESS_KEY_ID
        - AWS_SECRET_ACCESS_KEY
        - AWS_REGION
 
-12. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
+15. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
 
-13. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
+16. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
 
 
 #### Production

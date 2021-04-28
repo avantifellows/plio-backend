@@ -56,3 +56,4 @@ tqdm==4.51.0
 urllib3==1.25.11
 virtualenv==20.4.2
 wrapt==1.12.1
+django-rest-swagger==2.2.0

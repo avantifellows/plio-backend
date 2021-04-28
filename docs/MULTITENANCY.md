@@ -1,5 +1,5 @@
 ## Multitenancy
-Plio uses the [django-tenants-schemas](https://django-tenant-schemas.readthedocs.io/en/latest/install.html) package to implement multitenancy.
+Plio uses the [django-tenants](https://django-tenants.readthedocs.io/en/latest/) package to implement multitenancy.
 
 This guide aims to provide details on how Plio is using multi-tenancy and pre-requisites for someone contributing to the code.
 
@@ -12,6 +12,8 @@ Run the following commands to create an organization from programmatically:
     ```
 
 2. Create a public tenant that will be the default one.
+
+    **Note:** Public tenant is already created when docker container is initialized through Django fixtures. Please refer `entrypoint.sh` and `organizations/fixtures/default_tenant.yaml` files.
 
     ```py
     # create your public tenant
@@ -30,7 +32,7 @@ Run the following commands to create an organization from programmatically:
 3. Create a tenant organization that will have it's own schema.
     ```py
     # create your first real tenant
-    tenant = Organization(schema_name='avantifellows', name='Avanti Fellows', shortcode='af')
+    tenant = Organization(name='Avanti Fellows', shortcode='af')
     tenant.save()
 
     domain = Domain()
@@ -51,5 +53,5 @@ Run the following commands to create an organization from programmatically:
     SELECT tablename FROM pg_catalog.pg_tables where schemaname='public';
 
     -- view tables in tenant organization schema
-    SELECT tablename FROM pg_catalog.pg_tables where schemaname='avantifellows';
+    SELECT tablename FROM pg_catalog.pg_tables where schemaname='generated_schema_name';
     ```

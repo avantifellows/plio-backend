@@ -1,0 +1,34 @@
+version: '3.7'
+
+services: # the different images that will be running as containers
+  db: # service name
+    image: postgres:11-alpine # image name of the postgres database. during build, this will be pulled from dockerhub and a container spun up from it
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+      - POSTGRES_DB=${DB_NAME}
+      - PGPORT=${DB_PORT}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    restart: "on-failure"
+  web: # service name
+    # allows one to attach the terminal of a running container for debugging
+    stdin_open: true
+    tty: true
+    build: . # build the image for the web service from the dockerfile in parent directory.
+    volumes:
+      - .:/app # map data and files from parent directory in host to plio directory in docker container
+    env_file: # file where env variables are stored. Used as best practice so as not to expose secret keys
+      - .env # name of the env file
+    image: plio-backend # name of the image
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    restart: "on-failure"
+    depends_on: # cannot start if db service is not up and running
+      - db
+
+volumes:
+  postgres_data:

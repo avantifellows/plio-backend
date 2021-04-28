@@ -96,7 +96,7 @@ Follow the steps below to set up the staging environment on AWS.
    2. Choose target type to be `IP addresses`.
    3. Name the target group as `plio-backend-staging`.
    4. Set the protocol to `TCP` and port to `80`.
-   5. Select the `plio-staging-vpc` for the target group VPC.
+   5. Select the `plio-staging` for the target group VPC.
    6. In the next step, add an IP address in the `IP` text area - the IP address should belong to your VPC - if you followed the steps above exactly, you can use any IP address between `10.0.0.0` to `10.0.255.255`.
    7. Proceed to create the target group. You will see the created target group in the list of all target groups.
 

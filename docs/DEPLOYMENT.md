@@ -76,9 +76,9 @@ Follow the steps below to set up the staging environment on AWS.
    8. Set the alloted storage as per your needs.
    9. For Availability and Durability, use multi-AZ deployment if you need. Take a note that this may almost double your monthly expense.
    10. Under VPC settings, select the VPC created in previous step.
-   11. In case you prefer to connect to your database directly from your machine, set the public access to "Yes".
+   11. In case you prefer to connect to your database directly from your machine, set the public access to `Yes`.
    12. Under additional configuration, set initial database name as `plio_staging`. This will create an empty database.
-   13. Finally, create the RDS instance by clicking on "Create Database" button.
+   13. Finally, create the RDS instance by clicking on `Create Database` button.
    14. You will see the new RDS instance in the list of RDS instances. Click on your DB instance to see the connectivity settings.
    15. To connect to RDS from command line, run the following command (this will work if you've set public access to yes):
    ```sh
@@ -123,7 +123,7 @@ Follow the steps below to set up the staging environment on AWS.
     8. Save the container definition and the task definition.
     9. You will see the new task definition within the list of all task definitions.
 
-12. Go to `Clusters` and create a new cluster with the name `plio-staging-cluster`. (skip this step if you've already created a VPC when setting up the frontend repository)
+12. Under ECS, go to `Clusters` and create a new cluster with the name `plio-staging-cluster`. (skip this step if you've already created a Cluster when setting up the frontend repository)
     1. Select `Networking only`. We will go with serverless deployment so that we don't worry about managing our own server instances.
     2. Don't create a new VPC for your cluster. We'll use the VPC created in previous step in the next step of creating a service.
     3. Click on the create button.

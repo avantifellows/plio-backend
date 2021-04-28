@@ -36,7 +36,7 @@ Follow the steps below to set up the staging environment on AWS.
    1. Create a new VPC.
    2. Name it `plio-staging`.
    3. In IPv4 CIDR block, enter `10.0.0.0/16` - this will reserve 255 * 255 IPs within the VPC.
-   4. Click on create button. You will see the new VPC under the list of VPCs.
+   4. Click on the create button. You will see the new VPC under the list of VPCs.
    5. Check out this [AWS guide for more details on VPC](https://docs.aws.amazon.com/vpc/latest/userguide/working-with-vpcs.html).
 
    6. You'll need to attach an Internet Gateway to this VPC.

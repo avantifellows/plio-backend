@@ -157,8 +157,8 @@ Follow the steps below to set up the staging environment on AWS.
 
 16. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
 
+## Production
 
-#### Production
 Setting up a production environment on AWS is almost the same as staging. Additionally, take care of the following things:
 1. Rename all services as `plio-backend-production` or a similar naming convention.
 2. Go with auto-scaling option when creating a new service from ECS.

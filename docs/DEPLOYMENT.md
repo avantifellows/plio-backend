@@ -24,7 +24,7 @@ Deploying on AWS requires a basic understanding of the following tools and servi
 
 ### Continuous Delivery process
 
-An overview of how continuous delivery cycle works in Plio with GitHub action and Amazon ECR & ECS.
+An overview of how the continuous delivery cycle works in Plio with GitHub action and Amazon ECR & ECS.
 
 ![Overview of Continuous Delivery process](images/aws-gh-cd.png)
 
@@ -39,34 +39,31 @@ Follow the steps below to set up the staging environment on AWS.
    4. Click on create button. You will see the new VPC under the list of VPCs.
    5. Check out this [AWS guide for more details on VPC](https://docs.aws.amazon.com/vpc/latest/userguide/working-with-vpcs.html).
 
-3. You'll need to attach an Internet Gateway to this VPC.
+   6. You'll need to attach an Internet Gateway to this VPC.
+      1. Click on `Internet Gateways` in the VPC Dashboard.
+      2. Select `Create internet Gateaway`.
+      3. Name it as `plio-staging` and save it.
+      4. Click on `Attach to a VPC` in the next page and select the VPC created above.
 
-   1. Click on `Internet Gateways` in the VPC Dashboard.
-   2. Select `Create internet Gateaway`.
-   3. Name it as `plio-staging` and save it.
-   4. Click on `Attach to a VPC` in the next page and select the VPC created above.
+   7. Next, you'll need to attach Subnets to the VPC created above.
+      1. Click on `Subnets` in the VPC Dashboard.
+      2. Click on `Create Subnet`.
+      3. Choose the VPC created above as VPC ID.
+      4. Enter the `Subnet name` as `plio-staging-1`.
+      5. Either choose the `Availability Zone` if you have a preference or leave it to the default
+      6. Under `IPv4 CIDR block`, add a range of IPv4s that belong to your subnet. If you followed the steps above exactly, you can set this value as `10.0.0.0/24`. This will reserve the IPs `10.0.0.0` to `10.0.0.255` to this Subnet.
+      7. If you want to, you can create more subnets using `Add new subnet`  but it's not needed going forward. If you do choose to do so, you'll need to choose a different non-overlapping range of IPv4s for the `IPv4 CIDR block` option - for example, you could set it to: `10.0.1.0/24` to reserve the  IPs `10.0.1.0` to `10.0.1.255`.
+      8. Finally, create the subnet.
 
-4. Next, you'll need to attach Subnets to the VPC created above.
-
-   1.  Click on `Subnets` in the VPC Dashboard.
-   2. Click on `Create Subnet`.
-   3. Choose the VPC created above as VPC ID.
-   4. Enter the `Subnet name` as `plio-staging-1`.
-   5. Either choose the `Availability Zone` if you have a preference or leave it to the default
-   6. Under `IPv4 CIDR block`, add a range of IPv4s that belong to your subnet. If you followed the steps above exactly, you can set this value as `10.0.0.0/24`. This will reserve the IPs `10.0.0.0` to `10.0.0.255` to this Subnet.
-   7. If you want to, you can create more subnets using `Add new subnet`  but it's not needed going forward. If you do choose to do so, you'll need to choose a different non-overlapping range of IPv4s for the `IPv4 CIDR block` option - for example, you could set it to: `10.0.1.0/24` to reserve the  IPs `10.0.1.0` to `10.0.1.255`.
-   8. Finally, create the subnet.
-
-5. You need to update your `Route Tables` to give make your subnets publicly accessible.
-
-   1. Click on `Route Tables` in the VPC Dashboard
-   2. Select the entry corresponding to the VPC you created above.
-   3. Navigate to the `Routes` tab.
-   4. Click on `Edit routes`.
-   5. Click on `Add route`.
-   6. Add `0.0.0.0/0` as the `Destination`.
-   7. Select `Internet Gateway` under `Target` and link to the Internet Gateway you created above.
-   8. Click on `Save routes`.
+   8. You need to update your `Route Tables` to give make your subnets publicly accessible.
+      1. Click on `Route Tables` in the VPC Dashboard
+      2. Select the entry corresponding to the VPC you created above.
+      3. Navigate to the `Routes` tab.
+      4. Click on `Edit routes`.
+      5. Click on `Add route`.
+      6. Add `0.0.0.0/0` as the `Destination`.
+      7. Select `Internet Gateway` under `Target` and link to the Internet Gateway you created above.
+      8. Click on `Save routes`.
 
 6. Set up the database. Click on `Databases` on the AWS RDS page.
    1. Click on `Create Database`.

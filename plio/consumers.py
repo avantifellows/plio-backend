@@ -1,7 +1,8 @@
 import json
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
-from users.serializers import UserSerializer
+
+# from users.serializers import UserSerializer
 
 
 class UserConsumer(WebsocketConsumer):
@@ -29,5 +30,5 @@ class UserConsumer(WebsocketConsumer):
     def send_user(self, event):
         # serialize the recieved User instance
         # and send it over the websocket
-        user_instance = event["data"]
-        self.send(json.dumps({"user": UserSerializer(user_instance).data}))
+        user_data = event["data"]
+        self.send(json.dumps({"user": user_data}))

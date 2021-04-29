@@ -19,6 +19,11 @@ from django.contrib.auth import login
 from oauth2_provider.models import AccessToken, Application, RefreshToken
 from .services import SnsService
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.dispatch import receiver
+from django.db.models.signals import post_save, pre_save, post_delete
+
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -167,3 +172,31 @@ def get_by_access_token(request):
         return Response(UserSerializer(user).data)
 
     return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@receiver(pre_save, sender=User)
+def update_user(sender, instance: User, **kwargs):
+    if not instance.id:
+        # new user is created
+        return
+
+    # existing user is updated
+    previous = sender.objects.get(id=instance.id)
+    if previous.status != instance.status:
+        user_data = UserSerializer(instance).data
+        # execute this only if the user status has changed
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            "users", {"type": "send_user", "data": user_data}
+        )
+
+
+@receiver(post_save, sender=OrganizationUser)
+@receiver(post_delete, sender=OrganizationUser)
+def update_organization_user(sender, instance: OrganizationUser, **kwargs):
+    # execute this if anything in the Organization User has changed
+    user_data = UserSerializer(instance.user).data
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "users", {"type": "send_user", "data": user_data}
+    )

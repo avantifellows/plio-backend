@@ -1,10 +1,6 @@
 from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save, post_delete
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from organizations.models import Organization
 from safedelete.models import SafeDeleteModel, SafeDeleteManager, SOFT_DELETE
 from .config import user_status_choices
@@ -143,29 +139,3 @@ class OneTimePassword(models.Model):
 
     class Meta:
         db_table = "one_time_password"
-
-
-@receiver(pre_save, sender=User)
-def update_user(sender, instance: User, **kwargs):
-    if not instance.id:
-        # new user is created
-        return
-
-    # existing user is updated
-    previous = sender.objects.get(id=instance.id)
-    if previous.status != instance.status:
-        # execute this only if the user status has changed
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            "users", {"type": "send_user", "data": instance}
-        )
-
-
-@receiver(post_save, sender=OrganizationUser)
-@receiver(post_delete, sender=OrganizationUser)
-def update_organization_user(sender, instance: OrganizationUser, **kwargs):
-    # execute this if anything in the Organization User has changed
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
-        "users", {"type": "send_user", "data": instance.user}
-    )

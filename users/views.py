@@ -181,8 +181,8 @@ def update_user(sender, instance: User, **kwargs):
         return
 
     # existing user is updated
-    previous = sender.objects.get(id=instance.id)
-    if previous.status != instance.status:
+    pre_save_instance = sender.objects.get(id=instance.id)
+    if pre_save_instance.status != instance.status:
         # execute this only if the user status has changed
         user_data = UserSerializer(instance).data
         channel_layer = get_channel_layer()

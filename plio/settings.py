@@ -277,19 +277,14 @@ DEFAULT_ROLES = [
     {"name": "org-view"},
 ]
 
+REDIS_HOSTNAME = os.environ.get("REDIS_HOSTNAME")
+REDIS_PORT = os.environ.get("REDIS_PORT")
+
+# https://channels.readthedocs.io/en/latest/topics/channel_layers.html
 CHANNEL_LAYERS = {
     "default": {
-        # Method 1: Via redis lab
+        # using redis as the backing store
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [
-                ("redis-plio-staging.otbdjd.ng.0001.aps1.cache.amazonaws.com", 6379)
-            ],
-            # "hosts": [('redis', 6379)],
-        },
-        # Method 2: Via local Redis
-        # Method 3: Via In-memory channel layer
-        # Using this method.
-        # "BACKEND": "channels.layers.InMemoryChannelLayer"
-    },
+        "CONFIG": {"hosts": [(REDIS_HOSTNAME, REDIS_PORT)]},
+    }
 }

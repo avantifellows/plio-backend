@@ -183,8 +183,8 @@ def update_user(sender, instance: User, **kwargs):
     # existing user is updated
     previous = sender.objects.get(id=instance.id)
     if previous.status != instance.status:
-        user_data = UserSerializer(instance).data
         # execute this only if the user status has changed
+        user_data = UserSerializer(instance).data
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             "users", {"type": "send_user", "data": user_data}

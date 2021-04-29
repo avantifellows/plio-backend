@@ -29,6 +29,13 @@ services: # the different images that will be running as containers
     restart: "on-failure"
     depends_on: # cannot start if db service is not up and running
       - db
+  redis: # service name
+    image: "redis:5" # image name of the redis database. during build, this will be pulled from dockerhub and a container spun up from it
+    hostname: redis # channel layer will connect to this hostname in settings.py
+    ports:
+      - "6379:6379" # default redis port
+    depends_on:
+      - web # cannot start if web service is not up and running
 
 volumes:
   postgres_data:

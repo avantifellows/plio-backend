@@ -21,24 +21,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ["SECRET_KEY"]
+SECRET_KEY = os.environ.get("SECRET_KEY")
+
+# App environment. Possible values are: local, staging, production
+APP_ENV = os.environ.get("APP_ENV", "production")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ["DEBUG"]
+DEBUG = os.environ.get("DEBUG", False)
 
-ALLOWED_HOSTS = [
-    "0.0.0.0",
-    "127.0.0.1",
-    "staging.plio.in",
-    "backend.plio.in",
-    "oix3vlacdg.execute-api.ap-south-1.amazonaws.com",  # Staging Lambda
-    "musxsu7886.execute-api.ap-south-1.amazonaws.com",  # Prod Lambda
-]
-
-if "RDS_DB_NAME" in os.environ:
-    SECURE_SSL_REDIRECT = True
-else:
-    SECURE_SSL_REDIRECT = False
+# allowed hosts that can access the Django app
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(" ")
 
 # Application definition
 
@@ -244,12 +236,12 @@ GET_CMS_PROBLEM_URL = "/problems"
 
 DATABASES = {
     "default": {
-        "ENGINE": os.environ["DB_ENGINE"],
-        "NAME": os.environ["DB_NAME"],
-        "USER": os.environ["DB_USER"],
-        "PASSWORD": os.environ["DB_PASSWORD"],
-        "HOST": os.environ["DB_HOST"],
-        "PORT": int(os.environ["DB_PORT"]),
+        "ENGINE": os.environ.get("DB_ENGINE", "django_tenants.postgresql_backend"),
+        "NAME": os.environ.get("DB_NAME", "plio"),
+        "USER": os.environ.get("DB_USER", "postgres"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "HOST": os.environ.get("DB_HOST", "db"),
+        "PORT": int(os.environ.get("DB_PORT", 5432)),
     }
 }
 
@@ -259,12 +251,12 @@ DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 
 FRONTEND_URL = "https://app.plio.in"
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ["GOOGLE_OAUTH2_CLIENT_ID"]
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ["GOOGLE_OAUTH2_CLIENT_SECRET"]
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get("GOOGLE_OAUTH2_CLIENT_ID", "")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get("GOOGLE_OAUTH2_CLIENT_SECRET", "")
 
-AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
-AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
-AWS_REGION = os.environ["AWS_REGION"]
+AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+AWS_REGION = os.environ.get("AWS_REGION", "")
 
 API_APPLICATION_NAME = "plio"
 

@@ -283,7 +283,7 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [
-                ("redis-plio-staging-ro.otbdjd.ng.0001.aps1.cache.amazonaws.com", 6379)
+                ("redis-plio-staging.otbdjd.ng.0001.aps1.cache.amazonaws.com", 6379)
             ],
             # "hosts": [('redis', 6379)],
         },

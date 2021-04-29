@@ -288,9 +288,14 @@ DEFAULT_ROLES = [
 CHANNEL_LAYERS = {
     "default": {
         # Method 1: Via redis lab
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [("redis-plio-staging-ro.otbdjd.ng.0001.aps1.cache.amazonaws.com", 6379)],
+            # "hosts": [('redis', 6379)],
+        },
         # Method 2: Via local Redis
         # Method 3: Via In-memory channel layer
         # Using this method.
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
+        # "BACKEND": "channels.layers.InMemoryChannelLayer"
     },
 }

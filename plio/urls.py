@@ -20,11 +20,18 @@ from django.conf.urls import url
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from tags.views import TagViewSet
-from users.views import UserViewSet, request_otp, verify_otp, get_by_access_token
+from users.views import (
+    UserViewSet,
+    OrganizationUserViewSet,
+    request_otp,
+    verify_otp,
+    get_by_access_token,
+)
 from organizations.views import OrganizationViewSet
 from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
 from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
 from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
+from users import consumers
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -58,7 +65,9 @@ api_router.register(r"sessions", SessionViewSet, basename="sessions")
 api_router.register(r"session-answers", SessionAnswerViewSet)
 api_router.register(r"events", EventViewSet)
 api_router.register(r"tags", TagViewSet)
+api_router.register(r"organization-users", OrganizationUserViewSet)
 
+# http/https url patterns
 urlpatterns = [
     path("admin/", admin.site.urls),
     # API routes
@@ -73,4 +82,10 @@ urlpatterns = [
         schema_view.with_ui("redoc", cache_timeout=0),
         name="schema-redoc",
     ),
+]
+
+# ws/wss url patterns
+websocket_urlpatterns = [
+    # consumer for a particular user
+    path("api/v1/users/<int:user_id>", consumers.UserConsumer.as_asgi()),
 ]

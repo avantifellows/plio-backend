@@ -65,7 +65,7 @@ Follow the steps below to set up the staging environment on AWS.
       7. Select `Internet Gateway` under `Target` and link to the Internet Gateway you created above.
       8. Click on `Save routes`.
 
-6. Set up the database. Click on `Databases` on the AWS RDS page.
+3. Set up the database. Click on `Databases` on the AWS RDS page.
    1. Click on `Create Database`.
    2. Use `Standard create` the in database creation method.
    3. Use Postgres12 in the DB engine.
@@ -86,12 +86,12 @@ Follow the steps below to set up the staging environment on AWS.
    ```
    16. Once you are logged in into the PSQL CLI, you can run all the SQL commands to create a new database, user, grant privileges etc.
 
-7. Create a new Elastic IP by going to EC2 dashboard and navigating to the `Elastic IP` section.
+4. Create a new Elastic IP by going to EC2 dashboard and navigating to the `Elastic IP` section.
    1. Click on `Allocate Elastic IP address` and click on `Allocate` .
    2. You will see a new IP address in the IPs list. Name it `plio-backend-staging`.
    3. This will be used in later steps to give the load balancer a permanent IP address.
 
-8. Go to Target groups.
+5. Go to Target groups.
    1. Create a new target group.
    2. Choose target type to be `IP addresses`.
    3. Name the target group as `plio-backend-staging`.
@@ -100,7 +100,7 @@ Follow the steps below to set up the staging environment on AWS.
    6. In the next step, add an IP address in the `IP` text area - the IP address should belong to your VPC - if you followed the steps above exactly, you can use any IP address between `10.0.0.0` to `10.0.255.255`.
    7. Proceed to create the target group. You will see the created target group in the list of all target groups.
 
-9. Go to Load Balancers (LBs).
+6. Go to Load Balancers (LBs).
    1. Create a new load balancer.
    2. Select `Network Load Balancer` option. We use NLB for easy support of web socket connections.
    3. Name the LB as `plio-backend-staging`.
@@ -109,9 +109,9 @@ Follow the steps below to set up the staging environment on AWS.
    6. Under listeners and routing, select the target group `plio-backend-staging` for TCP port 80.
    7. Proceed to create the load balancer. You will see the created load balancer in the list of all load balancers.
 
-10. Go to ECR and create a new repository named `plio-backend-staging` and set the settings as per your needs.
+7. Go to ECR and create a new repository named `plio-backend-staging` and set the settings as per your needs.
 
-11. Now go to ECS and create a new task definition
+8. Now go to ECS and create a new task definition
 
     1. Select Fargate and name the task definition as `plio-backend-staging`.
     2. Set the task role as `ecsTaskExecutionRole`.
@@ -120,16 +120,17 @@ Follow the steps below to set up the staging environment on AWS.
     5. In the image field, you can just type in `image_arn`. This is not a valid entry and just a placeholder for now as it'll be replaced by the actual image ARN once the GitHub workflow triggers.
     6. Enter port `80` in the port mapping field.
     7. Use the `.env.example` file to set all the required environment variables for your container in the `Environment Variables` section.
-    8. Save the container definition and the task definition.
-    9. You will see the new task definition within the list of all task definitions.
+    8. Leave the variables `REDIS_HOSTNAME` and `REDIS_PORT` as empty for now. We'll fill them up later.
+    9. Save the container definition and the task definition.
+    10. You will see the new task definition within the list of all task definitions.
 
-12. Under ECS, go to `Clusters` and create a new cluster with the name `plio-staging-cluster`. (skip this step if you've already created a Cluster when setting up the frontend repository)
+9. Under ECS, go to `Clusters` and create a new cluster with the name `plio-staging-cluster`. (skip this step if you've already created a Cluster when setting up the frontend repository)
     1. Select `Networking only`. We will go with serverless deployment so that we don't worry about managing our own server instances.
     2. Don't create a new VPC for your cluster. We'll use the VPC created in previous step in the next step of creating a service.
     3. Click on the create button.
     4. You will see the new cluster within the list of clusters.
 
-13. Get into `plio-staging-cluster` and create a new service.
+10. Get into `plio-staging-cluster` and create a new service.
 
        1. Set launch type to Fargate. We'll use serverless deployments for Plio.
        2. Name the service as `plio-backend-staging`.
@@ -146,22 +147,70 @@ Follow the steps below to set up the staging environment on AWS.
        13. For auto-scaling, go with `Do not adjust the service's desired count`  for staging.
        14. Review and create the service.
 
-14. Next, go to your GitHub repository and create a new environment from the settings tab.
+11. Create a `redis` cluster on AWS Elasticache.
+
+      1. Go to the [ElastiCache dashboard](https://console.aws.amazon.com/elasticache/home). Select the region and click on `Create` button.
+      2. Select `Redis` as your Cluster engine.
+      3. Select `Cluster mode disabled`. More details on cluster mode [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Replication.Redis-RedisCluster.html).
+      4. Choose `Amazon Cloud` as your location.
+      5. Set the name of your cluster as `plio-redis-staging`.
+      6. Choose the latest `Engine version compatibility`.
+      7. Enter `6379` as the `Port`.
+      8. No need to change anything for `Parameter Group`.
+      9. Choose your `Node Type`. Plio uses `cache.t2.micro`. More details [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/nodes-select-size.html#CacheNodes.SelectSize).
+      10. For `Number of replicas`, enter `2`.
+      11. For high availability, select the `Multi AZ` checkbox. Take a note that this may almost double your monthly expense. More details [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html).
+      12. Select `Advanced Redis settings` and fill in the details as mentioned below.
+          1. For `Subnet group`, create a new group.
+          2. Add the subnets that were created above.
+          3. For `VPC ID`, add the VPC that was created above.
+          4. For `Availability zone(s)`, choose `No preference`. More details [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/RegionsAndAZs.html).
+          5. For `Security groups` choose the default security group.
+      13. Click the `Create` button.
+      14. Proceed when the cluster's status becomes `available`. Next we'll grant access to the cluster.
+      15. Go to the AWS EC2 console [here](https://console.aws.amazon.com/ec2/).
+      16. In the navigation pane, under `Network & Security`, choose `Security Groups`.
+      17. Choose the `default` security group for your VPC.
+      18. Choose the `Inbound` tab, and then do the following:
+          1. Choose `Edit` and select `Add Rule`.
+          2. In the `Type` column, choose `Custom TCP rule`.
+          3. In the `Port range` box, type `6379`.
+          4. In the `Source` box, choose `Anywhere`.
+          5. Click `Save`.
+      19. Find the endpoints of your redis instance using [this](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Endpoints.html) and copy them somewhere for later use.
+
+12. Connect the redis instance to the `plio-backend-staging` service that was created above.
+    1. Go to the ECS dashboard and select `plio-staging-cluster`.
+    2. Select the `plio-backend-staging` service.
+    3. Select the `Tasks` tab.
+    4. Select the running task definition in the `Task Definition` column.
+    5. Click `Create new revision` button on the top and select the existing container with the name: `plio-backend-staging`.
+    6. In the new window, scroll down to `Environment Variables` section.
+    7. Update the `REDIS_HOSTNAME` and `REDIS_PORT ` keys that were copied before.
+    8. Click the `Update` button to update the environment variables.
+    9. Click the `Create` button to create a new revision of the task definition.
+    10. Navigate back to the service `plio-backend-staging`.
+    11. Click `Update` on top right.
+    12. Update the revision of the newly created task definition and wait for it to get initiated.
+    13. After the new revision starts running, stop the older revision.
+
+13. Next, go to your GitHub repository and create a new environment from the settings tab.
     1. Name the environment as `Staging`.
     2. Make sure you have added the following GitHub secrets on repository level. If not, add these as your environment secrets.
        - AWS_ACCESS_KEY_ID
        - AWS_SECRET_ACCESS_KEY
        - AWS_REGION
 
-15. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
+14. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
 
-16. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
+15. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
 
 ## Production
 
 Setting up a production environment on AWS is almost the same as staging. Additionally, take care of the following things:
 1. Rename all services as `plio-backend-production` or a similar naming convention.
-2. Go with auto-scaling option when creating a new service from ECS.
+2. Change all the environment variables to the corresponding values for the production environment.
+3. Go with auto-scaling option when creating a new service from ECS.
    1. When creating a service or when updating it, navigate to the service auto-scaling section.
    2. Select `Configure Service Auto Scaling to adjust your service's desired count`.
    3. Set minimum number of tasks to `1`. This is the minimum count of running tasks when scale-in operation happen.

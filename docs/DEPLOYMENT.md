@@ -148,6 +148,7 @@ Follow the steps below to set up the staging environment on AWS.
        14. Review and create the service.
 
 11. Create and connect a `redis` cluster on AWS Elasticache to your backend app.
+
       1. Go to the [ElastiCache dashboard](https://console.aws.amazon.com/elasticache/home). On the top right corner, select the region where you want to launch the Redis Cluster and click on `Create` button.
       2. Select `Redis` as your Cluster engine.
       3. Select `Cluster mode disabled`. More details on cluster mode [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Replication.Redis-RedisCluster.html).
@@ -160,38 +161,38 @@ Follow the steps below to set up the staging environment on AWS.
       10. For `Number of replicas`, enter `2`.
       11. Select the `Multi AZ` checkbox. More details [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html).
       12. Select `Advanced Redis settings` and fill in the details as mentioned below.
-         1. For `Subnet group`, create a new group.
-         2. Add the subnets that were created above.
-         3. For `VPC ID`, add the VPC that was created above.
-         4. For `Availability zone(s)`, choose `No preference`. More details [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/RegionsAndAZs.html).
-         5. For `Security groups` choose the default security group. Rest all options are not mandatory.
+          1. For `Subnet group`, create a new group.
+          2. Add the subnets that were created above.
+          3. For `VPC ID`, add the VPC that was created above.
+          4. For `Availability zone(s)`, choose `No preference`. More details [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/RegionsAndAZs.html).
+          5. For `Security groups` choose the default security group. Rest all options are not mandatory.
       13. Click the `Create` button.
       14. Proceed when the cluster's status becomes `available`. Next we'll grant access to the cluster.
       15. Go to the AWS EC2 console [here](https://console.aws.amazon.com/ec2/).
       16. In the navigation pane, under `Network & Security`, choose `Security Groups`.
       17. Choose the `default` security group for your VPC.
       18. Choose the `Inbound` tab, and then do the following:
-         1. Choose `Edit` and select `Add Rule`.
-         2. In the `Type` column, choose `Custom TCP rule`.
-         3. In the `Port range` box, type `6379`.
-         4. In the `Source` box, choose `Anywhere`.
-         5. Click `Save`.
+          1. Choose `Edit` and select `Add Rule`.
+          2. In the `Type` column, choose `Custom TCP rule`.
+          3. In the `Port range` box, type `6379`.
+          4. In the `Source` box, choose `Anywhere`.
+          5. Click `Save`.
       19. Find the endpoints of your redis instance using [this](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Endpoints.html) and copy them somewhere for later use.
       20. Next, we will connect the endpoints (found in the previous step) to the `plio-backend-staging` service that was created above.
       21. Create a new revision of the task definition to add the redis endpoint as an environment variable.
-         1. Go to the ECS dashboard and select `plio-staging-cluster`.
-         2. Select the `plio-backend-staging` service.
-         3. Select the `Tasks` tab.
-         4. Select the running task definition in the `Task Definition` column.
-         5. Click `Create new revision` button on the top and select the existing container name: `plio-backend-staging`.
-         6. In the new window, scroll down to `Environment Variables` section.
-         7. Update the `REDIS_HOSTNAME` and `REDIS_PORT ` keys that were copied before.
-         8. Click the `Update` button to update the environment variables.
-         9. Click the `Create` button to create a new revision of the task definition.
-         10. Navigate back to the service `plio-backend-staging`.
-         11. Click `Update` on top right.
-         12. Update the revision of the newly created task definition and wait for it to get initiated.
-         13. After the new task definition start running, stop the older task definition.
+          1. Go to the ECS dashboard and select `plio-staging-cluster`.
+          2. Select the `plio-backend-staging` service.
+          3. Select the `Tasks` tab.
+          4. Select the running task definition in the `Task Definition` column.
+          5. Click `Create new revision` button on the top and select the existing container name: `plio-backend-staging`.
+          6. In the new window, scroll down to `Environment Variables` section.
+          7. Update the `REDIS_HOSTNAME` and `REDIS_PORT ` keys that were copied before.
+          8. Click the `Update` button to update the environment variables.
+          9. Click the `Create` button to create a new revision of the task definition.
+          10. Navigate back to the service `plio-backend-staging`.
+          11. Click `Update` on top right.
+          12. Update the revision of the newly created task definition and wait for it to get initiated.
+          13. After the new task definition start running, stop the older task definition.
 
 12. Next, go to your GitHub repository and create a new environment from the settings tab.
     1. Name the environment as `Staging`.

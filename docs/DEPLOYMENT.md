@@ -146,22 +146,68 @@ Follow the steps below to set up the staging environment on AWS.
        13. For auto-scaling, go with `Do not adjust the service's desired count`  for staging.
        14. Review and create the service.
 
-14. Next, go to your GitHub repository and create a new environment from the settings tab.
+14. Create and connect a `redis` cluster on AWS Elasticache to your backend app
+      1. Go to the ElastiCache dashboard on AWS. On the top right corner, select the region where you want to launch the Redis Cluster and click on "Create" button
+      2. Select “Redis” as your Cluster engine. In the checkbox below, "Cluster mode enabled" or "Cluster mode disabled" is your choice. Plio uses "Cluster mode disabled". More details on cluster mode [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Replication.Redis-RedisCluster.html)
+      3. Choose **Amazon Cloud** as your location in the **Location** section
+      4. Fill all the details in the **Redis Details** section. Some pointers below:
+         1. Choose a name for your Redis Cluster, e.g. “plio-redis-staging”. Description is optional
+         2. For "Engine version compatibility", it's recommended to choose the latest one.
+         3. For "Port", enter the port you want for the instance. `6379` is the default port for redis and is recommended.
+         4. For "Parameter Group", nothing needs to be changed. This gets decided when choosing between cluster mode enabled or disabled
+         5. Choose your "Node Type". Plio uses `cache.t2.micro`. The size of the node should depend on the workload of your apps in production. For more details, see [this](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/nodes-select-size.html#CacheNodes.SelectSize)
+         6. For "Number of replicas", choose the number of read replicas that you want for this cluster. It's recommended to have 1 or more replicas. If you choose to have 1 or more replicas, make sure you select "Multi AZ" checkbox. It provides high availability and failover support. More details [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html)
+         7. Select **Advanced Redis settings** and fill in the details as mentioned below:
+            1. For *Subnet group* you can create a new group or use an existing one. For staging, subnets were created in step 2.7. You can create a new subnet group, name it accordingly and add the subnets (created in step 2.7) to that group. A VPC was also created in step 2. Add that VPC ID in the appropriate selectbox. *NOTE*: If you selected Multi-AZ checkbox in step 6 above, then the subnet group will require two or more subnets in the group. For example, in staging environment for Plio, three subnets have been created and added to the group.
+            2. For *Availability zone(s)*, choose *No preference* – ElastiCache chooses the Availability Zones for your cluster's nodes. If required, configure your own availability zones. For more info, see [this](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/RegionsAndAZs.html)
+            3. For Security groups, choose the security groups that you want for this cluster. A security group acts as a firewall to control network access to your cluster. You can choose use the Default security group for your VPC or create a new one.
+            4. (OPTIONAL) Configure encryption options according to your requirements.
+            5. (OPTIONAL) Configure logging. For Plio, JSON logging has been configured at CloudWatch Logs
+            6. (OPTIONAL) Rest all the options are not mandatory and are left up to the user to configure according to their needs
+         8. Click the "Create" button. A Redis Cluster will get initialized and once it becomes “available” you will be able to continue with the steps ahead.
+         9. Grant access to your redis cluster by following the steps below-
+            1. Go to the AWS EC2 console [here](https://console.aws.amazon.com/ec2/)
+            2. In the navigation pane, under Network & Security, choose Security Groups.
+            3. From the list of security groups, choose the security group for your Amazon VPC. Unless you created a security group for ElastiCache use, this security group will be named *default*.
+            4. Choose the Inbound tab, and then do the following:
+               1. Choose Edit -> Add Rule.
+               2. In the Type column, choose Custom TCP rule.
+               3. In the Port range box, type the port number for your cluster node. This number must be the same one that you specified when you launched the cluster. The default port for Redis is 6379.
+               4. In the Source box, choose Anywhere which has the port range (0.0.0.0/0) so that any Amazon EC2 instance that you launch within your Amazon VPC can connect to your ElastiCache nodes.
+               5. Choose Save.
+         10. Connect the endpoint of your redis instance to the `plio-backend-staging` service that was created inside the `plio-staging-cluster` in Step 13.
+            1. Create a new revision of the task definition to add the redis endpoint as an environment variable
+               1. Go to the ECS dashboard and select `plio-staging-cluster`
+               2. Select the `plio-backend-staging` service
+               3. Go into the *Tasks* tab and select the running task definition in the *Task Definition* column
+               4. Click *Create new revision* button on the top, scroll down to the section *Container Definitions* and select the existing container name - `plio-backend-staging`
+               5. In the new window, scroll down to *Environment Variables* section and add the following keys and their values
+                  ```
+                  REDIS_HOSTNAME: <your elasticache redis endpoint>
+                  REDIS_PORT: <your elasticache redis port>
+                  ```
+                  To find the redis endpoints, see [this](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Endpoints.html)
+               6. After adding/updating the redis hostname and port, click the *Update* button and *Create* button to create a new revision.
+               7. Go back again to the service `plio-backend-staging` that exists inside `plio-staging-cluster` and click *Update* on top right. In the new window, update the revision of the task definition that you created in the step before. This will add the redis hostname and port to your environment variables. The new revision of the task definition will take some time to start up and applied.
+               8. After the new task definition shows the status as `RUNNING`, select the older task definition and click `STOP` on the top right to stop the definition.
+
+15. Next, go to your GitHub repository and create a new environment from the settings tab.
     1. Name the environment as `Staging`.
     2. Make sure you have added the following GitHub secrets on repository level. If not, add these as your environment secrets.
        - AWS_ACCESS_KEY_ID
        - AWS_SECRET_ACCESS_KEY
        - AWS_REGION
 
-15. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
+16. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
 
-16. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
+17. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
 
 ## Production
 
 Setting up a production environment on AWS is almost the same as staging. Additionally, take care of the following things:
 1. Rename all services as `plio-backend-production` or a similar naming convention.
-2. Go with auto-scaling option when creating a new service from ECS.
+2. Change the redis endpoint to the production instance instead of the staging one (if they are different for your case)
+3. Go with auto-scaling option when creating a new service from ECS.
    1. When creating a service or when updating it, navigate to the service auto-scaling section.
    2. Select `Configure Service Auto Scaling to adjust your service's desired count`.
    3. Set minimum number of tasks to `1`. This is the minimum count of running tasks when scale-in operation happen.

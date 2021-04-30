@@ -86,6 +86,6 @@ urlpatterns = [
 
 # ws/wss url patterns
 websocket_urlpatterns = [
-    # user consumer
-    path("api/v1/users/", consumers.UserConsumer.as_asgi()),
+    # consumer for a particular user
+    path("api/v1/users/<int:user_id>", consumers.UserConsumer.as_asgi()),
 ]

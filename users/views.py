@@ -186,8 +186,9 @@ def update_user(sender, instance: User, **kwargs):
         # execute this only if the user status has changed
         user_data = UserSerializer(instance).data
         channel_layer = get_channel_layer()
+        user_group_name = f"user_{user_data['id']}"
         async_to_sync(channel_layer.group_send)(
-            "users", {"type": "send_user", "data": user_data}
+            user_group_name, {"type": "send_user", "data": user_data}
         )
 
 
@@ -197,6 +198,7 @@ def update_organization_user(sender, instance: OrganizationUser, **kwargs):
     # execute this if anything in the Organization User has changed
     user_data = UserSerializer(instance.user).data
     channel_layer = get_channel_layer()
+    user_group_name = f"user_{user_data['id']}"
     async_to_sync(channel_layer.group_send)(
-        "users", {"type": "send_user", "data": user_data}
+        user_group_name, {"type": "send_user", "data": user_data}
     )

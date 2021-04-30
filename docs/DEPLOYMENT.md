@@ -147,7 +147,7 @@ Follow the steps below to set up the staging environment on AWS.
        13. For auto-scaling, go with `Do not adjust the service's desired count`  for staging.
        14. Review and create the service.
 
-11. Create and connect a `redis` cluster on AWS Elasticache to your backend app.
+11. Create a `redis` cluster on AWS Elasticache.
 
       1. Go to the [ElastiCache dashboard](https://console.aws.amazon.com/elasticache/home). On the top right corner, select the region where you want to launch the Redis Cluster and click on `Create` button.
       2. Select `Redis` as your Cluster engine.
@@ -178,32 +178,32 @@ Follow the steps below to set up the staging environment on AWS.
           4. In the `Source` box, choose `Anywhere`.
           5. Click `Save`.
       19. Find the endpoints of your redis instance using [this](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Endpoints.html) and copy them somewhere for later use.
-      20. Next, we will connect the endpoints (found in the previous step) to the `plio-backend-staging` service that was created above.
-      21. Create a new revision of the task definition to add the redis endpoint as an environment variable.
-          1. Go to the ECS dashboard and select `plio-staging-cluster`.
-          2. Select the `plio-backend-staging` service.
-          3. Select the `Tasks` tab.
-          4. Select the running task definition in the `Task Definition` column.
-          5. Click `Create new revision` button on the top and select the existing container name: `plio-backend-staging`.
-          6. In the new window, scroll down to `Environment Variables` section.
-          7. Update the `REDIS_HOSTNAME` and `REDIS_PORT ` keys that were copied before.
-          8. Click the `Update` button to update the environment variables.
-          9. Click the `Create` button to create a new revision of the task definition.
-          10. Navigate back to the service `plio-backend-staging`.
-          11. Click `Update` on top right.
-          12. Update the revision of the newly created task definition and wait for it to get initiated.
-          13. After the new task definition start running, stop the older task definition.
 
-12. Next, go to your GitHub repository and create a new environment from the settings tab.
+12. Connect the redis instance to the `plio-backend-staging` service that was created above.
+    1. Go to the ECS dashboard and select `plio-staging-cluster`.
+    2. Select the `plio-backend-staging` service.
+    3. Select the `Tasks` tab.
+    4. Select the running task definition in the `Task Definition` column.
+    5. Click `Create new revision` button on the top and select the existing container name: `plio-backend-staging`.
+    6. In the new window, scroll down to `Environment Variables` section.
+    7. Update the `REDIS_HOSTNAME` and `REDIS_PORT ` keys that were copied before.
+    8. Click the `Update` button to update the environment variables.
+    9. Click the `Create` button to create a new revision of the task definition.
+    10. Navigate back to the service `plio-backend-staging`.
+    11. Click `Update` on top right.
+    12. Update the revision of the newly created task definition and wait for it to get initiated.
+    13. After the new task definition start running, stop the older task definition.
+
+13. Next, go to your GitHub repository and create a new environment from the settings tab.
     1. Name the environment as `Staging`.
     2. Make sure you have added the following GitHub secrets on repository level. If not, add these as your environment secrets.
        - AWS_ACCESS_KEY_ID
        - AWS_SECRET_ACCESS_KEY
        - AWS_REGION
 
-13. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
+14. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
 
-14. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
+15. Once done, push some changes to the target branch so that the GitHub workflow `deploy_to_ecs_staging.yml` gets triggered.
 
 ## Production
 

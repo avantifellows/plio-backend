@@ -210,7 +210,26 @@ Follow the steps below to set up the staging environment on AWS.
 Setting up a production environment on AWS is almost the same as staging. Additionally, take care of the following things:
 1. Rename all services as `plio-backend-production` or a similar naming convention.
 2. Change all the environment variables to the corresponding values for the production environment.
-3. Go with auto-scaling option when creating a new service from ECS.
+3. We chose to use the same instance for the production and staging RDS instance while using a separate user and database for each environment to optimize for cost.
+   1. Once the RDS instance is created after following the step above, create the production DB in the same instance.
+   2. Connect to your RDS instance
+      ```sh
+      psql -h your-db-instance-endpoint.aws-region.rds.amazonaws.com -p 5432 -U master_username
+      ```
+   3. Ensure that you are in the `psql` shell - now you are connected to your RDS instance.
+   4. Create a new database using the `psql` shell
+      ```
+      postgres=> CREATE DATABASE plio_production;
+      ```
+   5. Create a new user
+      ```
+      postgres=> CREATE USER postgres_prod WITH PASSWORD 'YOUR_PASSWORD';
+      ```
+   6. Grant the newly created user all the privileges to the production DB
+      ```
+      postgres=> GRANT ALL PRIVILEGES ON DATABASE plio_production TO postgres_prod;
+      ```
+4. Go with auto-scaling option when creating a new service from ECS.
    1. When creating a service or when updating it, navigate to the service auto-scaling section.
    2. Select `Configure Service Auto Scaling to adjust your service's desired count`.
    3. Set minimum number of tasks to `1`. This is the minimum count of running tasks when scale-in operation happen.

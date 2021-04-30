@@ -9,8 +9,8 @@ from plio.settings import (
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from users.models import User, OneTimePassword
-from users.serializers import UserSerializer, OtpSerializer
+from users.models import User, OneTimePassword, OrganizationUser
+from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 
 import datetime
 import string
@@ -18,6 +18,11 @@ import random
 from django.contrib.auth import login
 from oauth2_provider.models import AccessToken, Application, RefreshToken
 from .services import SnsService
+
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.dispatch import receiver
+from django.db.models.signals import post_save, pre_save, post_delete
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -60,6 +65,22 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response({"status": "config set"})
+
+
+class OrganizationUserViewSet(viewsets.ModelViewSet):
+    """
+    OrganizationUser ViewSet description
+
+    list: List all organization users
+    retrieve: Retrieve an organization user
+    update: Update an organization user
+    create: Create an organization user
+    partial_update: Patch an organization user
+    destroy: Soft delete an organization user
+    """
+
+    queryset = OrganizationUser.objects.all()
+    serializer_class = OrganizationUserSerializer
 
 
 @api_view(["POST"])
@@ -151,3 +172,33 @@ def get_by_access_token(request):
         return Response(UserSerializer(user).data)
 
     return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@receiver(pre_save, sender=User)
+def update_user(sender, instance: User, **kwargs):
+    if not instance.id:
+        # new user is created
+        return
+
+    # existing user is updated
+    old_instance = sender.objects.get(id=instance.id)
+    if old_instance.status != instance.status:
+        # execute this only if the user status has changed
+        user_data = UserSerializer(instance).data
+        channel_layer = get_channel_layer()
+        user_group_name = f"user_{user_data['id']}"
+        async_to_sync(channel_layer.group_send)(
+            user_group_name, {"type": "send_user", "data": user_data}
+        )
+
+
+@receiver(post_save, sender=OrganizationUser)
+@receiver(post_delete, sender=OrganizationUser)
+def update_organization_user(sender, instance: OrganizationUser, **kwargs):
+    # execute this if a user is added to/removed from an organization
+    user_data = UserSerializer(instance.user).data
+    channel_layer = get_channel_layer()
+    user_group_name = f"user_{user_data['id']}"
+    async_to_sync(channel_layer.group_send)(
+        user_group_name, {"type": "send_user", "data": user_data}
+    )

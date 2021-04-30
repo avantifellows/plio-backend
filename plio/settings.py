@@ -62,6 +62,7 @@ TENANT_APPS = (
 )
 
 INSTALLED_APPS = [
+    "channels",
     "django_tenants",
     "corsheaders",
     "django.contrib.admin",
@@ -186,6 +187,7 @@ LOGGING = {
 }
 
 WSGI_APPLICATION = "plio.wsgi.application"
+ASGI_APPLICATION = "plio.asgi.application"
 
 
 # Password validation
@@ -274,3 +276,15 @@ DEFAULT_ROLES = [
     {"name": "org-admin"},
     {"name": "org-view"},
 ]
+
+REDIS_HOSTNAME = os.environ.get("REDIS_HOSTNAME")
+REDIS_PORT = os.environ.get("REDIS_PORT")
+
+# https://channels.readthedocs.io/en/latest/topics/channel_layers.html
+CHANNEL_LAYERS = {
+    "default": {
+        # using redis as the backing store
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [(REDIS_HOSTNAME, REDIS_PORT)]},
+    }
+}

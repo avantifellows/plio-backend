@@ -37,7 +37,7 @@ class PlioSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        # read_only_fields = ["uuid"]
+        read_only_fields = ["uuid"]
 
     def to_representation(self, instance):
         response = super().to_representation(instance)

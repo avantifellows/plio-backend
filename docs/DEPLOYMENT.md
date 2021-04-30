@@ -149,23 +149,23 @@ Follow the steps below to set up the staging environment on AWS.
 
 11. Create a `redis` cluster on AWS Elasticache.
 
-      1. Go to the [ElastiCache dashboard](https://console.aws.amazon.com/elasticache/home). On the top right corner, select the region where you want to launch the Redis Cluster and click on `Create` button.
+      1. Go to the [ElastiCache dashboard](https://console.aws.amazon.com/elasticache/home). Select the region and click on `Create` button.
       2. Select `Redis` as your Cluster engine.
       3. Select `Cluster mode disabled`. More details on cluster mode [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Replication.Redis-RedisCluster.html).
       4. Choose `Amazon Cloud` as your location.
-      5. Give a name to your cluster, e.g. `plio-redis-staging`.
+      5. Set the name of your cluster as `plio-redis-staging`.
       6. Choose the latest `Engine version compatibility`.
       7. Enter `6379` as the `Port`.
       8. No need to change anything for `Parameter Group`.
       9. Choose your `Node Type`. Plio uses `cache.t2.micro`. More details [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/nodes-select-size.html#CacheNodes.SelectSize).
       10. For `Number of replicas`, enter `2`.
-      11. Select the `Multi AZ` checkbox. More details [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html).
+      11. For high availability, select the `Multi AZ` checkbox. Take a note that this may almost double your monthly expense. More details [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html).
       12. Select `Advanced Redis settings` and fill in the details as mentioned below.
           1. For `Subnet group`, create a new group.
           2. Add the subnets that were created above.
           3. For `VPC ID`, add the VPC that was created above.
           4. For `Availability zone(s)`, choose `No preference`. More details [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/RegionsAndAZs.html).
-          5. For `Security groups` choose the default security group. Rest all options are not mandatory.
+          5. For `Security groups` choose the default security group.
       13. Click the `Create` button.
       14. Proceed when the cluster's status becomes `available`. Next we'll grant access to the cluster.
       15. Go to the AWS EC2 console [here](https://console.aws.amazon.com/ec2/).
@@ -184,7 +184,7 @@ Follow the steps below to set up the staging environment on AWS.
     2. Select the `plio-backend-staging` service.
     3. Select the `Tasks` tab.
     4. Select the running task definition in the `Task Definition` column.
-    5. Click `Create new revision` button on the top and select the existing container name: `plio-backend-staging`.
+    5. Click `Create new revision` button on the top and select the existing container with the name: `plio-backend-staging`.
     6. In the new window, scroll down to `Environment Variables` section.
     7. Update the `REDIS_HOSTNAME` and `REDIS_PORT ` keys that were copied before.
     8. Click the `Update` button to update the environment variables.
@@ -192,7 +192,7 @@ Follow the steps below to set up the staging environment on AWS.
     10. Navigate back to the service `plio-backend-staging`.
     11. Click `Update` on top right.
     12. Update the revision of the newly created task definition and wait for it to get initiated.
-    13. After the new task definition start running, stop the older task definition.
+    13. After the new revision starts running, stop the older revision.
 
 13. Next, go to your GitHub repository and create a new environment from the settings tab.
     1. Name the environment as `Staging`.

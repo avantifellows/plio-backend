@@ -2,7 +2,7 @@
 
 on:
   push:
-    branches: ["websockets"]
+    branches: ["master"]
 
 name: Deploy to ECS - staging
 

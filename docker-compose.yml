@@ -31,7 +31,6 @@ services: # the different images that will be running as containers
       - db
   redis: # service name
     image: "redis:5" # image name of the redis database. during build, this will be pulled from dockerhub and a container spun up from it
-    hostname: redis # channel layer will connect to this hostname in settings.py
     ports:
       - "6379:6379" # default redis port
     depends_on:

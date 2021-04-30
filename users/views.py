@@ -181,8 +181,8 @@ def update_user(sender, instance: User, **kwargs):
         return
 
     # existing user is updated
-    pre_save_instance = sender.objects.get(id=instance.id)
-    if pre_save_instance.status != instance.status:
+    old_instance = sender.objects.get(id=instance.id)
+    if old_instance.status != instance.status:
         # execute this only if the user status has changed
         user_data = UserSerializer(instance).data
         channel_layer = get_channel_layer()
@@ -195,7 +195,7 @@ def update_user(sender, instance: User, **kwargs):
 @receiver(post_save, sender=OrganizationUser)
 @receiver(post_delete, sender=OrganizationUser)
 def update_organization_user(sender, instance: OrganizationUser, **kwargs):
-    # execute this if anything in the Organization User has changed
+    # execute this if a user is added to/removed from an organization
     user_data = UserSerializer(instance.user).data
     channel_layer = get_channel_layer()
     user_group_name = f"user_{user_data['id']}"

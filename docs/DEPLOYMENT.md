@@ -210,7 +210,7 @@ Follow the steps below to set up the staging environment on AWS.
 Setting up a production environment on AWS is almost the same as staging. Additionally, take care of the following things:
 1. Rename all services as `plio-backend-production` or a similar naming convention.
 2. Change all the environment variables to the corresponding values for the production environment.
-3. We chose to use the same instance for the production and staging RDS instance while using a separate user and database for each environment to optimize for cost.
+3. We chose to use the same RDS instance for production and staging, but a separate user and database for each environment to optimize for cost.
    1. Once the RDS instance is created after following the step above, create the production DB in the same instance.
    2. Connect to your RDS instance
       ```sh

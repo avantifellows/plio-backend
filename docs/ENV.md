@@ -80,3 +80,22 @@ Port of your Redis instance
 ### Plio CMS
 #### `CMS_TOKEN`
 Secret token for Avanti's [Content Management System](http://cms.peerlearning.com) - if you plan to use it, you'll need to ask for access from the admins.
+
+### Superuser
+#### `SUPERUSER_EMAIL`
+Email for the superuser created during installation.
+
+#### `SUPERUSER_PASSWORD`
+Password for the superuser created during installation.
+
+### Default Tenant
+Plio supports multi-tenancy. For the installation to be complete, you need a default tenant corresponding to the `public` schema. You can set the following variables for the default tenant.
+
+#### `DEFAULT_TENANT_NAME`
+Name for the default tenant (e.g. Plio)
+
+#### `DEFAULT_TENANT_SHORTCODE`
+Shortcode for the default tenant (e.g. plio)
+
+#### `DEFAULT_TENANT_DOMAIN`
+The domain for the default tenant (e.g. 0.0.0.0 locally, plio.in on production)

@@ -2,11 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Count, Q
+from django.db.models import Q
 from plio.models import Video, Plio, Item, Question
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
-from entries.models import Session
 from plio.serializers import (
     VideoSerializer,
     PlioSerializer,
@@ -111,16 +110,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio.status = "draft"  # a duplicated plio will always be in "draft" mode
         plio.save()
         return Response(self.get_serializer(plio).data)
-
-    @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
-    def unique_users(self, request, uuid):
-        """Returns the number of unique users who have watched the specified plio"""
-        session_queryset = Session.objects.filter(plio__uuid=uuid)
-        return Response(
-            session_queryset.aggregate(Count("user__id", distinct=True))[
-                "user__id__count"
-            ]
-        )
 
 
 class ItemViewSet(viewsets.ModelViewSet):

@@ -14,7 +14,7 @@ class OrganizationTenantMiddleware(TenantMainMiddleware):
         Returns the value of the `ORGANIZATION` HTTP header
         """
         org = request.META.get("HTTP_ORGANIZATION", get_public_schema_name())
-        if org == "":
+        if not org:
             return get_public_schema_name()
 
         return org

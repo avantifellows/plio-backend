@@ -13,7 +13,11 @@ class OrganizationTenantMiddleware(TenantMainMiddleware):
         """
         Returns the value of the `ORGANIZATION` HTTP header
         """
-        return request.META.get("HTTP_ORGANIZATION", get_public_schema_name())
+        org = request.META.get("HTTP_ORGANIZATION", get_public_schema_name())
+        if not org:
+            return get_public_schema_name()
+
+        return org
 
     def get_tenant(self, tenant_model, request):
         """

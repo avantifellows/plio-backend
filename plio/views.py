@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django_tenants.utils import get_public_schema_name
 from django.db.models import Q
 from plio.models import Video, Plio, Item, Question
 from organizations.middleware import OrganizationTenantMiddleware
@@ -52,7 +53,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         )
 
         # personal workspace
-        if organization_shortcode == "":
+        if organization_shortcode == get_public_schema_name():
             return Plio.objects.filter(created_by=self.request.user)
 
         # organizational workspace

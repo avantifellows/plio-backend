@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -32,15 +31,13 @@ class StandardResultsSetPagination(PageNumberPagination):
     def get_paginated_response(self, data):
         # a paginated response will follow this structure
         return Response(
-            OrderedDict(
-                [
-                    ("count", self.page.paginator.count),
-                    ("page_size", self.get_page_size(self.request)),
-                    ("next", self.get_next_link()),
-                    ("previous", self.get_previous_link()),
-                    ("results", data),
-                ]
-            )
+            {
+                "count": self.page.paginator.count,
+                "page_size": self.get_page_size(self.request),
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "results": data,
+            }
         )
 
 
@@ -128,8 +125,15 @@ class PlioViewSet(viewsets.ModelViewSet):
         if page is not None:
             return self.get_paginated_response(page)
 
+        # return an empty response in a paginated format if pagination fails
         return Response(
-            {"detail": "Cannot paginate plio uuids"}, status=status.HTTP_404_NOT_FOUND
+            {
+                "count": 0,
+                "page_size": self.get_page_size(self.request),
+                "next": None,
+                "previous": None,
+                "results": [],
+            }
         )
 
     @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])

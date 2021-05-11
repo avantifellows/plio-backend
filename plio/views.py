@@ -125,7 +125,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         if page is not None:
             return self.get_paginated_response(page)
 
-        # return an empty response in a paginated format if pagination fails
+        # return an empty response in the paginated format if pagination fails
         return Response(
             {
                 "count": 0,

@@ -158,7 +158,7 @@ Follow the steps below to set up the staging environment on AWS.
       7. Enter `6379` as the `Port`.
       8. No need to change anything for `Parameter Group`.
       9. Choose your `Node Type`. Plio uses `cache.t2.micro`. More details [here](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/nodes-select-size.html#CacheNodes.SelectSize).
-      10. For `Number of replicas`, enter `2`.
+      10. For `Number of replicas`, enter `0`. Note: Each replica node will carry it's own cost. More on pricing [here](https://aws.amazon.com/elasticache/pricing/) and [here](https://www.reddit.com/r/aws/comments/cojaq6/questions_about_elasticache_pricing/)
       11. For high availability, select the `Multi AZ` checkbox. Take a note that this may almost double your monthly expense. More details [here](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZ.html).
       12. Select `Advanced Redis settings` and fill in the details as mentioned below.
           1. For `Subnet group`, create a new group.

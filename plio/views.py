@@ -137,19 +137,28 @@ class PlioViewSet(viewsets.ModelViewSet):
         # schema name to query in
         schema_name = OrganizationTenantMiddleware().get_schema(self.request)
 
+        # fetch the dumps
         with connection.cursor() as cursor:
-            # TODO titles for json?
             cursor.execute(get_session_responses_dump_query(uuid, schema=schema_name))
-            data_dump["responses"] = cursor.fetchall()
+            data_dump["responses"] = {
+                "columns": [col[0] for col in cursor.description],
+                "values": cursor.fetchall(),
+            }
             cursor.execute(get_plio_details_query(uuid, schema=schema_name))
             data_dump["plio-details"] = {
-                "name": plio.name,
-                "id": plio.uuid,
-                "video": plio.video.url,
-                "items": cursor.fetchall(),
+                "columns": [col[0] for col in cursor.description],
+                "values": {
+                    "name": plio.name,
+                    "id": plio.uuid,
+                    "video": plio.video.url,
+                    "items": cursor.fetchall(),
+                },
             }
             cursor.execute(get_events_query(uuid, schema=schema_name))
-            data_dump["events"] = cursor.fetchall()
+            data_dump["events"] = {
+                "columns": [col[0] for col in cursor.description],
+                "values": cursor.fetchall(),
+            }
             return Response(data_dump)
 
 

@@ -5,6 +5,10 @@ from plio.settings import (
     API_APPLICATION_NAME,
     OAUTH2_PROVIDER,
     OTP_EXPIRE_SECONDS,
+    AUTH0_TOKEN_URL,
+    AUTH0_CLIENT_ID,
+    AUTH0_CLIENT_SECRET,
+    AUTH0_AUDIENCE,
 )
 
 from rest_framework import viewsets, status
@@ -23,6 +27,8 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save, post_delete
+
+import requests
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -202,3 +208,16 @@ def update_organization_user(sender, instance: OrganizationUser, **kwargs):
     async_to_sync(channel_layer.group_send)(
         user_group_name, {"type": "send_user", "data": user_data}
     )
+
+
+@api_view(["POST"])
+def get_analytics_app_access_token(request):
+    url = AUTH0_TOKEN_URL
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id": AUTH0_CLIENT_ID,
+        "client_secret": AUTH0_CLIENT_SECRET,
+        "audience": AUTH0_AUDIENCE,
+    }
+    response = requests.post(url, data=payload)
+    return Response(response.json(), status=status.HTTP_200_OK)

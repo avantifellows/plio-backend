@@ -111,6 +111,10 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio.save()
         return Response(self.get_serializer(plio).data)
 
+    @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
+    def data_dump(self, request, uuid):
+        pass
+
 
 class ItemViewSet(viewsets.ModelViewSet):
     """

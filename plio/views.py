@@ -2,16 +2,22 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django.db import connection
 from django.db.models import Q
-from django_tenants.utils import get_public_schema_name
-from plio.models import Video, Plio, Item, Question
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
+from plio.models import Video, Plio, Item, Question
 from plio.serializers import (
     VideoSerializer,
     PlioSerializer,
     ItemSerializer,
     QuestionSerializer,
+)
+from plio.settings import DEFAULT_TENANT_SHORTCODE
+from .queries import (
+    get_plio_details_query,
+    get_session_responses_dump_query,
+    get_events_query,
 )
 
 
@@ -53,7 +59,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         )
 
         # personal workspace
-        if organization_shortcode == get_public_schema_name():
+        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
             return Plio.objects.filter(created_by=self.request.user)
 
         # organizational workspace
@@ -95,7 +101,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio = queryset.first()
         if not plio:
             return Response(
-                {"detail": "Plio not found."}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "Plio not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         serializer = self.get_serializer(plio)
@@ -114,7 +120,37 @@ class PlioViewSet(viewsets.ModelViewSet):
 
     @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
     def data_dump(self, request, uuid):
-        pass
+        # return 404 if user cannot access the object
+        # else fetch the object
+        plio = self.get_object()
+
+        # handle draft plios
+        if plio.status == "draft":
+            return Response(
+                {"detail": "Data dumps are not available for draft plios"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # holds the data dump
+        data_dump = {}
+
+        # schema name to query in
+        schema_name = OrganizationTenantMiddleware().get_schema(self.request)
+
+        with connection.cursor() as cursor:
+            # TODO titles for json?
+            cursor.execute(get_session_responses_dump_query(uuid, schema=schema_name))
+            data_dump["responses"] = cursor.fetchall()
+            cursor.execute(get_plio_details_query(uuid, schema=schema_name))
+            data_dump["plio-details"] = {
+                "name": plio.name,
+                "id": plio.uuid,
+                "video": plio.video.url,
+                "items": cursor.fetchall(),
+            }
+            cursor.execute(get_events_query(uuid, schema=schema_name))
+            data_dump["events"] = cursor.fetchall()
+            return Response(data_dump)
 
 
 class ItemViewSet(viewsets.ModelViewSet):

@@ -15,13 +15,24 @@ def get_plio_details_query(plio_uuid: str, schema: str):
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 
-def get_session_responses_dump_query(plio_uuid: str, schema: str):
-    """Returns the dump of all the session responses for the given plio"""
+def get_sessions_dump_query(plio_uuid: str, schema: str):
+    """Returns the dump of all the sessions for the given plio"""
     return f"""
         SELECT
             session.id as session_id,
             session.retention,
             session.watch_time,
+            MD5(session.user_id::varchar(255)) as user_id
+        FROM {schema}.session session
+        INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
+        WHERE plio.uuid  = '{plio_uuid}'"""
+
+
+def get_responses_dump_query(plio_uuid: str, schema: str):
+    """Returns the dump of all the session responses for the given plio"""
+    return f"""
+        SELECT
+            session.id as session_id,
             MD5(session.user_id::varchar(255)) as user_id,
             sessionAnswer.id AS session_answer_id,
             sessionAnswer.answer,

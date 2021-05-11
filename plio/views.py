@@ -8,7 +8,6 @@ from django.db import connection
 from django.db.models import Q
 from django.http import FileResponse
 import pandas as pd
-
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
 from plio.models import Video, Plio, Item, Question

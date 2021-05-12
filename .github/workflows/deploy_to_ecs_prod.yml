@@ -1,8 +1,8 @@
 # This workflow will build and push a new container image to Amazon ECR
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: ["release"]
 
 name: Deploy to ECS - production
 

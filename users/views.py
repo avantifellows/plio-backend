@@ -212,7 +212,7 @@ def update_organization_user(sender, instance: OrganizationUser, **kwargs):
 
 @api_view(["POST"])
 def retrieve_analytics_app_access_token(request):
-    """ Makes a client credentials request to Auth0 app to get an access token. """
+    """Makes a client_credentials request to Auth0 app to get an access token."""
     payload = {
         "grant_type": "client_credentials",
         "client_id": AUTH0_CLIENT_ID,

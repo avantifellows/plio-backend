@@ -15,30 +15,79 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from . import views
+from rest_framework import routers, permissions
+from django.conf.urls import url
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from tags.views import TagViewSet
+from users.views import (
+    UserViewSet,
+    OrganizationUserViewSet,
+    request_otp,
+    verify_otp,
+    get_by_access_token,
+    retrieve_analytics_app_access_token,
+)
+from organizations.views import OrganizationViewSet
+from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
+from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
+from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
+from users import consumers
 
+schema_view = get_schema_view(
+    openapi.Info(
+        title="Plio API",
+        default_version="v1",
+        description="Welcome to Plio's REST API documentation!",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="admin@plio.in"),
+        license=openapi.License(
+            name="MIT License",
+            url="https://github.com/avantifellows/plio-backend/blob/master/LICENSE",
+        ),
+        link="https://github.com/avantifellows/plio-backend",
+    ),
+    url="https://plio.in",
+    public=True,
+    permission_classes=[permissions.AllowAny],
+)
+
+api_router = routers.DefaultRouter()
+api_router.register(r"organizations", OrganizationViewSet)
+api_router.register(r"users", UserViewSet)
+api_router.register(r"videos", VideoViewSet)
+# https://stackoverflow.com/questions/48548622/base-name-argument-not-specified-and-could-not-automatically-determine-the-name
+api_router.register(r"plios", PlioViewSet, basename="plios")
+api_router.register(r"items", ItemViewSet, basename="items")
+api_router.register(r"questions", QuestionViewSet)
+api_router.register(r"experiments", ExperimentViewSet, basename="experiments")
+api_router.register(r"experiment-plios", ExperimentPlioViewSet)
+api_router.register(r"sessions", SessionViewSet, basename="sessions")
+api_router.register(r"session-answers", SessionAnswerViewSet)
+api_router.register(r"events", EventViewSet)
+api_router.register(r"tags", TagViewSet)
+api_router.register(r"organization-users", OrganizationUserViewSet)
+
+# http/https url patterns
 urlpatterns = [
-    path('player/', views.redirect_home),
-    path('player/<str:plio_id>', views.redirect_plio),
-    path('admin/', admin.site.urls),
-    path('', views.index),
-    path('plios_list', views.get_plios_list),
-    path('get_plio', views.get_plio),
-    path('get_plio_config', views._get_plio_config),
-    path('get_plios_df', views.get_plios_df),
+    path("admin/", admin.site.urls),
+    # API routes
+    path("api/v1/otp/request/", request_otp),
+    path("api/v1/otp/verify/", verify_otp),
+    path("api/v1/users/token/", get_by_access_token),
+    path("api/v1/", include(api_router.urls)),
+    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
+    path("auth/cubejs-token/", retrieve_analytics_app_access_token),
+    url(r"^auth/", include("rest_framework_social_oauth2.urls")),
+    url(
+        r"^api/v1/docs/$",
+        schema_view.with_ui("redoc", cache_timeout=0),
+        name="schema-redoc",
+    ),
+]
 
-    # separate app for tags
-    path('entries/', include('entries.urls')),
-
-    # separate app for users
-    path('users/', include('users.urls')),
-
-    # separate app for experiments
-    path('experiments/', include('experiments.urls')),
-
-    # separate app for tags
-    path('tags/', include('tags.urls')),
-
-     # separate app for components
-    path('components/', include('components.urls'))
+# ws/wss url patterns
+websocket_urlpatterns = [
+    # consumer for a particular user
+    path("api/v1/users/<int:user_id>", consumers.UserConsumer.as_asgi()),
 ]

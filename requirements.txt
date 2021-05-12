@@ -2,6 +2,8 @@ asgiref==3.2.10
 boto3==1.15.1
 botocore==1.18.1
 certifi==2020.12.5
+channels==3.0.3
+channels_redis==3.2
 chardet==3.0.4
 device-detector==0.10
 Django==3.1.1
@@ -11,9 +13,11 @@ django-s3-storage==0.13.4
 django-storages==1.11.1
 djangorestframework==3.12.2
 idna==2.10
+ipdb==0.13.4
 jmespath==0.10.0
 numpy==1.20.1
 pandas==1.2.2
+psycopg2-binary==2.8.6
 python-dateutil==2.8.1
 pytz==2020.1
 PyYAML==5.4.1
@@ -24,3 +28,12 @@ six==1.15.0
 sqlparse==0.4.1
 tqdm==4.51.0
 urllib3==1.25.11
+Pillow==8.1.2
+django-tenants==3.2.1
+djangorestframework==3.12.2
+Markdown==3.3.4
+django-filter==2.4.0
+drf-yasg==1.20.0
+django-safedelete==1.0.0
+django-oauth2-provider==0.2.6.1
+django-rest-framework-social-oauth2==1.1.0

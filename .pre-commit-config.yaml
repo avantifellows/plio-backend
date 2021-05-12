@@ -12,3 +12,12 @@ repos:
     rev: 20.8b1
     hooks:
     -   id: black
+-   repo: https://github.com/pycqa/flake8
+    rev: '3.9.0'
+    hooks:
+    -   id: flake8
+        args:
+        # these are errors that will be ignored by flake8
+        # check out their meaning here
+        # https://flake8.pycqa.org/en/latest/user/error-codes.html
+        - "--ignore=E501,E203,W503"

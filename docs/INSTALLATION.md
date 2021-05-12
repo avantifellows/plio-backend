@@ -2,8 +2,8 @@
 
 
 ### Pre-requisites
-- Python: Required version `3.8.2`
-
+#### Docker
+Download docker for your operating system: https://docs.docker.com/get-docker/
 
 ### Installation steps
 1. Clone the repository and change the working directory
@@ -11,54 +11,27 @@
     git clone https://github.com/avantifellows/plio-backend.git
     cd plio-backend
     ```
-2. Create a virtual environment and activate it
+2. For **DEVELOPMENT PURPOSE** only, make sure Docker Desktop application is running and docker version is giving a proper output.
     ```sh
-    python3 -m venv zappa_env
-    source zappa_env/bin/activate
+    docker --version
     ```
-3. Install the dependencies
-    #### Development
-    ```sh
-    pip install -r requirements-dev.txt
-    ```
-
-    #### Production
-    ```sh
-    pip install -r requirements.txt
-    ```
-
-4. Set up your .env file by copying .env.example
+3. Set up your `.env` file by copying `.env.example` file
     ```sh
     cp .env.example .env
     ```
-5. Update variables in your `.env` file based on your settings.
-6. For **development** only, run the following command to install pre-commit
+4. Update environment variables in your `.env` file based on your environment. For all available settings, see our [Environment variables guide](ENV.md).
+5. Build the docker image and run the containers using just one command:
+    ```sh
+    docker-compose up -d --build
+    ```
+6. For **DEVELOPMENT PURPOSE** only, run the following command to install pre-commit
     ```sh
     pre-commit install
     ```
-7. Start the python server
-    ```
-    export DJANGO_ENV=local && python manage.py runserver 0.0.0.0:8001
-    ```
+7. Set up either [OTP functionality](ONE-TIME-PIN.md) or [Google sign-in](oauth/GOOGLE-OAUTH2.md) for users to be able to log in.
+8. Your backend API should be accessible at http://0.0.0.0:8001/api/v1 and the Django Admin dashboard will be accessible at http://0.0.0.0:8001/admin
 
-    Other possible values for DJANGO_ENV are `staging` and `prod`.
 
-    **Note:** In Windows (even if you're using WSL), if you want to see the static html/css on a browser or hit the API using PostMan, don't use `0.0.0.0:8001`, but use `127.0.0.1:8001` instead.
-    > `0.0.0.0` is the invalid, un-routable address. [source](https://news.ycombinator.com/item?id=18978357)
-
-### Database setup
-Plio backend uses Postgres SQL database. Use the instructions below to set up the database server on your operating system.
-
-1. macOS
-
-    Use brew to install Postgres
-    ```
-    brew install postgresql
-    ```
-
-2. Windows
-    - Download Postgres server from [here](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
-    - Ensure that the installation includes the PostgreSQL Unicode ODBC driver. (Not required if you selected all options while installing)
-    - _Note_: Once installed, the PostgreSQL server appears in the `Services` tab in Windows Task Manager.
-    - Add the PostgreSQL bin directory path to the `PATH` environmental variable
-    - Confirm the installation by typing `psql` in the Command Prompt
+### Additional steps
+1. To enable OTP support, visit [One Time Pin guide](ONE-TIME-PIN.md).
+2. To enable Google sign-in support, visit [Google OAuth2 guide](oauth/GOOGLE-OAUTH2.md).

@@ -26,7 +26,7 @@ from users.views import (
     request_otp,
     verify_otp,
     get_by_access_token,
-    get_analytics_app_access_token,
+    retrieve_analytics_app_access_token,
 )
 from organizations.views import OrganizationViewSet
 from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
@@ -77,7 +77,7 @@ urlpatterns = [
     path("api/v1/users/token/", get_by_access_token),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
-    url("auth/cubejs-token", get_analytics_app_access_token),
+    path("auth/cubejs-token/", retrieve_analytics_app_access_token),
     url(r"^auth/", include("rest_framework_social_oauth2.urls")),
     url(
         r"^api/v1/docs/$",

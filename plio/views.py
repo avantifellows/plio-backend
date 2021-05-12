@@ -18,7 +18,7 @@ from plio.serializers import (
     QuestionSerializer,
 )
 from plio.settings import DEFAULT_TENANT_SHORTCODE
-from .queries import (
+from plio.queries import (
     get_plio_details_query,
     get_sessions_dump_query,
     get_responses_dump_query,
@@ -59,8 +59,8 @@ class PlioViewSet(viewsets.ModelViewSet):
     lookup_field = "uuid"
 
     def get_queryset(self):
-        organization_shortcode = OrganizationTenantMiddleware.get_organization(
-            self.request
+        organization_shortcode = (
+            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
         )
 
         # personal workspace
@@ -136,9 +136,10 @@ class PlioViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # holds the data dump
-        # data_dump = {}
-        data_dump_dir = f"/tmp/plio-{uuid}/{request.user.id}"
+        # define the directory which will hold the data dump
+        data_dump_dir = f"/tmp/plio-{uuid}/user-{request.user.id}"
+
+        # delete the directory if it exists and create a new one
         if os.path.exists(data_dump_dir):
             shutil.rmtree(data_dump_dir)
         os.makedirs(data_dump_dir)
@@ -147,8 +148,11 @@ class PlioViewSet(viewsets.ModelViewSet):
         schema_name = OrganizationTenantMiddleware().get_schema(self.request)
 
         def save_query_results(query_method, filename):
+            # execute the query
             cursor.execute(query_method(uuid, schema=schema_name))
+            # extract column names as cursor.description returns a tuple
             columns = [col[0] for col in cursor.description]
+            # create a dataframe from the rows and the columns and save to csv
             df = pd.DataFrame(cursor.fetchall(), columns=columns)
             df.to_csv(os.path.join(data_dump_dir, filename), index=False)
 

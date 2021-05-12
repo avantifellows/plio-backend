@@ -10,7 +10,7 @@ class OrganizationTenantMiddleware(TenantMainMiddleware):
     """
 
     @staticmethod
-    def get_organization(request):
+    def get_organization_shortcode(request):
         """
         Returns the value of the `ORGANIZATION` HTTP header
         """
@@ -27,7 +27,7 @@ class OrganizationTenantMiddleware(TenantMainMiddleware):
         # retrieve tenant model configured in settings.py
         tenant_model = get_tenant_model()
 
-        organization_shortcode = self.get_organization(request)
+        organization_shortcode = self.get_organization_shortcode(request)
         return tenant_model.objects.filter(shortcode=organization_shortcode).first()
 
     def get_schema(self, request):

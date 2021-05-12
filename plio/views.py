@@ -147,7 +147,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         # schema name to query in
         schema_name = OrganizationTenantMiddleware().get_schema(self.request)
 
-        def save_query_results(query_method, filename):
+        def save_query_results(cursor, query_method, filename):
             # execute the query
             cursor.execute(query_method(uuid, schema=schema_name))
             # extract column names as cursor.description returns a tuple
@@ -158,10 +158,12 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         # create the individual dump files
         with connection.cursor() as cursor:
-            save_query_results(get_sessions_dump_query, "sessions.csv")
-            save_query_results(get_responses_dump_query, "responses.csv")
-            save_query_results(get_plio_details_query, "plio-interaction-details.csv")
-            save_query_results(get_events_query, "events.csv")
+            save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
+            save_query_results(cursor, get_responses_dump_query, "responses.csv")
+            save_query_results(
+                cursor, get_plio_details_query, "plio-interaction-details.csv"
+            )
+            save_query_results(cursor, get_events_query, "events.csv")
 
             df = pd.DataFrame(
                 [[plio.uuid, plio.name, plio.video.url]],

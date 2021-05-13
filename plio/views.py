@@ -1,9 +1,10 @@
 import os
 import shutil
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django.db import connection
 from django.db.models import Q
 from django.http import FileResponse
@@ -24,6 +25,31 @@ from plio.queries import (
     get_responses_dump_query,
     get_events_query,
 )
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    """
+    Splits result sets into individual pages of data.
+    Pagination links are provided as part of the content
+    of the response.
+
+    Reference: django-rest-framework.org/api-guide/pagination/
+    """
+
+    # number of results in a page
+    page_size = 5
+
+    def get_paginated_response(self, data):
+        # a paginated response will follow this structure
+        return Response(
+            {
+                "count": self.page.paginator.count,
+                "page_size": self.get_page_size(self.request),
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "results": data,
+            }
+        )
 
 
 class VideoViewSet(viewsets.ModelViewSet):
@@ -57,6 +83,18 @@ class PlioViewSet(viewsets.ModelViewSet):
 
     serializer_class = PlioSerializer
     lookup_field = "uuid"
+
+    # set which pagination class to use, as no global pagination class is set
+    pagination_class = StandardResultsSetPagination
+
+    # match the search query with the values of these fields
+    search_fields = [
+        "name",
+        "status",
+        "updated_at",
+        "uuid",
+    ]
+    filter_backends = (filters.SearchFilter,)
 
     def get_queryset(self):
         organization_shortcode = (
@@ -92,10 +130,22 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(detail=False, permission_classes=[IsAuthenticated])
     def list_uuid(self, request):
         """Retrieves a list of UUIDs for all the plios"""
-        queryset = self.get_queryset()
-        if not queryset or not queryset.exists():
-            return Response([])
-        return Response(list(queryset.values_list("uuid", flat=True)))
+        queryset = self.filter_queryset(self.get_queryset())
+        uuid_list = queryset.values_list("uuid", flat=True)
+        page = self.paginate_queryset(uuid_list)
+        if page is not None:
+            return self.get_paginated_response(page)
+
+        # return an empty response in the paginated format if pagination fails
+        return Response(
+            {
+                "count": 0,
+                "page_size": self.get_page_size(self.request),
+                "next": None,
+                "previous": None,
+                "results": [],
+            }
+        )
 
     @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
     def play(self, request, uuid):

@@ -1,18 +1,28 @@
+import os
+import shutil
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from django_tenants.utils import get_public_schema_name
-from django.db.models import Count, Q
-from plio.models import Video, Plio, Item, Question
+from django.db import connection
+from django.db.models import Q
+from django.http import FileResponse
+import pandas as pd
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
-from entries.models import Session
+from plio.models import Video, Plio, Item, Question
 from plio.serializers import (
     VideoSerializer,
     PlioSerializer,
     ItemSerializer,
     QuestionSerializer,
+)
+from plio.settings import DEFAULT_TENANT_SHORTCODE
+from plio.queries import (
+    get_plio_details_query,
+    get_sessions_dump_query,
+    get_responses_dump_query,
+    get_events_query,
 )
 
 
@@ -49,12 +59,12 @@ class PlioViewSet(viewsets.ModelViewSet):
     lookup_field = "uuid"
 
     def get_queryset(self):
-        organization_shortcode = OrganizationTenantMiddleware.get_organization(
-            self.request
+        organization_shortcode = (
+            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
         )
 
         # personal workspace
-        if organization_shortcode == get_public_schema_name():
+        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
             return Plio.objects.filter(created_by=self.request.user)
 
         # organizational workspace
@@ -96,7 +106,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio = queryset.first()
         if not plio:
             return Response(
-                {"detail": "Plio not found."}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "Plio not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
         serializer = self.get_serializer(plio)
@@ -114,14 +124,62 @@ class PlioViewSet(viewsets.ModelViewSet):
         return Response(self.get_serializer(plio).data)
 
     @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
-    def unique_users(self, request, uuid):
-        """Returns the number of unique users who have watched the specified plio"""
-        session_queryset = Session.objects.filter(plio__uuid=uuid)
-        return Response(
-            session_queryset.aggregate(Count("user__id", distinct=True))[
-                "user__id__count"
-            ]
-        )
+    def download_data(self, request, uuid):
+        # return 404 if user cannot access the object
+        # else fetch the object
+        plio = self.get_object()
+
+        # handle draft plios
+        if plio.status == "draft":
+            return Response(
+                {"detail": "Data dumps are not available for draft plios"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # define the directory which will hold the data dump
+        data_dump_dir = f"/tmp/plio-{uuid}/user-{request.user.id}"
+
+        # delete the directory if it exists and create a new one
+        if os.path.exists(data_dump_dir):
+            shutil.rmtree(data_dump_dir)
+        os.makedirs(data_dump_dir)
+
+        # schema name to query in
+        schema_name = OrganizationTenantMiddleware().get_schema(self.request)
+
+        def save_query_results(cursor, query_method, filename):
+            # execute the query
+            cursor.execute(query_method(uuid, schema=schema_name))
+            # extract column names as cursor.description returns a tuple
+            columns = [col[0] for col in cursor.description]
+            # create a dataframe from the rows and the columns and save to csv
+            df = pd.DataFrame(cursor.fetchall(), columns=columns)
+            df.to_csv(os.path.join(data_dump_dir, filename), index=False)
+
+        # create the individual dump files
+        with connection.cursor() as cursor:
+            save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
+            save_query_results(cursor, get_responses_dump_query, "responses.csv")
+            save_query_results(
+                cursor, get_plio_details_query, "plio-interaction-details.csv"
+            )
+            save_query_results(cursor, get_events_query, "events.csv")
+
+            df = pd.DataFrame(
+                [[plio.uuid, plio.name, plio.video.url]],
+                columns=["id", "name", "video"],
+            )
+            df.to_csv(os.path.join(data_dump_dir, "plio-meta-details.csv"), index=False)
+
+        # create the zip
+        shutil.make_archive(data_dump_dir, "zip", data_dump_dir)
+
+        # read the zip
+        zip_file = open(f"{data_dump_dir}.zip", "rb")
+
+        # create the response
+        response = FileResponse(zip_file, as_attachment=True)
+        return response
 
 
 class ItemViewSet(viewsets.ModelViewSet):

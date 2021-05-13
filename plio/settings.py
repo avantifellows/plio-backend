@@ -258,6 +258,8 @@ AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
 AWS_REGION = os.environ.get("AWS_REGION", "")
 
+DEFAULT_TENANT_SHORTCODE = os.environ.get("DEFAULT_TENANT_SHORTCODE", "")
+
 API_APPLICATION_NAME = "plio"
 
 OAUTH2_PROVIDER = {
@@ -288,3 +290,8 @@ CHANNEL_LAYERS = {
         "CONFIG": {"hosts": [(REDIS_HOSTNAME, REDIS_PORT)]},
     }
 }
+
+AUTH0_TOKEN_URL = os.environ.get("AUTH0_TOKEN_URL")
+AUTH0_CLIENT_ID = os.environ.get("AUTH0_CLIENT_ID")
+AUTH0_CLIENT_SECRET = os.environ.get("AUTH0_CLIENT_SECRET")
+AUTH0_AUDIENCE = os.environ.get("AUTH0_AUDIENCE")

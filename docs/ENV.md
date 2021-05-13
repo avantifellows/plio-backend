@@ -99,3 +99,19 @@ Shortcode for the default tenant (e.g. plio)
 
 #### `DEFAULT_TENANT_DOMAIN`
 The domain for the default tenant (e.g. 0.0.0.0 locally, plio.in on production)
+
+
+### Auth0 for Plio Analytics
+While setting up Plio analytics, you need to make sure the following variables are also updated. These are responsible to fetch an access token from Auth0 Identity Provider.
+
+#### `AUTH0_TOKEN_URL`
+The url to request access token from Auth0. Generally looks like `https://<AUTH0-SUBDOMAIN>.auth0.com/oauth/token`
+
+#### `AUTH0_CLIENT_ID`
+The client id for your Auth0 app. Retrieve from Auth0 Application settings page
+
+#### `AUTH0_CLIENT_SECRET`
+The client secret for your Auth0 app. Retrieve from Auth0 Application settings page
+
+#### `AUTH0_AUDIENCE`
+Unique Identifier for your Auth0 API. Retrieve from Auth0 API settings.

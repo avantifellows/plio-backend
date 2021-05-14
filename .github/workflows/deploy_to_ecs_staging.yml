@@ -15,7 +15,7 @@ jobs:
     # uses GitHub environment
     environment:
       name: Staging
-      url: "http://staging-backend.plio.in"
+      url: "https://staging-backend.plio.in"
 
     steps:
       - name: Checkout

@@ -68,7 +68,6 @@ api_router.register(r"events", EventViewSet)
 api_router.register(r"tags", TagViewSet)
 api_router.register(r"organization-users", OrganizationUserViewSet)
 
-
 # http/https url patterns
 urlpatterns = [
     path("admin/", admin.site.urls),

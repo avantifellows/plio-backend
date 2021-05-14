@@ -14,7 +14,7 @@ jobs:
     # uses GitHub environment
     environment:
       name: Production
-      url: "http://backend.plio.in"
+      url: "https://backend.plio.in"
 
     steps:
       - name: Checkout

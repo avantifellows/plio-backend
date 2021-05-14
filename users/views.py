@@ -203,13 +203,16 @@ def update_user(sender, instance: User, **kwargs):
         # send an email if the user has been approved
         if instance.email and instance.status == "approved":
             subject = "Congrats - You're off the Plio waitlist! 🎉"
-            email_from = DEFAULT_FROM_EMAIL
             recipient_list = [
                 instance.email,
             ]
             html_message = render_to_string("waitlist-approve-email.html")
             send_mail(
-                subject, None, email_from, recipient_list, html_message=html_message
+                subject,
+                None,
+                DEFAULT_FROM_EMAIL,
+                recipient_list,
+                html_message=html_message,
             )
 
 

@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# collect static files
+python manage.py collectstatic --no-input
+
 # run migrations
 python manage.py migrate
 

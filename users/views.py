@@ -1,5 +1,20 @@
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+
+import datetime
+import string
+import random
+from oauth2_provider.models import AccessToken, Application, RefreshToken
+
+from asgiref.sync import async_to_sync
+from django.contrib.auth import login
+from django.dispatch import receiver
+from django.db.models.signals import post_save, pre_save, post_delete
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from channels.layers import get_channel_layer
 
 from plio.settings import (
     API_APPLICATION_NAME,
@@ -9,25 +24,13 @@ from plio.settings import (
     AUTH0_CLIENT_ID,
     AUTH0_CLIENT_SECRET,
     AUTH0_AUDIENCE,
+    DEFAULT_FROM_EMAIL,
 )
 
-from rest_framework import viewsets, status
-from rest_framework.response import Response
 from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 
-import datetime
-import string
-import random
-from django.contrib.auth import login
-from oauth2_provider.models import AccessToken, Application, RefreshToken
 from .services import SnsService
-
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save, post_delete
-
 import requests
 
 
@@ -196,6 +199,21 @@ def update_user(sender, instance: User, **kwargs):
         async_to_sync(channel_layer.group_send)(
             user_group_name, {"type": "send_user", "data": user_data}
         )
+
+        # send an email if the user has been approved
+        if instance.email and instance.status == "approved":
+            subject = "Congrats - You're off the Plio waitlist! 🎉"
+            recipient_list = [
+                instance.email,
+            ]
+            html_message = render_to_string("waitlist-approve-email.html")
+            send_mail(
+                subject=subject,
+                message=None,
+                from_email=DEFAULT_FROM_EMAIL,
+                recipient_list=recipient_list,
+                html_message=html_message,
+            )
 
 
 @receiver(post_save, sender=OrganizationUser)

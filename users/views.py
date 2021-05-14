@@ -208,10 +208,10 @@ def update_user(sender, instance: User, **kwargs):
             ]
             html_message = render_to_string("waitlist-approve-email.html")
             send_mail(
-                subject,
-                None,
-                DEFAULT_FROM_EMAIL,
-                recipient_list,
+                subject=subject,
+                message=None,
+                from_email=DEFAULT_FROM_EMAIL,
+                recipient_list=recipient_list,
                 html_message=html_message,
             )
 

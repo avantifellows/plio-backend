@@ -15,8 +15,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import routers, permissions
 from django.conf.urls import url
+from django.shortcuts import render
+from rest_framework import routers, permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from tags.views import TagViewSet
@@ -68,8 +69,15 @@ api_router.register(r"events", EventViewSet)
 api_router.register(r"tags", TagViewSet)
 api_router.register(r"organization-users", OrganizationUserViewSet)
 
+
+def index(request):
+    context = {"first_name": "Aman"}
+    return render(request, "waitlist-approve.html", context)
+
+
 # http/https url patterns
 urlpatterns = [
+    path("", index),
     path("admin/", admin.site.urls),
     # API routes
     path("api/v1/otp/request/", request_otp),

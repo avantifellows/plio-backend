@@ -1,5 +1,19 @@
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+
+import datetime
+import string
+import random
+from oauth2_provider.models import AccessToken, Application, RefreshToken
+
+from asgiref.sync import async_to_sync
+from django.contrib.auth import login
+from django.dispatch import receiver
+from django.db.models.signals import post_save, pre_save, post_delete
+from django.core.mail import send_email
+from channels.layers import get_channel_layer
 
 from plio.settings import (
     API_APPLICATION_NAME,
@@ -9,25 +23,13 @@ from plio.settings import (
     AUTH0_CLIENT_ID,
     AUTH0_CLIENT_SECRET,
     AUTH0_AUDIENCE,
+    EMAIL_HOST_USER,
 )
 
-from rest_framework import viewsets, status
-from rest_framework.response import Response
 from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 
-import datetime
-import string
-import random
-from django.contrib.auth import login
-from oauth2_provider.models import AccessToken, Application, RefreshToken
 from .services import SnsService
-
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save, post_delete
-
 import requests
 
 
@@ -196,6 +198,25 @@ def update_user(sender, instance: User, **kwargs):
         async_to_sync(channel_layer.group_send)(
             user_group_name, {"type": "send_user", "data": user_data}
         )
+
+        # send an email if the user has been approved
+        if instance.email:
+            subject = "Congrats - You're off the waitlist!"
+            message = (
+                """Hooray 🎉  You’re off the waitlist - welcome to the Plio family :)
+            With Plio, you can unlock the true potential of videos by making them interactive and gathering data on their usage.
+            You can start Plio-fying the world by clicking here.
+
+            We sincerely hope that you enjoy the experience and are eagerly waiting to hear from you.
+            Cheers,
+            Plioneers
+            """,
+            )
+            email_from = EMAIL_HOST_USER
+            recipient_list = [
+                instance.email,
+            ]
+            send_email(subject, message, email_from, recipient_list)
 
 
 @receiver(post_save, sender=OrganizationUser)

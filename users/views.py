@@ -20,11 +20,8 @@ from plio.settings import (
     API_APPLICATION_NAME,
     OAUTH2_PROVIDER,
     OTP_EXPIRE_SECONDS,
-    AUTH0_TOKEN_URL,
-    AUTH0_CLIENT_ID,
-    AUTH0_CLIENT_SECRET,
-    AUTH0_AUDIENCE,
     DEFAULT_FROM_EMAIL,
+    ANALYTICS_IDP,
 )
 
 from users.models import User, OneTimePassword, OrganizationUser
@@ -230,12 +227,15 @@ def update_organization_user(sender, instance: OrganizationUser, **kwargs):
 
 @api_view(["POST"])
 def retrieve_analytics_app_access_token(request):
-    """Makes a client_credentials request to Auth0 app to get an access token."""
+    """Makes a client_credentials request to the configured identity provider to retrive an access token."""
+
     payload = {
         "grant_type": "client_credentials",
-        "client_id": AUTH0_CLIENT_ID,
-        "client_secret": AUTH0_CLIENT_SECRET,
-        "audience": AUTH0_AUDIENCE,
+        "client_id": ANALYTICS_IDP["client_id"],
+        "client_secret": ANALYTICS_IDP["client_secret"],
     }
-    response = requests.post(AUTH0_TOKEN_URL, data=payload)
+    if ANALYTICS_IDP["type"] == "auth0":
+        payload.audience = ANALYTICS_IDP["audience"]
+
+    response = requests.post(ANALYTICS_IDP["token_url"], data=payload)
     return Response(response.json(), status=status.HTTP_200_OK)

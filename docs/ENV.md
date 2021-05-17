@@ -101,17 +101,28 @@ Shortcode for the default tenant (e.g. plio)
 The domain for the default tenant (e.g. 0.0.0.0 locally, plio.in on production)
 
 
-### Auth0 for Plio Analytics
-While setting up Plio analytics, you need to make sure the following variables are also updated. These are responsible to fetch an access token from Auth0 Identity Provider.
+### Identity Provider for Plio Analytics
+While setting up Plio analytics, you need to make sure the following variables are also updated. These are responsible to fetch an access token from the configured Identity Provider.
 
-#### `AUTH0_TOKEN_URL`
-The url to request access token from Auth0. Generally looks like `https://<AUTH0-SUBDOMAIN>.auth0.com/oauth/token`
+#### `ANALYTICS_IDP_TYPE`
+Plio Analytics supports two identity providers. The possible values for this variable are `cognito` (AWS Cognito) and `auth0` (Auth0).
 
-#### `AUTH0_CLIENT_ID`
-The client id for your Auth0 app. Retrieve from Auth0 Application settings page
+#### `ANALYTICS_IDP_TOKEN_URL`
+The url to request access token from the Identity Provider. Generally looks like:
+1. When type is `cognito`: `https://<APP-DOMAIN-PREFIX>.auth.<aws-region>.amazoncognito.com/oauth2/token`. This is the same as the Amazon Cognito domain you have configured.
+2. When type is `auth0`: `https://<AUTH0-SUBDOMAIN>.auth0.com/oauth/token`
 
-#### `AUTH0_CLIENT_SECRET`
-The client secret for your Auth0 app. Retrieve from Auth0 Application settings page
+#### `ANALYTICS_IDP_CLIENT_ID`
+The client id for your identity provider app.
+1. When type is `cognito`: Retrieve this from your User pool's "App clients" page.
+2. When type is `auth0`: Retrieve from Auth0 Application settings page.
 
-#### `AUTH0_AUDIENCE`
-Unique Identifier for your Auth0 API. Retrieve from Auth0 API settings.
+#### `ANALYTICS_IDP_CLIENT_SECRET`
+The client secret for your identity provider app.
+1. When type is `cognito`: Retrieve this from your User pool's "App clients" page.
+2. When type is `auth0`: Retrieve from Auth0 Application settings page.
+
+#### `ANALYTICS_IDP_AUDIENCE`
+Unique Identifier for your Auth0 API.
+1. When type is `cognito`: Not needed.
+2. When type is `auth0`: Retrieve from Auth0 API settings.

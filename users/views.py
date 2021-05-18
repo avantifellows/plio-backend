@@ -227,7 +227,7 @@ def update_organization_user(sender, instance: OrganizationUser, **kwargs):
 
 @api_view(["POST"])
 def retrieve_analytics_app_access_token(request):
-    """Makes a client_credentials request to the configured identity provider to retrieve an access token."""
+    """Requests the configured identity provider to retrieve an access token."""
 
     payload = {
         "grant_type": "client_credentials",

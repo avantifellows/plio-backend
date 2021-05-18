@@ -110,7 +110,7 @@ Plio Analytics supports two identity providers. The possible values for this var
 #### `ANALYTICS_IDP_TOKEN_URL`
 The url to request access token from the Identity Provider. Generally looks like:
 1. When type is `cognito`: `https://<APP-DOMAIN-PREFIX>.auth.<aws-region>.amazoncognito.com/oauth2/token`. This is the same as the Amazon Cognito domain you have configured.
-2. When type is `auth0`: `https://<AUTH0-SUBDOMAIN>.auth0.com/oauth/token`
+2. When type is `auth0`: `https://<AUTH0-SUBDOMAIN>.<REGION>.auth0.com/oauth/token`
 
 #### `ANALYTICS_IDP_CLIENT_ID`
 The client id for your identity provider app.

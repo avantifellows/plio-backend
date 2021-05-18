@@ -235,7 +235,7 @@ def retrieve_analytics_app_access_token(request):
         "client_secret": ANALYTICS_IDP["client_secret"],
     }
     if ANALYTICS_IDP["type"] == "auth0":
-        payload.audience = ANALYTICS_IDP["audience"]
+        payload["audience"] = ANALYTICS_IDP["audience"]
 
     response = requests.post(ANALYTICS_IDP["token_url"], data=payload)
     return Response(response.json(), status=status.HTTP_200_OK)

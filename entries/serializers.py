@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from plio.models import Item
+from plio.models import Item, Video
 from plio.serializers import PlioSerializer
 from entries.models import Session, SessionAnswer, Event
 from experiments.serializers import ExperimentSerializer
@@ -64,7 +64,6 @@ class SessionSerializer(serializers.ModelSerializer):
         # will store the values for creating the session answers
         session_answers = []
 
-        # create the session answers
         if last_session:
             # copy last session answers
             keys_to_copy = ["item", "answer"]
@@ -84,6 +83,12 @@ class SessionSerializer(serializers.ModelSerializer):
                         "session": session.id,
                     }
                 )
+
+            # create new empty retention string
+            video_duration = int(
+                Video.objects.filter(id=session.plio.video_id).first().duration
+            )
+            session.retention = ("0," * video_duration)[:-1]
 
         # create the session answers
         for session_answer in session_answers:

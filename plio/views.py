@@ -221,6 +221,12 @@ class PlioViewSet(viewsets.ModelViewSet):
             )
             df.to_csv(os.path.join(data_dump_dir, "plio-meta-details.csv"), index=False)
 
+            # move the README for the data dump to the directory
+            shutil.copyfile(
+                "./plio/static/plio/docs/download_csv_README.md",
+                os.path.join(data_dump_dir, "README.md"),
+            )
+
         # create the zip
         shutil.make_archive(data_dump_dir, "zip", data_dump_dir)
 

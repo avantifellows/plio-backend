@@ -64,8 +64,6 @@ class SessionSerializer(serializers.ModelSerializer):
         # will store the values for creating the session answers
         session_answers = []
 
-        # create the session answers
-        # create empty retention string if it doesn't exist
         if last_session:
             # copy last session answers
             keys_to_copy = ["item", "answer"]

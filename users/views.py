@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 import datetime
 import string
@@ -26,6 +27,7 @@ from plio.settings import (
 
 from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
+from users.permissions import UserPermission
 
 from .services import SnsService
 import requests
@@ -43,11 +45,16 @@ class UserViewSet(viewsets.ModelViewSet):
     destroy: Soft delete a user
     """
 
+    permission_classes = [IsAuthenticated, UserPermission]
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @action(detail=True, methods=["patch", "get"])
-    def config(self, request, pk=True):
+    @action(
+        detail=True,
+        methods=["patch", "get"],
+        permission_classes=[IsAuthenticated, UserPermission],
+    )
+    def config(self, request, pk):
         user = self.get_object()
         if request.method == "GET":
             return Response(user.config)

@@ -13,7 +13,6 @@ class PlioPermission(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, obj):
-        print("inside object permission")
         if request.user.is_superuser:
             return True
 

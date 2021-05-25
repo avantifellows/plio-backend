@@ -3,7 +3,7 @@ from rest_framework import permissions
 
 class UserPermission(permissions.BasePermission):
     """
-    Global permission check for users.
+    Permission check for users.
     """
 
     def has_permission(self, request, view):

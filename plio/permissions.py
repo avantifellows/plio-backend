@@ -3,7 +3,7 @@ from rest_framework import permissions
 
 class PlioPermission(permissions.BasePermission):
     """
-    Global permission check for plios.
+    Permission check for plios.
     """
 
     def has_permission(self, request, view):
@@ -13,8 +13,5 @@ class PlioPermission(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        if view.action == "duplicate":
-            return request.user == obj.created_by
-
-        if view.action == "download_data":
+        if view.action in ["duplicate", "download_data"]:
             return request.user == obj.created_by

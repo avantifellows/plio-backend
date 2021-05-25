@@ -3,7 +3,7 @@ from rest_framework import permissions
 
 class OrganizationPermission(permissions.BasePermission):
     """
-    Global permission check for organizations.
+    Permission check for organizations.
     """
 
     def has_permission(self, request, view):

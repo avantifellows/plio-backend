@@ -25,6 +25,7 @@ from plio.queries import (
     get_responses_dump_query,
     get_events_query,
 )
+from plio.permissions import PlioPermission
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -81,6 +82,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     play: Retrieve a plio in order to play
     """
 
+    permission_classes = [IsAuthenticated, PlioPermission]
     serializer_class = PlioSerializer
     lookup_field = "uuid"
 
@@ -133,6 +135,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         uuid_list = queryset.values_list("uuid", flat=True)
         page = self.paginate_queryset(uuid_list)
+
         if page is not None:
             return self.get_paginated_response(page)
 
@@ -147,7 +150,11 @@ class PlioViewSet(viewsets.ModelViewSet):
             }
         )
 
-    @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
+    @action(
+        methods=["get"],
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+    )
     def play(self, request, uuid):
         queryset = Plio.objects.filter(uuid=uuid)
         queryset = queryset.filter(is_public=True) | queryset.filter(
@@ -162,7 +169,11 @@ class PlioViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(plio)
         return Response(serializer.data)
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    @action(
+        methods=["post"],
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+    )
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
         plio = self.get_object()
@@ -173,7 +184,11 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio.save()
         return Response(self.get_serializer(plio).data)
 
-    @action(methods=["get"], detail=True, permission_classes=[IsAuthenticated])
+    @action(
+        methods=["get"],
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+    )
     def download_data(self, request, uuid):
         # return 404 if user cannot access the object
         # else fetch the object

@@ -23,8 +23,8 @@ class PlioPermission(permissions.BasePermission):
             OrganizationTenantMiddleware.get_organization_shortcode(request)
         )
         if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
-            # This is user's personal workspace in the shared DB schema.
-            # Only plios created by the user are allowed to access.
+            # this is the user's personal workspace in the public DB schema
+            # only plios created by the user can be accessed
             return request.user == obj.created_by
 
         # checking if user is a member of the organization

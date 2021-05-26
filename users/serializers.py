@@ -26,6 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
             "status",
         ]
         extra_kwargs = {"password": {"write_only": True}}
+        read_only_fields = ["is_superuser", "is_staff", "mobile"]
 
     def to_representation(self, instance):
         response = super().to_representation(instance)

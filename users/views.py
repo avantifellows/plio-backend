@@ -27,7 +27,7 @@ from plio.settings import (
 
 from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
-from users.permissions import UserPermission
+from users.permissions import UserPermission, OrganizationUserPermission
 
 from .services import SnsService
 import requests
@@ -92,6 +92,7 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
     destroy: Soft delete an organization user
     """
 
+    permission_classes = [IsAuthenticated, OrganizationUserPermission]
     queryset = OrganizationUser.objects.all()
     serializer_class = OrganizationUserSerializer
 

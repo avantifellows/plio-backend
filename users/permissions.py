@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from users.models import OrganizationUser
+from users.models import OrganizationUser, Role
 
 
 class UserPermission(permissions.BasePermission):
@@ -30,16 +30,31 @@ class OrganizationUserPermission(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        if view.action == "create":
-            # only organization admins can add a user to their organization
-            user_is_organization_admin = OrganizationUser.objects.filter(
-                organization=request.data["organization"],
-                user=request.user.id,
-                role__name="org-admin",
-            ).exists()
-            return user_is_organization_admin
+        if view.action in ["list", "retrieve"]:
+            return True
 
-        return True
+        organization_user = OrganizationUser.objects.filter(
+            organization=request.data["organization"],
+            user=request.user.id,
+            role__name__in=["org-admin", "super-admin"],
+        ).first()
+
+        if not organization_user:
+            # user doesn't belong to the queried organization
+            # or doesn't have sufficient role within organization
+            return False
+
+        requested_role = Role.objects.filter(id=request.data["role"]).first()
+
+        # super-admins can add users with org-admin and org-view roles to their organization
+        if organization_user.role.name == "super-admin":
+            return requested_role.name in ["org-admin", "org-view"]
+
+        # or-admins can add users with org-view role to their organization
+        if organization_user.role.name == "org-admin":
+            return requested_role.name == "org-view"
+
+        return False
 
     def has_object_permission(self, request, view, obj):
         """Object-level permissions for organization-user. This determines whether the request can access an organization-user instance or not."""

@@ -43,6 +43,7 @@ class UserViewSet(viewsets.ModelViewSet):
     create: Create a user
     partial_update: Patch a user
     destroy: Soft delete a user
+    config: Retrieve or update user config
     """
 
     permission_classes = [IsAuthenticated, UserPermission]

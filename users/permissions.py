@@ -38,7 +38,7 @@ class OrganizationUserPermission(permissions.BasePermission):
         user_organization_role = request.user.get_role_for_organization(
             request.data["organization"]
         )
-        if user_organization_role not in ["org-admin", "super-admin"]:
+        if user_organization_role.name not in ["org-admin", "super-admin"]:
             # user doesn't belong to the queried organization
             # or doesn't have sufficient role within organization
             return False
@@ -46,11 +46,11 @@ class OrganizationUserPermission(permissions.BasePermission):
         requested_role = Role.objects.filter(id=request.data["role"]).first()
 
         # super-admins can add users with org-admin and org-view roles to their organization
-        if user_organization_role == "super-admin":
+        if user_organization_role.name == "super-admin":
             return requested_role.name in ["org-admin", "org-view"]
 
         # or-admins can add users with org-view role to their organization
-        if user_organization_role == "org-admin":
+        if user_organization_role.name == "org-admin":
             return requested_role.name == "org-view"
 
         return False
@@ -65,13 +65,13 @@ class OrganizationUserPermission(permissions.BasePermission):
         )
 
         # only super-admin and org-admin can access organization_user instance
-        if user_organization_role not in ["super-admin", "org-admin"]:
+        if user_organization_role.name not in ["super-admin", "org-admin"]:
             return False
 
         # super-admins can add users with org-admin and org-view roles to their organization
-        if user_organization_role == "super-admin":
+        if user_organization_role.name == "super-admin":
             return obj.role.name in ["org-admin", "org-view"]
 
         # or-admins can add users with org-view role to their organization
-        if user_organization_role == "org-admin":
+        if user_organization_role.name == "org-admin":
             return obj.role.name == "org-view"

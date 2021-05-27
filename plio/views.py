@@ -26,6 +26,7 @@ from plio.queries import (
     get_events_query,
 )
 from plio.permissions import PlioPermission
+from plio.ordering import CustomOrderingFilter
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -89,6 +90,14 @@ class PlioViewSet(viewsets.ModelViewSet):
     # set which pagination class to use, as no global pagination class is set
     pagination_class = StandardResultsSetPagination
 
+    # define the filter backends to use
+    # this inlcludes the search filtering and ordering
+    filter_backends = [
+        filters.SearchFilter,
+        filters.OrderingFilter,
+        CustomOrderingFilter,
+    ]
+
     # match the search query with the values of these fields
     search_fields = [
         "name",
@@ -96,7 +105,11 @@ class PlioViewSet(viewsets.ModelViewSet):
         "updated_at",
         "uuid",
     ]
-    filter_backends = (filters.SearchFilter,)
+
+    # specify which fields the API should allow ordering by
+    ordering_fields = ["name", "updated_at", "created_at"]
+    # set the default ordering
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         organization_shortcode = (

@@ -91,6 +91,7 @@ class User(SafeDeleteModel, AbstractUser):
         return "%d: %s" % (self.id, self.name)
 
     def get_role_for_organization(self, organization_id):
+        """Returns the user's role within the organization provided (None if the user is not a part)"""
         organization_user = OrganizationUser.objects.filter(
             organization_id=organization_id, user_id=self.id
         ).first()

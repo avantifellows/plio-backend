@@ -85,6 +85,6 @@ class OrganizationUserPermission(permissions.BasePermission):
         if user_organization_role.name == "super-admin":
             return obj.role.name in ["org-admin", "org-view"]
 
-        # or-admins can add users with org-view role to their organization
+        # org-admins can add users with org-view role to their organization
         if user_organization_role.name == "org-admin":
             return obj.role.name == "org-view"

@@ -28,4 +28,4 @@ Visit the [REST API guide](docs/REST-API.md) to connect your Plio's frontend set
 - [Google OAuth2](docs/oauth/GOOGLE-OAUTH2.md)
 
 ## Product Guide
-To know more about features and updates on Plio, visit the [product guide on our YouTube channel](https://www.youtube.com/playlist?list=PL3U0Jqw-piJgw2hSpuAZym4K1_Tb0RTRV).
+To know more about the features and updates on Plio, visit the [product guide on our YouTube channel](https://www.youtube.com/playlist?list=PL3U0Jqw-piJgw2hSpuAZym4K1_Tb0RTRV).

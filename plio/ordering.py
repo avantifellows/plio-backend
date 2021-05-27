@@ -16,7 +16,7 @@ class CustomOrderingFilter(OrderingFilter):
 
     filter_queryset(): Gets the prepared ordering list from `get_ordering()`,
                        prepares the queryset according to any specific custom
-                       ordering implementation, and returns the ordered by queryset
+                       ordering implementation, and returns the ordered queryset
 
     inspired by: https://stackoverflow.com/questions/40950251/django-rest-ordering-custom
     """

@@ -94,7 +94,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     # this inlcludes the search filtering and ordering
     filter_backends = [
         filters.SearchFilter,
-        filters.OrderingFilter,
         CustomOrderingFilter,
     ]
 
@@ -105,11 +104,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         "updated_at",
         "uuid",
     ]
-
-    # specify which fields the API should allow ordering by
-    ordering_fields = ["name", "updated_at", "created_at"]
-    # set the default ordering
-    ordering = ["-created_at"]
 
     def get_queryset(self):
         organization_shortcode = (

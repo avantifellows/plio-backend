@@ -23,18 +23,27 @@ class CustomOrderingFilter(OrderingFilter):
 
     # define the allowed custom ordering fields
     # any ordering value other than this list will be rejected
-    allowed_ordering_fields = ["unique_viewers", "-unique_viewers"]
+    allowed_ordering_fields = ["unique_viewers", "name", "updated_at", "created_at"]
+    # set the default ordering
+    default_ordering = ["-updated_at"]
 
     def get_ordering(self, request, queryset, view):
         params = request.query_params.get(self.ordering_param)
         if params:
             fields = [param.strip() for param in params.split(",")]
+
+            def field_valid(field):
+                if field.startswith("-"):
+                    field = field[1:]
+                return field in self.allowed_ordering_fields
+
             # filter out the fields that are not allowed
-            ordering = [field for field in fields if field in self.allowed_ordering_fields]
+            ordering = [field for field in fields if field_valid(field)]
             if ordering:
                 return ordering
 
         # no ordering was included, or all the ordering fields were invalid
+        setattr(view, "ordering", self.default_ordering)
         return self.get_default_ordering(view)
 
     def filter_queryset(self, request, queryset, view):
@@ -42,7 +51,7 @@ class CustomOrderingFilter(OrderingFilter):
 
         if ordering:
             # if the ordering fields contain "unique_viewers"
-            if any("unique_viewers" in orderBy for orderBy in ordering):
+            if any("unique_viewers" in order_by for order_by in ordering):
                 # prepare a session queryset which has an annotated field "count_unique_users"
                 # that holds the count of unique users for every plio in the plio's queryset
                 plio_session_group = Session.objects.filter(

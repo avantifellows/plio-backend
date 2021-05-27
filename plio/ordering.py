@@ -32,13 +32,13 @@ class CustomOrderingFilter(OrderingFilter):
         if params:
             fields = [param.strip() for param in params.split(",")]
 
-            def field_valid(field):
+            def is_valid_field(field):
                 if field.startswith("-"):
                     field = field[1:]
                 return field in self.allowed_ordering_fields
 
             # filter out the fields that are not allowed
-            ordering = [field for field in fields if field_valid(field)]
+            ordering = [field for field in fields if is_valid_field(field)]
             if ordering:
                 return ordering
 

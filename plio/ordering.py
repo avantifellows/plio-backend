@@ -34,7 +34,7 @@ class CustomOrderingFilter(OrderingFilter):
             if ordering:
                 return ordering
 
-        # No ordering was included, or all the ordering fields were invalid
+        # no ordering was included, or all the ordering fields were invalid
         return self.get_default_ordering(view)
 
     def filter_queryset(self, request, queryset, view):

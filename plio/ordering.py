@@ -45,17 +45,17 @@ class CustomOrderingFilter(OrderingFilter):
             if any("unique_viewers" in orderBy for orderBy in ordering):
                 # prepare a session queryset which has an annotated field "count_unique_users"
                 # that holds the count of unique users for every plio in the plio's queryset
-                session_queryset = Session.objects.filter(
+                plio_session_group = Session.objects.filter(
                     plio__uuid=OuterRef("uuid")
                 ).values("plio__uuid")
 
-                session_queryset = session_queryset.annotate(
+                plios_unique_users_count = plio_session_group.annotate(
                     count_unique_users=Count("user__id", distinct=True)
                 ).values("count_unique_users")
 
                 # annotate the plio's queryset with the count of unique users
                 queryset = queryset.annotate(
-                    unique_viewers=Coalesce(Subquery(session_queryset), 0)
+                    unique_viewers=Coalesce(Subquery(plios_unique_users_count), 0)
                 )
 
             return queryset.order_by(*ordering)

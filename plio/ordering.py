@@ -30,7 +30,7 @@ class CustomOrderingFilter(OrderingFilter):
         if params:
             fields = [param.strip() for param in params.split(",")]
             # filter out the fields that are not allowed
-            ordering = [f for f in fields if f in self.allowed_ordering_fields]
+            ordering = [field for field in fields if field in self.allowed_ordering_fields]
             if ordering:
                 return ordering
 

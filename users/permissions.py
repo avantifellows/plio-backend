@@ -1,5 +1,5 @@
 from rest_framework import permissions
-from users.models import OrganizationUser, Role
+from users.models import Role
 
 
 class UserPermission(permissions.BasePermission):
@@ -30,16 +30,15 @@ class OrganizationUserPermission(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        if view.action in ["list", "retrieve"]:
+        # when listing, a user should only see organization-user mapping for the organizations they have access to.
+        # this is handled by get_queryset
+        if view.action == "list":
             return True
 
-        organization_user = OrganizationUser.objects.filter(
-            organization=request.data["organization"],
-            user=request.user.id,
-            role__name__in=["org-admin", "super-admin"],
-        ).first()
-
-        if not organization_user:
+        user_organization_role = request.user.get_role_for_organization(
+            request.data["organization"]
+        )
+        if user_organization_role not in ["org-admin", "super-admin"]:
             # user doesn't belong to the queried organization
             # or doesn't have sufficient role within organization
             return False
@@ -47,11 +46,11 @@ class OrganizationUserPermission(permissions.BasePermission):
         requested_role = Role.objects.filter(id=request.data["role"]).first()
 
         # super-admins can add users with org-admin and org-view roles to their organization
-        if organization_user.role.name == "super-admin":
+        if user_organization_role == "super-admin":
             return requested_role.name in ["org-admin", "org-view"]
 
         # or-admins can add users with org-view role to their organization
-        if organization_user.role.name == "org-admin":
+        if user_organization_role == "org-admin":
             return requested_role.name == "org-view"
 
         return False
@@ -61,10 +60,18 @@ class OrganizationUserPermission(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        # only organization admins are allowed to access organization-user instance
-        user_is_organization_admin = OrganizationUser.objects.filter(
-            organization=request.data["organization"],
-            user=request.user.id,
-            role__name="org-admin",
-        ).exists()
-        return user_is_organization_admin
+        user_organization_role = request.user.get_role_for_organization(
+            request.data["organization"]
+        )
+
+        # only super-admin and org-admin can access organization_user instance
+        if user_organization_role not in ["super-admin", "org-admin"]:
+            return False
+
+        # super-admins can add users with org-admin and org-view roles to their organization
+        if user_organization_role == "super-admin":
+            return obj.role.name in ["org-admin", "org-view"]
+
+        # or-admins can add users with org-view role to their organization
+        if user_organization_role == "org-admin":
+            return obj.role.name == "org-view"

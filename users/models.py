@@ -90,6 +90,15 @@ class User(SafeDeleteModel, AbstractUser):
     def __str__(self):
         return "%d: %s" % (self.id, self.name)
 
+    def get_role_for_organization(self, organization_id):
+        organization_user = OrganizationUser.objects.filter(
+            organization_id=organization_id, user_id=self.id
+        ).first()
+        if not organization_user:
+            return None
+
+        return organization_user.role
+
 
 class UserMeta(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE

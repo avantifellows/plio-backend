@@ -27,20 +27,27 @@ class OrganizationUserPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
         """View-level permissions for organization-user. This determines whether the request can access organization-user instances or not."""
+
         if request.user.is_superuser:
             return True
 
         # when listing, a user should only see organization-user mapping for the organizations they have access to.
         # this is handled by get_queryset
-        if view.action == "list":
+        if view.action in ["list", "retrieve", "destroy"]:
             return True
 
         user_organization_role = request.user.get_role_for_organization(
             request.data["organization"]
         )
-        if user_organization_role.name not in ["org-admin", "super-admin"]:
+        if not user_organization_role or user_organization_role.name not in [
+            "org-admin",
+            "super-admin",
+        ]:
             # user doesn't belong to the queried organization
             # or doesn't have sufficient role within organization
+            return False
+
+        if "role" not in request.data:
             return False
 
         requested_role = Role.objects.filter(id=request.data["role"]).first()
@@ -60,9 +67,15 @@ class OrganizationUserPermission(permissions.BasePermission):
         if request.user.is_superuser:
             return True
 
-        user_organization_role = request.user.get_role_for_organization(
-            request.data["organization"]
-        )
+        if view.action == "retrieve":
+            return True
+
+        if view.action == "destroy":
+            organization_id = obj.organization_id
+        else:
+            organization_id = request.data["organization"]
+
+        user_organization_role = request.user.get_role_for_organization(organization_id)
 
         # only super-admin and org-admin can access organization_user instance
         if user_organization_role.name not in ["super-admin", "org-admin"]:

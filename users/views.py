@@ -97,6 +97,21 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
     queryset = OrganizationUser.objects.all()
     serializer_class = OrganizationUserSerializer
 
+    def get_queryset(self):
+        # get all organizations where the current user is a super-admin or org-admin
+        user_organizations = OrganizationUser.objects.filter(
+            user=self.request.user, role__name__in=["super-admin", "org-admin"]
+        ).all()
+
+        # get the array of organization ids
+        organizations_ids = [
+            user_organization.organization_id
+            for user_organization in user_organizations
+        ]
+
+        # return instances that falls under the organization ids
+        return OrganizationUser.objects.filter(organization__in=organizations_ids)
+
 
 @api_view(["POST"])
 @permission_classes([AllowAny])

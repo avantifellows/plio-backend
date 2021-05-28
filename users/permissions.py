@@ -77,10 +77,6 @@ class OrganizationUserPermission(permissions.BasePermission):
 
         user_organization_role = request.user.get_role_for_organization(organization_id)
 
-        # only super-admin and org-admin can access organization_user instance
-        if user_organization_role.name not in ["super-admin", "org-admin"]:
-            return False
-
         # super-admins can add users with org-admin and org-view roles to their organization
         if user_organization_role.name == "super-admin":
             return obj.role.name in ["org-admin", "org-view"]

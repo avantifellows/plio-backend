@@ -94,7 +94,6 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
     """
 
     permission_classes = [IsAuthenticated, OrganizationUserPermission]
-    queryset = OrganizationUser.objects.all()
     serializer_class = OrganizationUserSerializer
 
     def get_queryset(self):

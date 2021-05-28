@@ -27,7 +27,7 @@ from plio.settings import (
 
 from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
-from users.permissions import UserPermission
+from users.permissions import UserPermission, OrganizationUserPermission
 
 from .services import SnsService
 import requests
@@ -43,6 +43,7 @@ class UserViewSet(viewsets.ModelViewSet):
     create: Create a user
     partial_update: Patch a user
     destroy: Soft delete a user
+    config: Retrieve or update user config
     """
 
     permission_classes = [IsAuthenticated, UserPermission]
@@ -92,8 +93,27 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
     destroy: Soft delete an organization user
     """
 
+    permission_classes = [IsAuthenticated, OrganizationUserPermission]
     queryset = OrganizationUser.objects.all()
     serializer_class = OrganizationUserSerializer
+
+    def get_queryset(self):
+        # get all organizations where the current user is a super-admin or org-admin
+        if self.request.user.is_superuser:
+            return OrganizationUser.objects.all()
+
+        user_organizations = OrganizationUser.objects.filter(
+            user=self.request.user, role__name__in=["super-admin", "org-admin"]
+        ).all()
+
+        # get the array of organization ids
+        organization_ids = [
+            user_organization.organization_id
+            for user_organization in user_organizations
+        ]
+
+        # return instances that falls under the organization ids
+        return OrganizationUser.objects.filter(organization__in=organization_ids)
 
 
 @api_view(["POST"])

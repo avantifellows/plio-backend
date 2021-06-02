@@ -4,6 +4,9 @@ set -e
 # collect static files
 python manage.py collectstatic --no-input
 
+# create migrations
+python manage.py makemigrations
+
 # run migrations
 python manage.py migrate
 

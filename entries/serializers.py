@@ -22,6 +22,7 @@ class SessionSerializer(serializers.ModelSerializer):
             "watch_time",
             "plio",
             "user",
+            "is_first",
             "created_at",
             "updated_at",
         ]
@@ -57,6 +58,9 @@ class SessionSerializer(serializers.ModelSerializer):
             for key in keys_to_check:
                 if key not in validated_data:
                     validated_data[key] = last_session_data[key]
+
+        else:
+            validated_data["is_first"] = True
 
         # get the newly created session object
         session = Session.objects.create(**validated_data)

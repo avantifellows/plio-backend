@@ -23,3 +23,4 @@ Fixes #{issue id}
 - [ ] Tested locally
 - [ ] Tested on staging
 - [ ] Tested on production
+- [ ] If changes in DB, update [DB schema](https://docs.google.com/presentation/d/15c45HbHphh4w3guaFV3BgEA5nMKd-4J35JdUKdrpPzo/edit#slide=id.gc8c9ec0b5e_0_0)

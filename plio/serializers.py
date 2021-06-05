@@ -81,6 +81,8 @@ class QuestionSerializer(serializers.ModelSerializer):
             "type",
             "options",
             "correct_answer",
+            "has_char_limit",
+            "max_char_limit",
             "created_at",
             "updated_at",
         ]

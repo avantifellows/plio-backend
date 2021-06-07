@@ -95,6 +95,8 @@ class Question(SafeDeleteModel):
     correct_answer = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    has_char_limit = models.BooleanField(default=False)
+    max_char_limit = models.FloatField(null=True)
 
     class Meta:
         db_table = "question"

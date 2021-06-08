@@ -37,4 +37,8 @@ jobs:
           DB_PASSWORD: postgres
           SECRET_KEY: TESTING_KEY
         run: |
-          python manage.py test
+          coverage run manage.py test
+      - name: Coveralls
+        run: coveralls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

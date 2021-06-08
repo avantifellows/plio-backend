@@ -8,36 +8,33 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        db: [postgres]
-        python-version: [3.8]
-        include:
-          - db: postgres
-            db_user: runner
-            db_password: ''
+    services:
+      db:
+        image: postgres:12.3-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: github_actions
+        ports:
+          - 5432:5432
+        options: --mount type=tmpfs,destination=/var/lib/postgresql/data --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Start PostgreSQL
-      if: matrix.db == 'postgres'
-      run: |
-        sudo systemctl start postgresql.service
-        sudo -u postgres createuser -s runner
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install apprise braintree coverage coveralls
-    - name: Run Tests
-      env:
-        DB: ${{ matrix.db }}
-        DB_HOST: 127.0.0.1
-        DB_USER: ${{ matrix.db_user }}
-        DB_PASSWORD: ${{ matrix.db_password }}
-        SECRET_KEY: TESTING_KEY
-      run: |
-        python manage.py test
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install apprise braintree coverage coveralls
+      - name: Run Tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_NAME: github_actions
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          SECRET_KEY: TESTING_KEY
+        run: |
+          python manage.py test

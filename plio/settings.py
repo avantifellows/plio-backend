@@ -30,7 +30,7 @@ APP_ENV = os.environ.get("APP_ENV", "production")
 DEBUG = os.environ.get("DEBUG", False)
 
 # allowed hosts that can access the Django app
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(" ")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(" ")
 
 # Application definition
 

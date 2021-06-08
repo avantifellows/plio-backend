@@ -37,5 +37,6 @@ jobs:
         DB: ${{ matrix.db }}
         DB_USER: ${{ matrix.db_user }}
         DB_PASSWORD: ${{ matrix.db_password }}
+        SECRET_KEY: TESTING_KEY
       run: |
         python manage.py test

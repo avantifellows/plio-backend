@@ -29,7 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install apprise braintree coverage coveralls
-      - name: Run Tests
+      - name: Run Test Cases
         env:
           DB_HOST: 127.0.0.1
           DB_NAME: github_actions
@@ -42,3 +42,7 @@ jobs:
         run: coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: true

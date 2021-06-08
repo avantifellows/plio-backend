@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         db: [postgres]
-        python-version: [3.7, 3.8]
+        python-version: [3.8]
         include:
           - db: postgres
             db_user: postgres

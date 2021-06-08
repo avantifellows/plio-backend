@@ -14,7 +14,7 @@ jobs:
         python-version: [3.8]
         include:
           - db: postgres
-            db_user: postgres
+            db_user: runner
             db_password: ''
     steps:
     - uses: actions/checkout@v2

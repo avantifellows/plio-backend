@@ -35,6 +35,7 @@ jobs:
     - name: Run Tests
       env:
         DB: ${{ matrix.db }}
+        DB_HOST: 127.0.0.1
         DB_USER: ${{ matrix.db_user }}
         DB_PASSWORD: ${{ matrix.db_password }}
         SECRET_KEY: TESTING_KEY

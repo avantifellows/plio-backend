@@ -7,6 +7,7 @@ on:
 
 jobs:
   test:
+    name: Test cases
     runs-on: ubuntu-latest
     services:
       db:

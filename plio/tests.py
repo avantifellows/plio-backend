@@ -62,12 +62,12 @@ class PlioCRUDTestCase(BaseTestCase):
         # unset the credentials
         self.client.credentials()
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get(reverse("plio-list"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_a_user_can_list_plios(self):
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get(reverse("plio-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 2)
 
@@ -78,7 +78,7 @@ class PlioCRUDTestCase(BaseTestCase):
         Plio.objects.create(name="Plio 1", video=self.video, created_by=new_user)
 
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get(reverse("plio-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with different user
         self.assertEqual(response.data["count"], 2)

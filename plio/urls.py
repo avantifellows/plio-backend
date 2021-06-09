@@ -53,20 +53,24 @@ schema_view = get_schema_view(
 )
 
 api_router = routers.DefaultRouter()
-api_router.register(r"organizations", OrganizationViewSet)
-api_router.register(r"users", UserViewSet)
-api_router.register(r"videos", VideoViewSet)
+api_router.register(r"organizations", OrganizationViewSet, basename="organization")
+api_router.register(r"users", UserViewSet, basename="user")
+api_router.register(r"videos", VideoViewSet, basename="view")
 # https://stackoverflow.com/questions/48548622/base-name-argument-not-specified-and-could-not-automatically-determine-the-name
-api_router.register(r"plios", PlioViewSet, basename="plios")
-api_router.register(r"items", ItemViewSet, basename="items")
-api_router.register(r"questions", QuestionViewSet)
-api_router.register(r"experiments", ExperimentViewSet, basename="experiments")
-api_router.register(r"experiment-plios", ExperimentPlioViewSet)
-api_router.register(r"sessions", SessionViewSet, basename="sessions")
-api_router.register(r"session-answers", SessionAnswerViewSet)
-api_router.register(r"events", EventViewSet)
-api_router.register(r"tags", TagViewSet)
-api_router.register(r"organization-users", OrganizationUserViewSet)
+api_router.register(r"plios", PlioViewSet, basename="plio")
+api_router.register(r"items", ItemViewSet, basename="item")
+api_router.register(r"questions", QuestionViewSet, basename="question")
+api_router.register(r"experiments", ExperimentViewSet, basename="experiment")
+api_router.register(
+    r"experiment-plios", ExperimentPlioViewSet, basename="experiment_plio"
+)
+api_router.register(r"sessions", SessionViewSet, basename="session")
+api_router.register(r"session-answers", SessionAnswerViewSet, basename="session_answer")
+api_router.register(r"events", EventViewSet, basename="event")
+api_router.register(r"tags", TagViewSet, basename="tag")
+api_router.register(
+    r"organization-users", OrganizationUserViewSet, basename="organization_user"
+)
 
 # http/https url patterns
 urlpatterns = [

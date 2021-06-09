@@ -18,6 +18,7 @@ jobs:
     name: Test cases
     runs-on: ubuntu-latest
     services:
+      # Creates a postgres docker where migrations will run.
       db:
         image: postgres:12.3-alpine
         env:
@@ -26,17 +27,22 @@ jobs:
           POSTGRES_DB: github_actions
         ports:
           - 5432:5432
-        options: --mount type=tmpfs,destination=/var/lib/postgresql/data --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
+
+      # Install Python. This matches the Python version in Dockerfile.
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
       - name: Run Test Cases
         env:
           DB_HOST: 127.0.0.1
@@ -44,8 +50,9 @@ jobs:
           DB_USER: postgres
           DB_PASSWORD: postgres
           SECRET_KEY: TESTING_KEY
-        run: |
-          coverage run manage.py test
+        # command to run tests and generate coverage metrics
+        run: coverage run manage.py test
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:

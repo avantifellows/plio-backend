@@ -72,8 +72,8 @@ api_router.register(r"organization-users", OrganizationUserViewSet)
 urlpatterns = [
     path("admin/", admin.site.urls),
     # API routes
-    path("api/v1/otp/request/", request_otp),
-    path("api/v1/otp/verify/", verify_otp),
+    path("api/v1/otp/request/", request_otp, name="request_otp"),
+    path("api/v1/otp/verify/", verify_otp, name="verify_otp"),
     path("api/v1/users/token/", get_by_access_token),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),

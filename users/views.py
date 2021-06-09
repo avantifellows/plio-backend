@@ -23,6 +23,7 @@ from plio.settings import (
     OTP_EXPIRE_SECONDS,
     DEFAULT_FROM_EMAIL,
     ANALYTICS_IDP,
+    SMS_DRIVER,
 )
 
 from users.models import User, OneTimePassword, OrganizationUser
@@ -127,11 +128,12 @@ def request_otp(request):
     )
     otp.save()
 
-    sms = SnsService()
-    sms.publish(
-        otp.mobile,
-        f"Hello! Your OTP for Plio login is {otp.otp}. It is valid for the next 5 minutes. Please do not share it with anyone.",
-    )
+    if SMS_DRIVER == "sns":
+        sms = SnsService()
+        sms.publish(
+            otp.mobile,
+            f"Hello! Your OTP for Plio login is {otp.otp}. It is valid for the next 5 minutes. Please do not share it with anyone.",
+        )
 
     return Response(OtpSerializer(otp).data)
 

@@ -37,3 +37,4 @@ drf-yasg==1.20.0
 django-safedelete==1.0.0
 django-oauth2-provider==0.2.6.1
 django-rest-framework-social-oauth2==1.1.0
+coverage==5.5

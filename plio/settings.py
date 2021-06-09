@@ -30,7 +30,7 @@ APP_ENV = os.environ.get("APP_ENV", "production")
 DEBUG = os.environ.get("DEBUG", False)
 
 # allowed hosts that can access the Django app
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS").split(" ")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(" ")
 
 # Application definition
 
@@ -112,7 +112,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
 ]
 
 MIDDLEWARE = [
-    "django_tenants.middleware.main.TenantMainMiddleware",
+    "organizations.middleware.OrganizationTenantMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -123,7 +123,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "request_logging.middleware.LoggingMiddleware",
-    "organizations.middleware.OrganizationTenantMiddleware",
 ]
 
 ROOT_URLCONF = "plio.urls"
@@ -231,7 +230,7 @@ STATICFILES_DIRS = [
 ]
 
 CMS_URL = "https://cms.peerlearning.com/api"
-CMS_TOKEN = os.environ["CMS_TOKEN"]
+CMS_TOKEN = os.environ.get("CMS_TOKEN")
 GET_CMS_PROBLEM_URL = "/problems"
 
 DATABASES = {
@@ -308,3 +307,5 @@ EMAIL_PORT = os.environ.get("EMAIL_PORT")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+
+SMS_DRIVER = os.environ.get("SMS_DRIVER")

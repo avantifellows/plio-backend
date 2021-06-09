@@ -39,11 +39,22 @@ class OtpAuthTestCase(BaseTestCase):
         otp_exists = OneTimePassword.objects.filter(mobile=self.user_mobile).exists()
         self.assertTrue(otp_exists)
 
-    def test_guest_can_verify_otp(self):
+    def test_invalid_otp_should_fail(self):
         # request otp
         self.client.post(reverse("request_otp"), {"mobile": self.user_mobile})
 
-        # fetch otp
+        # invalid otp
+        otp = "000000"
+        response = self.client.post(
+            reverse("verify_otp"), {"mobile": self.user_mobile, "otp": otp}
+        )
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_valid_otp_should_pass(self):
+        # request otp
+        self.client.post(reverse("request_otp"), {"mobile": self.user_mobile})
+
+        # verify valid otp
         otp = OneTimePassword.objects.filter(mobile=self.user_mobile).first()
         response = self.client.post(
             reverse("verify_otp"), {"mobile": self.user_mobile, "otp": otp.otp}

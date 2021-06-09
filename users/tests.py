@@ -1,10 +1,10 @@
 from rest_framework.test import APIClient
 from rest_framework.test import APITestCase
-from users.models import OneTimePassword
-from plio.settings import API_APPLICATION_NAME
+from rest_framework import status
 from oauth2_provider.models import Application
 from django.urls import reverse
-from rest_framework import status
+from users.models import OneTimePassword
+from plio.settings import API_APPLICATION_NAME
 
 
 class BaseTestCase(APITestCase):

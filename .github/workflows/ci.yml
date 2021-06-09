@@ -24,7 +24,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: github_actions
+          POSTGRES_DB: github_actions_testing
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
@@ -46,15 +46,17 @@ jobs:
       - name: Run Test Cases
         env:
           DB_HOST: 127.0.0.1
-          DB_NAME: github_actions
+          DB_NAME: github_actions_testing
           DB_USER: postgres
           DB_PASSWORD: postgres
-          SECRET_KEY: TESTING_KEY
+          SECRET_KEY: wpurj&oym6m@kcp(m&z(q-g0bo-r*+!f_&j(94di8j&_j4m%2s  # random secret key
         # command to run tests and generate coverage metrics
         run: coverage run manage.py test
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
+          # The codecov token to upload report. Can be retrieved from your Codecov dashboard.
+          # This should be set from `GitHub Repo > Settings > Environment Variables`.
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

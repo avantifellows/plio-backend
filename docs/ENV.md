@@ -70,6 +70,9 @@ AWS secret access key.
 #### `AWS_REGION`
 Region of the AWS IAM user.
 
+#### `SMS_DRIVER`
+The driver to send sms. The only supported value is `sns` right now for AWS SNS. When in development mode, use an empty string to avoid SMS triggers while debugging/testing.
+
 ### Redis
 #### `REDIS_HOSTNAME`
 Hostname of your Redis instance

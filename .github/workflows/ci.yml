@@ -57,6 +57,6 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           # The codecov token to upload report. Can be retrieved from your Codecov dashboard.
-          # This should be set from `GitHub Repo > Settings > Environment Variables`.
+          # This should be set from `GitHub Repo > Settings > Secrets`.
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

@@ -8,7 +8,7 @@ from plio.settings import API_APPLICATION_NAME
 
 
 class BaseTestCase(APITestCase):
-    """Base class that set up generic pre-requisites for all further test classes"""
+    """Base class that sets up generic pre-requisites for all further test classes"""
 
     def setUp(self):
         self.client = APIClient()

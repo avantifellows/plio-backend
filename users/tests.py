@@ -15,7 +15,7 @@ class OtpAuthTestCase(BaseTestCase):
 
     def test_guest_can_request_for_otp(self):
         response = self.client.post(
-            reverse("request_otp"), {"mobile": self.user_mobile}
+            reverse("request-otp"), {"mobile": self.user_mobile}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -24,23 +24,23 @@ class OtpAuthTestCase(BaseTestCase):
 
     def test_invalid_otp_should_fail(self):
         # request otp
-        self.client.post(reverse("request_otp"), {"mobile": self.user_mobile})
+        self.client.post(reverse("request-otp"), {"mobile": self.user_mobile})
 
         # invalid otp
         otp = "000000"
         response = self.client.post(
-            reverse("verify_otp"), {"mobile": self.user_mobile, "otp": otp}
+            reverse("verify-otp"), {"mobile": self.user_mobile, "otp": otp}
         )
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_valid_otp_should_pass(self):
         # request otp
-        self.client.post(reverse("request_otp"), {"mobile": self.user_mobile})
+        self.client.post(reverse("request-otp"), {"mobile": self.user_mobile})
 
         # verify valid otp
         otp = OneTimePassword.objects.filter(mobile=self.user_mobile).first()
         response = self.client.post(
-            reverse("verify_otp"), {"mobile": self.user_mobile, "otp": otp.otp}
+            reverse("verify-otp"), {"mobile": self.user_mobile, "otp": otp.otp}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

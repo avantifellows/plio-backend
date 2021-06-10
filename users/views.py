@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 import datetime
+from django.utils import timezone
 import string
 import random
 from oauth2_provider.models import AccessToken, Application, RefreshToken
@@ -123,9 +124,7 @@ def request_otp(request):
     otp = OneTimePassword()
     otp.mobile = request.data["mobile"]
     otp.otp = random.randint(100000, 999999)
-    otp.expires_at = datetime.datetime.now() + datetime.timedelta(
-        seconds=OTP_EXPIRE_SECONDS
-    )
+    otp.expires_at = timezone.now() + datetime.timedelta(seconds=OTP_EXPIRE_SECONDS)
     otp.save()
 
     if SMS_DRIVER == "sns":
@@ -145,7 +144,7 @@ def verify_otp(request):
     otp = request.data["otp"]
     try:
         otp = OneTimePassword.objects.filter(
-            mobile=mobile, otp=otp, expires_at__gte=datetime.datetime.now()
+            mobile=mobile, otp=otp, expires_at__gte=timezone.now()
         ).first()
         if not otp:
             raise OneTimePassword.DoesNotExist
@@ -164,7 +163,7 @@ def verify_otp(request):
         scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
 
         application = Application.objects.get(name=API_APPLICATION_NAME)
-        expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
+        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
         random_token = "".join(random.choices(string.ascii_lowercase, k=30))
         # generate oauth2 access token
         access_token = AccessToken.objects.create(

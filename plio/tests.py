@@ -1,6 +1,7 @@
 import datetime
 import random
 import string
+from django.utils import timezone
 
 from rest_framework.test import APIClient
 from rest_framework.test import APITestCase
@@ -36,7 +37,7 @@ class BaseTestCase(APITestCase):
         random_token = "".join(random.choices(string.ascii_lowercase, k=30))
         expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
         scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
-        expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
+        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
         self.access_token = AccessToken.objects.create(
             user=self.user,
             application=application,
@@ -64,24 +65,24 @@ class PlioCRUDTestCase(BaseTestCase):
         # unset the credentials
         self.client.credentials()
         # get plios
-        response = self.client.get(reverse("plio-list"))
+        response = self.client.get(reverse("plios-list"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_can_list_plios(self):
         # get plios
-        response = self.client.get(reverse("plio-list"))
+        response = self.client.get(reverse("plios-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 2)
 
     def test_user_list_own_plios(self):
-         """A user should only be able to list their own plios"""
+        """A user should only be able to list their own plios"""
         # create a new user
         new_user = User.objects.create(mobile="+919988776655")
         # create plio from the new user
         Plio.objects.create(name="Plio 1", video=self.video, created_by=new_user)
 
         # get plios
-        response = self.client.get(reverse("plio-list"))
+        response = self.client.get(reverse("plios-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with different user
         self.assertEqual(response.data["count"], 2)

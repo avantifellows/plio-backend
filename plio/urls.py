@@ -53,27 +53,33 @@ schema_view = get_schema_view(
 )
 
 api_router = routers.DefaultRouter()
-api_router.register(r"organizations", OrganizationViewSet)
-api_router.register(r"users", UserViewSet)
-api_router.register(r"videos", VideoViewSet)
+api_router.register(r"organizations", OrganizationViewSet, basename="organizations")
+api_router.register(r"users", UserViewSet, basename="users")
+api_router.register(r"videos", VideoViewSet, basename="views")
 # https://stackoverflow.com/questions/48548622/base-name-argument-not-specified-and-could-not-automatically-determine-the-name
 api_router.register(r"plios", PlioViewSet, basename="plios")
 api_router.register(r"items", ItemViewSet, basename="items")
-api_router.register(r"questions", QuestionViewSet)
+api_router.register(r"questions", QuestionViewSet, basename="questions")
 api_router.register(r"experiments", ExperimentViewSet, basename="experiments")
-api_router.register(r"experiment-plios", ExperimentPlioViewSet)
+api_router.register(
+    r"experiment-plios", ExperimentPlioViewSet, basename="experiment-plios"
+)
 api_router.register(r"sessions", SessionViewSet, basename="sessions")
-api_router.register(r"session-answers", SessionAnswerViewSet)
-api_router.register(r"events", EventViewSet)
-api_router.register(r"tags", TagViewSet)
-api_router.register(r"organization-users", OrganizationUserViewSet)
+api_router.register(
+    r"session-answers", SessionAnswerViewSet, basename="session-answers"
+)
+api_router.register(r"events", EventViewSet, basename="events")
+api_router.register(r"tags", TagViewSet, basename="tags")
+api_router.register(
+    r"organization-users", OrganizationUserViewSet, basename="organization-users"
+)
 
 # http/https url patterns
 urlpatterns = [
     path("admin/", admin.site.urls),
     # API routes
-    path("api/v1/otp/request/", request_otp, name="request_otp"),
-    path("api/v1/otp/verify/", verify_otp, name="verify_otp"),
+    path("api/v1/otp/request/", request_otp, name="request-otp"),
+    path("api/v1/otp/verify/", verify_otp, name="verify-otp"),
     path("api/v1/users/token/", get_by_access_token),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),

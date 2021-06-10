@@ -1,14 +1,16 @@
+import datetime
+import random
+import string
+
 from rest_framework.test import APIClient
 from rest_framework.test import APITestCase
 from rest_framework import status
 from oauth2_provider.models import Application
-from django.urls import reverse
-from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
-import datetime
-import random
-import string
-from users.models import User
 from oauth2_provider.models import AccessToken
+from django.urls import reverse
+
+from users.models import User
+from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video
 
 
@@ -58,20 +60,21 @@ class PlioCRUDTestCase(BaseTestCase):
         Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user)
         Plio.objects.create(name="Plio 2", video=self.video, created_by=self.user)
 
-    def test_a_guest_cannot_list_plios(self):
+    def test_guest_cannot_list_plios(self):
         # unset the credentials
         self.client.credentials()
         # get plios
         response = self.client.get(reverse("plio-list"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_a_user_can_list_plios(self):
+    def test_user_can_list_plios(self):
         # get plios
         response = self.client.get(reverse("plio-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 2)
 
-    def test_a_user_can_only_list_their_plios(self):
+    def test_user_list_own_plios(self):
+         """A user should only be able to list their own plios"""
         # create a new user
         new_user = User.objects.create(mobile="+919988776655")
         # create plio from the new user

@@ -8,10 +8,11 @@ class OrganizationCRUDTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         # seed some organizations
-        Organization.objects.create(name="Plio 1", shortcode="org-1")
-        Organization.objects.create(name="Plio 2", shortcode="org-2")
+        Organization.objects.create(name="Org 1", shortcode="org-1")
+        Organization.objects.create(name="Org 2", shortcode="org-2")
 
-    def test_a_normal_user_cannot_list_organizations(self):
+    def test_normal_user_list_organizations(self):
+        """A non-superuser should not be able to list organizations"""
         # get organizations
         response = self.client.get(reverse("organization-list"))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

@@ -1,21 +1,21 @@
-from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.permissions import AllowAny
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-
 import datetime
-from django.utils import timezone
 import string
 import random
-from oauth2_provider.models import AccessToken, Application, RefreshToken
+import requests
 
-from asgiref.sync import async_to_sync
+from django.utils import timezone
 from django.contrib.auth import login
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save, post_delete
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.permissions import AllowAny
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from oauth2_provider.models import AccessToken, Application, RefreshToken
+from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from plio.settings import (
@@ -26,13 +26,10 @@ from plio.settings import (
     ANALYTICS_IDP,
     SMS_DRIVER,
 )
-
 from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 from users.permissions import UserPermission, OrganizationUserPermission
-
 from .services import SnsService
-import requests
 
 
 class UserViewSet(viewsets.ModelViewSet):

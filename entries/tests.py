@@ -1,7 +1,7 @@
 from plio.tests import BaseTestCase
 
 
-class SessionCRUDTestCase(BaseTestCase):
+class SessionTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -10,7 +10,7 @@ class SessionCRUDTestCase(BaseTestCase):
         self.assertTrue(True)
 
 
-class SessionAnswerCRUDTestCase(BaseTestCase):
+class SessionAnswerTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -19,7 +19,7 @@ class SessionAnswerCRUDTestCase(BaseTestCase):
         self.assertTrue(True)
 
 
-class EventCRUDTestCase(BaseTestCase):
+class EventTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 

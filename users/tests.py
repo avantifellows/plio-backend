@@ -45,7 +45,7 @@ class OtpAuthTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
-class UserMetaCRUDTestCase(BaseTestCase):
+class UserMetaTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -54,7 +54,7 @@ class UserMetaCRUDTestCase(BaseTestCase):
         self.assertTrue(True)
 
 
-class RoleCRUDTestCase(BaseTestCase):
+class RoleTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -63,7 +63,7 @@ class RoleCRUDTestCase(BaseTestCase):
         self.assertTrue(True)
 
 
-class OrganizationUserCRUDTestCase(BaseTestCase):
+class OrganizationUserTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 

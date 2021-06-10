@@ -4,7 +4,7 @@ from rest_framework import status
 from django.urls import reverse
 
 
-class OrganizationCRUDTestCase(BaseTestCase):
+class OrganizationTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         # seed some organizations

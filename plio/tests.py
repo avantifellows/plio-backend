@@ -48,7 +48,7 @@ class BaseTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
 
 
-class PlioCRUDTestCase(BaseTestCase):
+class PlioTestCase(BaseTestCase):
     """Tests the Plio CRUD functionality."""
 
     def setUp(self):
@@ -87,8 +87,30 @@ class PlioCRUDTestCase(BaseTestCase):
         # the count should remain 2 as the new plio was created with different user
         self.assertEqual(response.data["count"], 2)
 
+    def test_user_can_duplicate_their_plio(self):
+        plio = Plio.objects.filter(created_by=self.user).first()
+        # duplicate plio
+        response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-class VideoCRUDTestCase(BaseTestCase):
+        self.assertNotEqual(plio.id, response.data["id"])
+        self.assertNotEqual(plio.uuid, response.data["uuid"])
+        self.assertEqual(plio.name, response.data["name"])
+
+    def test_user_cannot_duplicate_other_user_plio(self):
+        # create a new user
+        new_user = User.objects.create(mobile="+919988776655")
+        # create plio from the new user
+        plio = Plio.objects.create(
+            name="Plio New User", video=self.video, created_by=new_user
+        )
+
+        # duplicate plio
+        response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class VideoTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -97,7 +119,7 @@ class VideoCRUDTestCase(BaseTestCase):
         self.assertTrue(True)
 
 
-class ItemCRUDTestCase(BaseTestCase):
+class ItemTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -106,7 +128,7 @@ class ItemCRUDTestCase(BaseTestCase):
         self.assertTrue(True)
 
 
-class QuestionCRUDTestCase(BaseTestCase):
+class QuestionTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 

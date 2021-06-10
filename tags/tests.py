@@ -1,7 +1,7 @@
 from plio.tests import BaseTestCase
 
 
-class TagCRUDTestCase(BaseTestCase):
+class TagTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -10,7 +10,7 @@ class TagCRUDTestCase(BaseTestCase):
         self.assertTrue(True)
 
 
-class ModelHasTagCRUDTestCase(BaseTestCase):
+class ModelHasTagTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 

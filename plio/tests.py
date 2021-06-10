@@ -35,14 +35,14 @@ class BaseTestCase(APITestCase):
         expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
         scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
         expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
-        access_token = AccessToken.objects.create(
+        self.access_token = AccessToken.objects.create(
             user=self.user,
             application=application,
             token=random_token,
             expires=expires,
             scope=scopes,
         )
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + access_token.token)
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
 
 
 class PlioCRUDTestCase(BaseTestCase):
@@ -82,3 +82,30 @@ class PlioCRUDTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with different user
         self.assertEqual(response.data["count"], 2)
+
+
+class VideoCRUDTestCase(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_for_video(self):
+        # write API calls here
+        self.assertTrue(True)
+
+
+class ItemCRUDTestCase(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_for_item(self):
+        # write API calls here
+        self.assertTrue(True)
+
+
+class QuestionCRUDTestCase(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+
+    def test_for_question(self):
+        # write API calls here
+        self.assertTrue(True)

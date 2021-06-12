@@ -6,6 +6,20 @@ from safedelete.models import SafeDeleteModel, SOFT_DELETE
 from plio.config import plio_status_choices, item_type_choices, question_type_choices
 
 
+class Image(SafeDeleteModel):
+    _safedelte_policy = SOFT_DELETE
+
+    image_url = models.ImageField("Image", upload_to="images")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "image"
+
+    def __str__(self):
+        return f"Image id {self.id}"
+
+
 class Video(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE
 
@@ -86,6 +100,7 @@ class Item(SafeDeleteModel):
 class Question(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE
 
+    image = models.ForeignKey(Image, null=True, on_delete=models.DO_NOTHING)
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     type = models.CharField(
         max_length=255, choices=question_type_choices, default="mcq"

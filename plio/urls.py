@@ -30,7 +30,13 @@ from users.views import (
 )
 from organizations.views import OrganizationViewSet
 from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
-from plio.views import VideoViewSet, PlioViewSet, ItemViewSet, QuestionViewSet
+from plio.views import (
+    VideoViewSet,
+    PlioViewSet,
+    ItemViewSet,
+    QuestionViewSet,
+    ImageViewSet,
+)
 from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
 from users import consumers
 
@@ -67,6 +73,7 @@ api_router.register(r"session-answers", SessionAnswerViewSet)
 api_router.register(r"events", EventViewSet)
 api_router.register(r"tags", TagViewSet)
 api_router.register(r"organization-users", OrganizationUserViewSet)
+api_router.register(r"images", ImageViewSet)
 
 # http/https url patterns
 urlpatterns = [

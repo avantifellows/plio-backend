@@ -12,12 +12,13 @@ from django.http import FileResponse
 import pandas as pd
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
-from plio.models import Video, Plio, Item, Question
+from plio.models import Video, Plio, Item, Question, Image
 from plio.serializers import (
     VideoSerializer,
     PlioSerializer,
     ItemSerializer,
     QuestionSerializer,
+    ImageSerializer,
 )
 from plio.settings import DEFAULT_TENANT_SHORTCODE
 from plio.queries import (
@@ -346,3 +347,24 @@ class QuestionViewSet(viewsets.ModelViewSet):
         question.item = item
         question.save()
         return Response(self.get_serializer(question).data)
+
+
+class ImageViewSet(viewsets.ModelViewSet):
+    """
+    Image ViewSet description
+
+    list: List all image file entries
+    retrieve: Retrieve an image file entry
+    update: Update an image file entry
+    create: Create an image file entry
+    partial_update: Patch an image file entry
+    destroy: Soft delete a image file entry, along
+             with the uploaded S3 file
+    """
+
+    queryset = Image.objects.all()
+    serializer_class = ImageSerializer
+
+    def perform_destroy(self, instance):
+        instance.image_url.delete()
+        instance.delete()

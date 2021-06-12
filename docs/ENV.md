@@ -70,6 +70,9 @@ AWS secret access key.
 #### `AWS_REGION`
 Region of the AWS IAM user.
 
+#### `AWS_STORAGE_BUCKET_NAME`
+AWS bucket where Django storages uploads the files
+
 #### `SMS_DRIVER`
 The driver to send sms. The only supported value is `sns` right now for AWS SNS. When in development mode, use an empty string to avoid SMS triggers while debugging/testing.
 

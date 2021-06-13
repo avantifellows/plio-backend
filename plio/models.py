@@ -9,7 +9,7 @@ from plio.config import plio_status_choices, item_type_choices, question_type_ch
 class Image(SafeDeleteModel):
     _safedelte_policy = SOFT_DELETE
 
-    image_url = models.ImageField("Image", upload_to="images")
+    url = models.ImageField("Image", upload_to="images")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -17,7 +17,7 @@ class Image(SafeDeleteModel):
         db_table = "image"
 
     def __str__(self):
-        return f"Image id {self.id}"
+        return f"{self.id}: {self.url}"
 
 
 class Video(SafeDeleteModel):

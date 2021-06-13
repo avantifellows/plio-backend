@@ -366,5 +366,5 @@ class ImageViewSet(viewsets.ModelViewSet):
     serializer_class = ImageSerializer
 
     def perform_destroy(self, instance):
-        instance.image_url.delete()
+        instance.url.delete()
         instance.delete()

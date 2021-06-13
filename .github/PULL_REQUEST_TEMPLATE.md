@@ -20,6 +20,7 @@ Fixes #{issue id}
 ## Test Plan
 
 <!-- Demonstrate that the code is solid. Example: The exact commands you ran and their output, screenshots / videos if the pull request changes the user interface. -->
+- [ ] Wrote tests
 - [ ] Tested locally
 - [ ] Tested on staging
 - [ ] Tested on production

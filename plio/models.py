@@ -1,7 +1,8 @@
 from django.conf import settings
 from django.db import models
 import string
-import random, os
+import random
+import os
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
 from plio.config import plio_status_choices, item_type_choices, question_type_choices
 

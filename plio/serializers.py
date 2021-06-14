@@ -10,6 +10,7 @@ class ImageSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "url",
+            "alt_text",
             "created_at",
             "updated_at",
         ]

@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 import string
-import random
+import random, os
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
 from plio.config import plio_status_choices, item_type_choices, question_type_choices
 
@@ -10,6 +10,7 @@ class Image(SafeDeleteModel):
     _safedelte_policy = SOFT_DELETE
 
     url = models.ImageField("Image", upload_to="images")
+    alt_text = models.CharField(max_length=255, default="Image")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -18,6 +19,25 @@ class Image(SafeDeleteModel):
 
     def __str__(self):
         return f"{self.id}: {self.url}"
+
+    def _generate_random_string(self, length=10):
+        """Generates a random string of given length."""
+        return "".join(random.choices(string.ascii_lowercase, k=length))
+
+    def _generate_unique_uuid(self):
+        """Generates a unique file name for the image being uploaded."""
+        new_file_name = self._generate_random_string()
+
+        while Image.objects.filter(url__icontains=new_file_name).exists():
+            new_file_name = self._generate_random_string()
+        return new_file_name
+
+    def save(self, *args, **kwargs):
+        """Image save method. Before uploading, it creates a unique file name for the image."""
+        self.url.name = "".join(
+            [self._generate_unique_uuid(), os.path.splitext(self.url.name)[1]]
+        )
+        super().save(*args, **kwargs)
 
 
 class Video(SafeDeleteModel):

@@ -1,20 +1,21 @@
-from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.permissions import AllowAny
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-
 import datetime
 import string
 import random
-from oauth2_provider.models import AccessToken, Application, RefreshToken
+import requests
 
-from asgiref.sync import async_to_sync
+from django.utils import timezone
 from django.contrib.auth import login
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save, post_delete
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.permissions import AllowAny
+from rest_framework import viewsets, status
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from oauth2_provider.models import AccessToken, Application, RefreshToken
+from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from plio.settings import (
@@ -25,13 +26,10 @@ from plio.settings import (
     ANALYTICS_IDP,
     SMS_DRIVER,
 )
-
 from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 from users.permissions import UserPermission, OrganizationUserPermission
-
 from .services import SnsService
-import requests
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -123,9 +121,7 @@ def request_otp(request):
     otp = OneTimePassword()
     otp.mobile = request.data["mobile"]
     otp.otp = random.randint(100000, 999999)
-    otp.expires_at = datetime.datetime.now() + datetime.timedelta(
-        seconds=OTP_EXPIRE_SECONDS
-    )
+    otp.expires_at = timezone.now() + datetime.timedelta(seconds=OTP_EXPIRE_SECONDS)
     otp.save()
 
     if SMS_DRIVER == "sns":
@@ -145,7 +141,7 @@ def verify_otp(request):
     otp = request.data["otp"]
     try:
         otp = OneTimePassword.objects.filter(
-            mobile=mobile, otp=otp, expires_at__gte=datetime.datetime.now()
+            mobile=mobile, otp=otp, expires_at__gte=timezone.now()
         ).first()
         if not otp:
             raise OneTimePassword.DoesNotExist
@@ -164,7 +160,7 @@ def verify_otp(request):
         scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
 
         application = Application.objects.get(name=API_APPLICATION_NAME)
-        expires = datetime.datetime.now() + datetime.timedelta(seconds=expire_seconds)
+        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
         random_token = "".join(random.choices(string.ascii_lowercase, k=30))
         # generate oauth2 access token
         access_token = AccessToken.objects.create(

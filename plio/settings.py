@@ -266,7 +266,7 @@ OAUTH2_PROVIDER = {
     "DEFAULT_SCOPES": ["read", "write"],
 }
 
-OTP_EXPIRE_SECONDS = 300
+OTP_EXPIRE_SECONDS = 300  # 5 minutes
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "organization",

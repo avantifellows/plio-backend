@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('plio', '0021_auto_20210613_1711'),
+        ("plio", "0021_auto_20210613_1711"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='image',
-            name='alt_text',
-            field=models.CharField(default='Image', max_length=255),
+            model_name="image",
+            name="alt_text",
+            field=models.CharField(default="Image", max_length=255),
         ),
     ]

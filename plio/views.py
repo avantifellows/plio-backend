@@ -275,6 +275,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = ItemSerializer
+    permission_classes = [IsAuthenticated, PlioPermission]
 
     def get_queryset(self):
         queryset = Item.objects.all()

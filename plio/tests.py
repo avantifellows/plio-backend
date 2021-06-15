@@ -12,7 +12,7 @@ from django.urls import reverse
 
 from users.models import User
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
-from plio.models import Plio, Video, Item, Question
+from plio.models import Plio, Video, Item, Question, Image
 
 
 class BaseTestCase(APITestCase):
@@ -137,29 +137,26 @@ class QuestionTestCase(BaseTestCase):
         self.assertTrue(True)
 
 
-class ImageTestCase(PlioTestCase):
+class ImageTestCase(BaseTestCase):
     """Tests the Image CRUD functionality."""
 
     def setUp(self):
-        # seed some plios
         super().setUp()
-
-        # seed some items and questions
-        self.plio_1 = Plio.objects.filter(name="Plio 1").first()
-
-        self.item_1_plio_1 = Item.objects.create(
-            plio=self.plio_1, type="question", time=1
+        # seed a video
+        self.video = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
-        self.item_2_plio_1 = Item.objects.create(
-            plio=self.plio_1, type="question", time=2
+        # seed a plio, item and question
+        self.test_plio = Plio.objects.create(name="test_plio", video=self.video, created_by=self.user)
+        self.test_item = Item.objects.create(
+            plio=self.test_plio, type="question", time=1
         )
-
-        self.question_1_plio_1 = Question.objects.create(item=self.item_1_plio_1)
-        self.question_2_plio_1 = Question.objects.create(item=self.item_2_plio_1)
+        self.test_question = Question.objects.create(item=self.test_item)
 
     def test_user_can_attach_images_to_their_question(self):
         """
-        Tests whether a user can link images to the questions that were created by themselves
+        Tests whether a user can link images to the questions 
+        that were created by themselves
         """
         # upload a test image and retrieve the id
         with open("plio/static/plio/test_image.jpeg", "rb") as img:
@@ -168,15 +165,16 @@ class ImageTestCase(PlioTestCase):
 
         # update the question with the newly uploaded image
         response = self.client.put(
-            reverse("questions-detail", args=[self.question_1_plio_1.id]),
-            {"item": self.item_1_plio_1.id, "image": uploaded_image_id},
+            reverse("questions-detail", args=[self.test_question.id]),
+            {"item": self.test_item.id, "image": uploaded_image_id},
         )
         # the user should be able to update the question
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_cannot_attach_image_to_other_user_question(self):
         """
-        Tests that a user should NOT be able to link images to the questions that were created by some other user
+        Tests that a user should NOT be able to link images to 
+        the questions that were created by some other user
         """
         # create a new user
         new_user = User.objects.create(mobile="+919988776654")
@@ -194,20 +192,21 @@ class ImageTestCase(PlioTestCase):
             scope=scopes,
         )
         # reset and set the new credentials
-        self.client.credentials()
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + new_access_token.token)
 
         # create a new image entry using a test image
         with open("plio/static/plio/test_image.jpeg", "rb") as img:
             response = self.client.post(reverse("images-list"), {"url": img})
 
-        # try updating the other user's question entry with the newly created image
+        # try updating the other user's question entry with 
+        # the newly created image
         uploaded_image_id = response.json()["id"]
         response = self.client.put(
-            reverse("questions-detail", args=[self.question_1_plio_1.id]),
-            {"item": self.item_1_plio_1.id, "image": uploaded_image_id},
+            reverse("questions-detail", args=[self.test_question.id]),
+            {"item": self.test_item.id, "image": uploaded_image_id},
         )
-        # the user should not be able to link an image to a question created by some other user
+        # the user should not be able to link an image to 
+        # a question created by some other user
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_user_can_upload_image(self):
@@ -221,7 +220,8 @@ class ImageTestCase(PlioTestCase):
 
     def test_guest_cannot_upload_image(self):
         """
-        Tests whether a guest(unauthroized user) should not be able to create/upload an image
+        Tests whether a guest(unauthorized user) should 
+        not be able to create/upload an image
         """
         # resetting the credentials to mock a guest user
         self.client.credentials()
@@ -233,8 +233,20 @@ class ImageTestCase(PlioTestCase):
 
     def test_upload_size_does_not_exceed_limit(self):
         """
-        Tests whether any uploads more than `settings.DATA_UPLOAD_MAX_MEMORY_SIZE` should not be allowed
+        Tests whether any uploads more than 
+        `settings.DATA_UPLOAD_MAX_MEMORY_SIZE` should not be allowed
         """
         with open("plio/static/plio/test_image_10mb.jpeg", "rb") as img:
             response = self.client.post(reverse("images-list"), {"url": img})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_each_image_has_unique_name(self):
+        """
+        Tests whether each image entry when generated, has a unique name 
+        and should not conflict with a name that already exists
+        """
+        random.seed(10)
+        test_image_1 = Image.objects.create()
+        random.seed(10)
+        test_image_2 = Image.objects.create()
+        self.assertNotEqual(test_image_1.url.name, test_image_2.url.name)

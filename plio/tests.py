@@ -147,7 +147,9 @@ class ImageTestCase(BaseTestCase):
             title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         # seed a plio, item and question
-        self.test_plio = Plio.objects.create(name="test_plio", video=self.video, created_by=self.user)
+        self.test_plio = Plio.objects.create(
+            name="test_plio", video=self.video, created_by=self.user
+        )
         self.test_item = Item.objects.create(
             plio=self.test_plio, type="question", time=1
         )
@@ -155,7 +157,7 @@ class ImageTestCase(BaseTestCase):
 
     def test_user_can_attach_images_to_their_question(self):
         """
-        Tests whether a user can link images to the questions 
+        Tests whether a user can link images to the questions
         that were created by themselves
         """
         # upload a test image and retrieve the id
@@ -173,7 +175,7 @@ class ImageTestCase(BaseTestCase):
 
     def test_user_cannot_attach_image_to_other_user_question(self):
         """
-        Tests that a user should NOT be able to link images to 
+        Tests that a user should NOT be able to link images to
         the questions that were created by some other user
         """
         # create a new user
@@ -198,14 +200,14 @@ class ImageTestCase(BaseTestCase):
         with open("plio/static/plio/test_image.jpeg", "rb") as img:
             response = self.client.post(reverse("images-list"), {"url": img})
 
-        # try updating the other user's question entry with 
+        # try updating the other user's question entry with
         # the newly created image
         uploaded_image_id = response.json()["id"]
         response = self.client.put(
             reverse("questions-detail", args=[self.test_question.id]),
             {"item": self.test_item.id, "image": uploaded_image_id},
         )
-        # the user should not be able to link an image to 
+        # the user should not be able to link an image to
         # a question created by some other user
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -220,7 +222,7 @@ class ImageTestCase(BaseTestCase):
 
     def test_guest_cannot_upload_image(self):
         """
-        Tests whether a guest(unauthorized user) should 
+        Tests whether a guest(unauthorized user) should
         not be able to create/upload an image
         """
         # resetting the credentials to mock a guest user
@@ -233,7 +235,7 @@ class ImageTestCase(BaseTestCase):
 
     def test_upload_size_does_not_exceed_limit(self):
         """
-        Tests whether any uploads more than 
+        Tests whether any uploads more than
         `settings.DATA_UPLOAD_MAX_MEMORY_SIZE` should not be allowed
         """
         with open("plio/static/plio/test_image_10mb.jpeg", "rb") as img:
@@ -242,7 +244,7 @@ class ImageTestCase(BaseTestCase):
 
     def test_each_image_has_unique_name(self):
         """
-        Tests whether each image entry when generated, has a unique name 
+        Tests whether each image entry when generated, has a unique name
         and should not conflict with a name that already exists
         """
         random.seed(10)

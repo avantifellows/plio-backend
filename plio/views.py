@@ -364,6 +364,3 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
-
-    def perform_destroy(self, instance):
-        instance.delete()

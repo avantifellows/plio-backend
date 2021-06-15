@@ -79,7 +79,7 @@ api_router.register(r"tags", TagViewSet, basename="tags")
 api_router.register(
     r"organization-users", OrganizationUserViewSet, basename="organization-users"
 )
-api_router.register(r"images", ImageViewSet)
+api_router.register(r"images", ImageViewSet, basename="images")
 
 # http/https url patterns
 urlpatterns = [

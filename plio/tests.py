@@ -12,7 +12,7 @@ from django.urls import reverse
 
 from users.models import User
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
-from plio.models import Plio, Video
+from plio.models import Plio, Video, Item, Question
 
 
 class BaseTestCase(APITestCase):
@@ -23,7 +23,7 @@ class BaseTestCase(APITestCase):
 
         # User access and refresh tokens require an OAuth Provider application to be set up and use it as a foreign key.
         # As the test database is empty, we create an application instance before running the test cases.
-        application = Application.objects.create(
+        self.application = Application.objects.create(
             name=API_APPLICATION_NAME,
             redirect_uris="",
             client_type=Application.CLIENT_CONFIDENTIAL,
@@ -40,7 +40,7 @@ class BaseTestCase(APITestCase):
         expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
         self.access_token = AccessToken.objects.create(
             user=self.user,
-            application=application,
+            application=self.application,
             token=random_token,
             expires=expires,
             scope=scopes,
@@ -135,3 +135,106 @@ class QuestionTestCase(BaseTestCase):
     def test_for_question(self):
         # write API calls here
         self.assertTrue(True)
+
+
+class ImageTestCase(PlioTestCase):
+    """Tests the Image CRUD functionality."""
+
+    def setUp(self):
+        # seed some plios
+        super().setUp()
+
+        # seed some items and questions
+        self.plio_1 = Plio.objects.filter(name="Plio 1").first()
+
+        self.item_1_plio_1 = Item.objects.create(
+            plio=self.plio_1, type="question", time=1
+        )
+        self.item_2_plio_1 = Item.objects.create(
+            plio=self.plio_1, type="question", time=2
+        )
+
+        self.question_1_plio_1 = Question.objects.create(item=self.item_1_plio_1)
+        self.question_2_plio_1 = Question.objects.create(item=self.item_2_plio_1)
+
+    def test_user_can_attach_images_to_their_question(self):
+        """
+        Tests whether a user can link images to the questions that were created by themselves
+        """
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(reverse("images-list"), {"url": img})
+        uploaded_image_id = response.json()["id"]
+
+        # update the question with the newly uploaded image
+        response = self.client.put(
+            reverse("questions-detail", args=[self.question_1_plio_1.id]),
+            {"item": self.item_1_plio_1.id, "image": uploaded_image_id},
+        )
+        # the user should be able to update the question
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_cannot_attach_image_to_other_user_question(self):
+        """
+        Tests that a user should NOT be able to link images to the questions that were created by some other user
+        """
+        # create a new user
+        new_user = User.objects.create(mobile="+919988776654")
+
+        # set up access token for the new user
+        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
+        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
+        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
+        new_access_token = AccessToken.objects.create(
+            user=new_user,
+            application=self.application,
+            token=random_token,
+            expires=expires,
+            scope=scopes,
+        )
+        # reset and set the new credentials
+        self.client.credentials()
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + new_access_token.token)
+
+        # create a new image entry using a test image
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(reverse("images-list"), {"url": img})
+
+        # try updating the other user's question entry with the newly created image
+        uploaded_image_id = response.json()["id"]
+        response = self.client.put(
+            reverse("questions-detail", args=[self.question_1_plio_1.id]),
+            {"item": self.item_1_plio_1.id, "image": uploaded_image_id},
+        )
+        # the user should not be able to link an image to a question created by some other user
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_user_can_upload_image(self):
+        """
+        Tests whether an authorized user can create/upload an image
+        """
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(reverse("images-list"), {"url": img})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_guest_cannot_upload_image(self):
+        """
+        Tests whether a guest(unauthroized user) should not be able to create/upload an image
+        """
+        # resetting the credentials to mock a guest user
+        self.client.credentials()
+
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(reverse("images-list"), {"url": img})
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_upload_size_does_not_exceed_limit(self):
+        """
+        Tests whether any uploads more than `settings.DATA_UPLOAD_MAX_MEMORY_SIZE` should not be allowed
+        """
+        with open("plio/static/plio/test_image_10mb.jpeg", "rb") as img:
+            response = self.client.post(reverse("images-list"), {"url": img})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

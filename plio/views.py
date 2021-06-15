@@ -323,6 +323,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
+    permission_classes = [IsAuthenticated, PlioPermission]
 
     @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
     def duplicate(self, request, pk):
@@ -358,8 +359,7 @@ class ImageViewSet(viewsets.ModelViewSet):
     update: Update an image file entry
     create: Create an image file entry
     partial_update: Patch an image file entry
-    destroy: Soft delete a image file entry, along
-             with the uploaded S3 file
+    destroy: Soft delete a image file entry
     """
 
     queryset = Image.objects.all()

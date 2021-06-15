@@ -50,6 +50,10 @@ jobs:
           DB_USER: postgres
           DB_PASSWORD: postgres
           SECRET_KEY: wpurj&oym6m@kcp(m&z(q-g0bo-r*+!f_&j(94di8j&_j4m%2s  # random secret key
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_STORAGE_BUCKET_NAME: ${{ secrets.AWS_STORAGE_BUCKET_NAME }}
         # command to run tests and generate coverage metrics
         run: coverage run manage.py test
 

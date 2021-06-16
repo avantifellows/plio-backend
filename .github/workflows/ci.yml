@@ -3,7 +3,7 @@ name: Plio CI
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [master, feature/more-testing]
 
 jobs:
   pre-commit:

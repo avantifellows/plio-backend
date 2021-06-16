@@ -124,12 +124,12 @@ class VideoTestCase(BaseTestCase):
     def test_guest_cannot_list_videos(self):
         # unset the credentials
         self.client.credentials()
-        # get plios
+        # get videos
         response = self.client.get(reverse("videos-list"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_can_list_videos(self):
-        # get plios
+        # get videos
         response = self.client.get(reverse("videos-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)

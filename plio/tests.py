@@ -114,9 +114,12 @@ class VideoTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-    def test_for_video(self):
-        # write API calls here
-        self.assertTrue(True)
+    def test_guest_cannot_list_videos(self):
+        # unset the credentials
+        self.client.credentials()
+        # get plios
+        response = self.client.get(reverse("videos-list"))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class ItemTestCase(BaseTestCase):

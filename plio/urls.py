@@ -55,7 +55,7 @@ schema_view = get_schema_view(
 api_router = routers.DefaultRouter()
 api_router.register(r"organizations", OrganizationViewSet, basename="organizations")
 api_router.register(r"users", UserViewSet, basename="users")
-api_router.register(r"videos", VideoViewSet, basename="views")
+api_router.register(r"videos", VideoViewSet, basename="videos")
 # https://stackoverflow.com/questions/48548622/base-name-argument-not-specified-and-could-not-automatically-determine-the-name
 api_router.register(r"plios", PlioViewSet, basename="plios")
 api_router.register(r"items", ItemViewSet, basename="items")

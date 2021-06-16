@@ -35,6 +35,7 @@ class Image(SafeDeleteModel):
 
     def save(self, *args, **kwargs):
         """Image save method. Before uploading, it creates a unique file name for the image."""
+        # to avoid setting a new name every time the model is saved
         if not self.url.name:
             self.url.name = "".join(
                 [self._generate_unique_uuid(), os.path.splitext(self.url.name)[1]]

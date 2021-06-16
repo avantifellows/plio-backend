@@ -113,10 +113,26 @@ class PlioTestCase(BaseTestCase):
 class VideoTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
+        # seed some videos
+        Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        Video.objects.create(
+            title="Video 2", url="https://www.youtube.com/watch?v=jWdA2JFCxGw"
+        )
 
-    def test_for_video(self):
-        # write API calls here
-        self.assertTrue(True)
+    def test_guest_cannot_list_videos(self):
+        # unset the credentials
+        self.client.credentials()
+        # get videos
+        response = self.client.get(reverse("videos-list"))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_can_list_videos(self):
+        # get videos
+        response = self.client.get(reverse("videos-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
 
 
 class ItemTestCase(BaseTestCase):

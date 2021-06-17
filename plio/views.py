@@ -12,6 +12,11 @@ from django.db.models import Q
 from django.http import FileResponse
 import pandas as pd
 from storages.backends.s3boto3 import S3Boto3Storage
+
+from google.cloud import bigquery
+from google.oauth2 import service_account
+import boto3
+
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
 from plio.models import Video, Plio, Item, Question, Image
@@ -22,7 +27,11 @@ from plio.serializers import (
     QuestionSerializer,
     ImageSerializer,
 )
-from plio.settings import DEFAULT_TENANT_SHORTCODE, AWS_STORAGE_BUCKET_NAME
+from plio.settings import (
+    DEFAULT_TENANT_SHORTCODE,
+    AWS_STORAGE_BUCKET_NAME,
+    BIGQUERY,
+)
 from plio.queries import (
     get_plio_details_query,
     get_sessions_dump_query,
@@ -223,13 +232,39 @@ class PlioViewSet(viewsets.ModelViewSet):
         # schema name to query in
         schema_name = OrganizationTenantMiddleware().get_schema(self.request)
 
+        if BIGQUERY["enabled"]:
+            gcp_service_account_file = "/tmp/gcp-service-account.json"
+            s3 = boto3.client("s3")
+            # download the BigQuery credentials file from S3 bucket
+            s3.download_file(
+                BIGQUERY["credentials_json_s3_bucket"],
+                BIGQUERY["credentials_json_s3_filepath"],
+                gcp_service_account_file,
+            )
+            # retrieve credentials from BigQuery credentials file
+            credentials = service_account.Credentials.from_service_account_file(
+                gcp_service_account_file
+            )
+            # create bigquery client
+            client = bigquery.Client(
+                credentials=credentials,
+                project=BIGQUERY["project_id"],
+                location=BIGQUERY["location"],
+            )
+
         def save_query_results(cursor, query_method, filename):
-            # execute the query
-            cursor.execute(query_method(uuid, schema=schema_name))
-            # extract column names as cursor.description returns a tuple
-            columns = [col[0] for col in cursor.description]
-            # create a dataframe from the rows and the columns and save to csv
-            df = pd.DataFrame(cursor.fetchall(), columns=columns)
+            if BIGQUERY["enabled"]:
+                # execute the sql query using BigQuery client and create a dataframe
+                df = client.query(query_method(uuid, schema=schema_name)).to_dataframe()
+            else:
+                # execute the sql query using postgres DB connection cursor
+                cursor.execute(query_method(uuid, schema=schema_name))
+                # extract column names as cursor.description returns a tuple
+                columns = [col[0] for col in cursor.description]
+                # create a dataframe from the rows and the columns
+                df = pd.DataFrame(cursor.fetchall(), columns=columns)
+
+            # save to csv
             df.to_csv(os.path.join(data_dump_dir, filename), index=False)
 
         # create the individual dump files

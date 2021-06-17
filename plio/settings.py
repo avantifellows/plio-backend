@@ -315,3 +315,13 @@ DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 AWS_QUERYSTRING_AUTH = False
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 mb
+
+BIGQUERY = {
+    "enabled": os.environ.get("BIGQUERY_ENABLED", APP_ENV in ["staging", "production"]),
+    "project_id": os.environ.get("BIGQUERY_PROJECT_ID"),
+    "location": os.environ.get("BIGQUERY_LOCATION"),
+    "credentials_json_s3_bucket": os.environ.get("BIGQUERY_CREDENTIALS_JSON_S3_BUCKET"),
+    "credentials_json_s3_filepath": os.environ.get(
+        "BIGQUERY_CREDENTIALS_JSON_S3_FILEPATH"
+    ),
+}

@@ -15,6 +15,8 @@ services: # the different images that will be running as containers
       - postgres_data:/var/lib/postgresql/data/
     restart: "on-failure"
   web: # service name
+    # platform defined to fix python packages installation issues on Apple Silicon
+    platform: linux/amd64
     # allows one to attach the terminal of a running container for debugging
     stdin_open: true
     tty: true

@@ -317,7 +317,9 @@ AWS_QUERYSTRING_AUTH = False
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 mb
 
 BIGQUERY = {
-    "enabled": os.environ.get("BIGQUERY_ENABLED", APP_ENV in ["staging", "production"]),
+    "enabled": True
+    if os.environ.get("BIGQUERY_ENABLED") == "True"
+    else APP_ENV in ["staging", "production"],
     "project_id": os.environ.get("BIGQUERY_PROJECT_ID"),
     "location": os.environ.get("BIGQUERY_LOCATION"),
     "credentials": os.environ.get("BIGQUERY_CREDENTIALS"),

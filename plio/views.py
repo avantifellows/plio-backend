@@ -1,6 +1,7 @@
 import os
 import shutil
 from copy import deepcopy
+import base64
 
 from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
@@ -15,7 +16,6 @@ from storages.backends.s3boto3 import S3Boto3Storage
 
 from google.cloud import bigquery
 from google.oauth2 import service_account
-import base64
 
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser

@@ -139,6 +139,7 @@ BigQuery settings are needed if Plio Analytics is configured to use BigQuery. We
 
 #### `BIGQUERY_ENABLED`
 Boolean value. If not set, it defaults to `True` if APP_ENV is set to staging or production.
+
 #### `BIGQUERY_PROJECT_ID`
 The BigQuery project id that contains the datasets.
 

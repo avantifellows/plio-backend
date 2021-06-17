@@ -15,7 +15,7 @@ from storages.backends.s3boto3 import S3Boto3Storage
 
 from google.cloud import bigquery
 from google.oauth2 import service_account
-import boto3
+import base64
 
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
@@ -210,6 +210,13 @@ class PlioViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated, PlioPermission],
     )
     def download_data(self, request, uuid):
+        """
+        Downloads a zip file containing various CSVs for a Plio.
+        If BigQuery is enabled, the report data is fetch from BigQuery dataset.
+
+        request: HTTP request.
+        uuid: UUID of the plio for which report needs to be downloaded.
+        """
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
@@ -234,13 +241,9 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         if BIGQUERY["enabled"]:
             gcp_service_account_file = "/tmp/gcp-service-account.json"
-            s3 = boto3.client("s3")
-            # download the BigQuery credentials file from S3 bucket
-            s3.download_file(
-                BIGQUERY["credentials_json_s3_bucket"],
-                BIGQUERY["credentials_json_s3_filepath"],
-                gcp_service_account_file,
-            )
+            with open(gcp_service_account_file, "wb") as file:
+                file.write(base64.b64decode(BIGQUERY["credentials"]))
+
             # retrieve credentials from BigQuery credentials file
             credentials = service_account.Credentials.from_service_account_file(
                 gcp_service_account_file

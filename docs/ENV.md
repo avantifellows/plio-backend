@@ -132,3 +132,23 @@ The client secret for your identity provider app.
 Unique Identifier for your Auth0 API.
 1. When type is `cognito`: Not needed.
 2. When type is `auth0`: Retrieve from Auth0 API settings.
+
+
+### BigQuery configurations
+BigQuery settings are needed if Plio Analytics is configured to use BigQuery. We recommended using BigQuery for staging/production set ups.
+
+#### `BIGQUERY_ENABLED`
+Boolean value. If not set, it defaults to `True` if APP_ENV is set to staging or production.
+#### `BIGQUERY_PROJECT_ID`
+The BigQuery project id that contains the datasets.
+
+#### `BIGQUERY_LOCATION`
+The location of the BigQuery project. All datasets must be in the same location.
+
+#### `BIGQUERY CREDENTIALS`
+This is a base64 encoded value of your Google Cloud Platform's service account. You can learn more about acquiring service account credentials [here](https://cloud.google.com/docs/authentication/getting-started) and [here](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts?supportedpurview=project). The service account must have BigQuery admin permissions.
+
+Once you have downloaded the JSON file, run the following commands and use the output for this environment variable:
+```sh
+cat /path/to/gcp-service-account-filename.json | base64
+```

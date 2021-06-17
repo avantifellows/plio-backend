@@ -320,8 +320,5 @@ BIGQUERY = {
     "enabled": os.environ.get("BIGQUERY_ENABLED", APP_ENV in ["staging", "production"]),
     "project_id": os.environ.get("BIGQUERY_PROJECT_ID"),
     "location": os.environ.get("BIGQUERY_LOCATION"),
-    "credentials_json_s3_bucket": os.environ.get("BIGQUERY_CREDENTIALS_JSON_S3_BUCKET"),
-    "credentials_json_s3_filepath": os.environ.get(
-        "BIGQUERY_CREDENTIALS_JSON_S3_FILEPATH"
-    ),
+    "credentials": os.environ.get("BIGQUERY_CREDENTIALS"),
 }

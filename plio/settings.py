@@ -71,7 +71,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_s3_storage",
     "rest_framework",
     "drf_yasg",
     "safedelete",
@@ -84,6 +83,7 @@ INSTALLED_APPS = [
     "oauth2_provider",
     "social_django",
     "rest_framework_social_oauth2",
+    "storages",
 ]
 
 TENANT_MODEL = "organizations.Organization"
@@ -309,3 +309,9 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 
 SMS_DRIVER = os.environ.get("SMS_DRIVER")
+
+# file storage for uploaded images
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
+AWS_QUERYSTRING_AUTH = False
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 mb

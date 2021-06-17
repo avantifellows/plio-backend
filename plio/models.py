@@ -2,8 +2,47 @@ from django.conf import settings
 from django.db import models
 import string
 import random
+import os
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
 from plio.config import plio_status_choices, item_type_choices, question_type_choices
+
+
+class Image(SafeDeleteModel):
+    _safedelte_policy = SOFT_DELETE
+
+    url = models.ImageField("Image", upload_to="images")
+    alt_text = models.CharField(max_length=255, default="Image")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "image"
+
+    def __str__(self):
+        return f"{self.id}: {self.url}"
+
+    def _generate_random_string(self, length=10):
+        """Generates a random string of given length."""
+        return "".join(random.choices(string.ascii_lowercase, k=length))
+
+    def _generate_unique_uuid(self):
+        """Generates a unique file name for the image being uploaded."""
+        new_file_name = self._generate_random_string()
+
+        while Image.objects.filter(url__icontains=new_file_name).exists():
+            new_file_name = self._generate_random_string()
+        return new_file_name
+
+    def save(self, *args, **kwargs):
+        """Image save method. Before uploading, it creates a unique file name for the image."""
+        # to avoid setting a new name every time the model is saved
+        if not self.id:
+            dir_name = os.path.dirname(self.url.name)
+            file_name = "".join(
+                [self._generate_unique_uuid(), os.path.splitext(self.url.name)[1]]
+            )
+            self.url.name = os.path.join(dir_name, file_name)
+        super().save(*args, **kwargs)
 
 
 class Video(SafeDeleteModel):
@@ -86,6 +125,7 @@ class Item(SafeDeleteModel):
 class Question(SafeDeleteModel):
     _safedelete_policy = SOFT_DELETE
 
+    image = models.ForeignKey(Image, null=True, on_delete=models.DO_NOTHING)
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     type = models.CharField(
         max_length=255, choices=question_type_choices, default="mcq"

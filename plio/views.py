@@ -1,5 +1,6 @@
 import os
 import shutil
+from copy import deepcopy
 
 from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
@@ -10,16 +11,18 @@ from django.db import connection
 from django.db.models import Q
 from django.http import FileResponse
 import pandas as pd
+from storages.backends.s3boto3 import S3Boto3Storage
 from organizations.middleware import OrganizationTenantMiddleware
 from users.models import OrganizationUser
-from plio.models import Video, Plio, Item, Question
+from plio.models import Video, Plio, Item, Question, Image
 from plio.serializers import (
     VideoSerializer,
     PlioSerializer,
     ItemSerializer,
     QuestionSerializer,
+    ImageSerializer,
 )
-from plio.settings import DEFAULT_TENANT_SHORTCODE
+from plio.settings import DEFAULT_TENANT_SHORTCODE, AWS_STORAGE_BUCKET_NAME
 from plio.queries import (
     get_plio_details_query,
     get_sessions_dump_query,
@@ -274,6 +277,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     """
 
     serializer_class = ItemSerializer
+    permission_classes = [IsAuthenticated, PlioPermission]
 
     def get_queryset(self):
         queryset = Item.objects.all()
@@ -322,6 +326,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
+    permission_classes = [IsAuthenticated, PlioPermission]
 
     @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
     def duplicate(self, request, pk):
@@ -343,6 +348,51 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 {"detail": "Specified item not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
+        if question.image:
+            # create duplicate for image if the question has an image
+            duplicate_image_id = ImageViewSet.as_view({"post": "duplicate"})(
+                request=request._request, pk=question.image.id
+            ).data["id"]
+            question.image = Image.objects.filter(id=duplicate_image_id).first()
+
         question.item = item
         question.save()
         return Response(self.get_serializer(question).data)
+
+
+class ImageViewSet(viewsets.ModelViewSet):
+    """
+    Image ViewSet description
+
+    list: List all image file entries
+    retrieve: Retrieve an image file entry
+    update: Update an image file entry
+    create: Create an image file entry
+    partial_update: Patch an image file entry
+    destroy: Soft delete a image file entry
+    """
+
+    queryset = Image.objects.all()
+    serializer_class = ImageSerializer
+
+    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    def duplicate(self, request, pk):
+        """
+        Creates a clone of the image with the given pk
+        """
+        image = self.get_object()
+
+        # create new image object
+        new_image = Image.objects.create(
+            alt_text=image.alt_text, url=deepcopy(image.url)
+        )
+        new_image.save()
+
+        # creating the image at the new path
+        s3 = S3Boto3Storage()
+        copy_source = {"Bucket": AWS_STORAGE_BUCKET_NAME, "Key": image.url.name}
+        s3.bucket.meta.client.copy(
+            copy_source, AWS_STORAGE_BUCKET_NAME, new_image.url.name
+        )
+
+        return Response(self.get_serializer(new_image).data)

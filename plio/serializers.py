@@ -1,7 +1,19 @@
 from rest_framework import serializers
-from plio.models import Video, Plio, Item, Question
+from plio.models import Video, Plio, Item, Question, Image
 from users.models import User
 from users.serializers import UserSerializer
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Image
+        fields = [
+            "id",
+            "url",
+            "alt_text",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class VideoSerializer(serializers.ModelSerializer):
@@ -81,8 +93,15 @@ class QuestionSerializer(serializers.ModelSerializer):
             "type",
             "options",
             "correct_answer",
+            "image",
             "has_char_limit",
             "max_char_limit",
             "created_at",
             "updated_at",
         ]
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        if instance.image:
+            response["image"] = ImageSerializer(instance.image).data
+        return response

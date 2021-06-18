@@ -54,6 +54,7 @@ jobs:
       - name: Run Test Cases
         env:
           DB_HOST: 127.0.0.1
+          DB_PORT: 5432
           DB_NAME: github_actions_testing
           DB_USER: postgres
           DB_PASSWORD: postgres

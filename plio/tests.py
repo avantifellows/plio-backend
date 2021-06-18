@@ -577,15 +577,18 @@ class ImageTestCase(BaseTestCase):
         test_image_2 = Image.objects.create()
         self.assertNotEqual(test_image_1.url.name, test_image_2.url.name)
 
-    # def test_user_can_duplicate_image(self):
-    #     """Tests the duplicate functionality for images"""
-    #     # duplicate image
-    #     response = self.client.post(f"/api/v1/images/{self.image.id}/duplicate/")
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    def test_user_can_duplicate_image(self):
+        """Tests the duplicate functionality for images"""
+        # duplicate image
+        response = self.client.post(f"/api/v1/images/{self.image}/duplicate/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    #     self.assertNotEqual(self.item.id, response.data["id"])
-    #     self.assertEqual(self.item.type, response.data["type"])
-    #     self.assertEqual(self.item.time, response.data["time"])
+        image = Image.objects.filter(id=self.image).first()
+        new_image = Image.objects.filter(id=response.data["id"]).first()
+
+        self.assertNotEqual(self.image, response.data["id"])
+        self.assertEqual(image.alt_text, response.data["alt_text"])
+        self.assertEqual(image.url.file.size, new_image.url.file.size)
 
     # should only be able to view own images
     # should only be able to update own images

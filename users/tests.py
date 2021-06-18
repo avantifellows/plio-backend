@@ -1,7 +1,8 @@
 from rest_framework import status
 from django.urls import reverse
-from users.models import OneTimePassword
+from users.models import OneTimePassword, User, Role
 from plio.tests import BaseTestCase
+from organizations.models import Organization
 
 
 class OtpAuthTestCase(BaseTestCase):
@@ -66,7 +67,39 @@ class RoleTestCase(BaseTestCase):
 class OrganizationUserTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
+        # set up an organization
+        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
+        # set up a user that's supposed to be in the organization
+        self.organization_user = User.objects.create(mobile="+919988776655")
 
-    def test_for_organization_user(self):
-        # write API calls here
-        self.assertTrue(True)
+    def test_normal_user_cannot_create_organization_user(self):
+        # get org-view role
+        role_org_view = Role.objects.filter(name="org-view").first()
+        # add organization_user to the organization
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.organization_user.id,
+                "organization": self.organization.id,
+                "role": role_org_view.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_superuser_can_create_organization_user(self):
+        # make the current user as superuser
+        self.user.is_superuser = True
+        self.user.save()
+
+        # get org-view role
+        role_org_view = Role.objects.filter(name="org-view").first()
+        # add organization_user to the organization
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.organization_user.id,
+                "organization": self.organization.id,
+                "role": role_org_view.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

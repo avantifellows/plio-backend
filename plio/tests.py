@@ -10,11 +10,14 @@ from oauth2_provider.models import AccessToken
 from django.urls import reverse
 from django.utils import timezone
 from django.http import FileResponse
+from django.db import connection
 
 from users.models import User
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
 from entries.models import Session
+from organizations.models import Organization
+from users.models import Role, OrganizationUser
 
 
 class BaseTestCase(APITestCase):
@@ -311,3 +314,38 @@ class PlioDownloadTestCase(BaseTestCase):
         # download new user plio data
         response = self.client.get(f"/api/v1/plios/{new_user_plio.uuid}/download_data/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_can_download_data_for_other_user_plio_in_organization(self):
+        # create new user
+        new_user = User.objects.create(mobile="+919988776655")
+        # create a new organization
+        organization = Organization.objects.create(name="Org 1", shortcode="org-1")
+
+        # add both users to the organization
+        role = Role.objects.filter(name="org-view").first()
+        OrganizationUser.objects.create(
+            organization=organization, user=self.user, role=role
+        )
+        OrganizationUser.objects.create(
+            organization=organization, user=new_user, role=role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(organization.schema_name)
+        # create a video within the organization schema
+        new_user_video = Video.objects.create(
+            title="Video 2", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # create a plio with new user inside the organization schema
+        new_user_plio = Plio.objects.create(
+            name="Plio 2", video=new_user_video, created_by=new_user, status="published"
+        )
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+        # add the organization shortcode in the request header and download new user plio data
+        response = self.client.get(
+            f"/api/v1/plios/{new_user_plio.uuid}/download_data/",
+            HTTP_ORGANIZATION=organization.shortcode,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response, FileResponse))

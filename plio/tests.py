@@ -42,6 +42,12 @@ class BaseTestCase(APITestCase):
         self.access_token_2 = get_new_access_token(self.user_2, self.application)
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
 
+        # create org
+        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
+
+        # create roles
+        self.org_view_role = Role.objects.filter(name="org-view").first()
+
 
 def get_new_access_token(user, application):
     """Creates a new access token for the given user and application"""
@@ -75,12 +81,6 @@ class PlioTestCase(BaseTestCase):
         self.plio_2 = Plio.objects.create(
             name="Plio 2", video=self.video, created_by=self.user
         )
-
-        # create org
-        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
-
-        # create roles
-        self.org_view_role = Role.objects.filter(name="org-view").first()
 
     def test_guest_cannot_list_plios(self):
         # unset the credentials
@@ -368,6 +368,84 @@ class ItemTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 1 as the new item was created with different user
         self.assertEqual(len(response.data), 1)
+
+    def test_user_can_list_own_items_org(self):
+        # add user to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user
+        )
+
+        item_org = Item.objects.create(type="question", plio=plio_org, time=1)
+
+        # set organization in request
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # get plios
+        response = self.client.get(reverse("items-list"))
+
+        # the plio created above should be listed
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], item_org.id)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+    def test_user_can_list_other_items_org(self):
+        # add users to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user_2
+        )
+
+        item_org = Item.objects.create(type="question", plio=plio_org, time=1)
+
+        # set organization in request
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # get plios
+        response = self.client.get(reverse("items-list"))
+
+        # the plio created above should be listed
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], item_org.id)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
 
     def test_duplicate_no_plio_id(self):
         """Testing duplicate without providing any plio id"""

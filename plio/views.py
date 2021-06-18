@@ -119,13 +119,10 @@ class PlioViewSet(viewsets.ModelViewSet):
             return Plio.objects.filter(created_by=self.request.user)
 
         # organizational workspace
-        if (
-            self.request.user.is_authenticated
-            and OrganizationUser.objects.filter(
-                organization__shortcode=organization_shortcode,
-                user=self.request.user.id,
-            ).exists()
-        ):
+        if OrganizationUser.objects.filter(
+            organization__shortcode=organization_shortcode,
+            user=self.request.user.id,
+        ).exists():
             # user should be authenticated and a part of the org
             return Plio.objects.filter(
                 Q(is_public=True)

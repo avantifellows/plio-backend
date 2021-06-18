@@ -138,7 +138,7 @@ Unique Identifier for your Auth0 API.
 BigQuery settings are needed if Plio Analytics is configured to use BigQuery. We recommended using BigQuery for staging/production set ups.
 
 #### `BIGQUERY_ENABLED`
-Boolean value. If not set, it defaults to `True` if APP_ENV is set to staging or production.
+Boolean value. Defaults to `False` if not set.
 
 #### `BIGQUERY_PROJECT_ID`
 The BigQuery project id that contains the datasets.

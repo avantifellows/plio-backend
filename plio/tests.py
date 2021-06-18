@@ -271,7 +271,7 @@ class PlioTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/plios/{private_plio.uuid}/play/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_user_can_duplicate_their_plio(self):
+    def test_duplicate(self):
         plio = Plio.objects.filter(created_by=self.user).first()
         # duplicate plio
         response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
@@ -371,8 +371,8 @@ class ItemTestCase(BaseTestCase):
             json.loads(response.content)["detail"], "Specified plio not found"
         )
 
-    def test_user_can_duplicate_own_item(self):
-        """User should be able to duplicate an item previously created by the user"""
+    def test_duplicate(self):
+        """Tests the duplicate functionality"""
         # duplicate item
         response = self.client.post(
             f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": self.plio.id}
@@ -499,8 +499,8 @@ class QuestionTestCase(BaseTestCase):
             json.loads(response.content)["detail"], "Specified item not found"
         )
 
-    def test_user_can_duplicate_own_question(self):
-        """User should be able to duplicate a question previously created by the user"""
+    def test_duplicate_own_question(self):
+        """Tests the duplicate functionality"""
         # duplicate question
         response = self.client.post(
             f"/api/v1/questions/{self.question.id}/duplicate/", {"itemId": self.item.id}
@@ -510,6 +510,33 @@ class QuestionTestCase(BaseTestCase):
         self.assertNotEqual(self.question.id, response.data["id"])
         self.assertEqual(self.question.type, response.data["type"])
         self.assertEqual(self.question.text, response.data["text"])
+
+    def test_duplicate_question_with_image(self):
+        """Tests the duplicate functionality for a question which has an image"""
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(
+                reverse("images-list"), {"url": img, "alt_text": "test image"}
+            )
+        image_id = response.json()["id"]
+
+        # attach image id to question
+        response = self.client.put(
+            reverse("questions-detail", args=[self.question.id]),
+            {"item": self.item.id, "image": image_id},
+        )
+
+        # duplicate question
+        response = self.client.post(
+            f"/api/v1/questions/{self.question.id}/duplicate/", {"itemId": self.item.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertNotEqual(self.question.id, response.data["id"])
+        self.assertEqual(self.question.type, response.data["type"])
+        self.assertEqual(self.question.text, response.data["text"])
+        self.assertIsNotNone(response.data["image"])
+        self.assertNotEqual(self.question.image, response.data["image"])
 
     # should only be able to view own questions
     # + other relevant conditions
@@ -526,13 +553,11 @@ class ImageTestCase(BaseTestCase):
             title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         # seed a plio, item and question
-        self.test_plio = Plio.objects.create(
+        self.plio = Plio.objects.create(
             name="test_plio", video=self.video, created_by=self.user
         )
-        self.test_item = Item.objects.create(
-            plio=self.test_plio, type="question", time=1
-        )
-        self.test_question = Question.objects.create(item=self.test_item)
+        self.item = Item.objects.create(plio=self.plio, type="question", time=1)
+        self.question = Question.objects.create(item=self.item)
 
         # upload a test image and retrieve the id
         with open("plio/static/plio/test_image.jpeg", "rb") as img:
@@ -557,8 +582,8 @@ class ImageTestCase(BaseTestCase):
         """
         # update the question with the newly uploaded image
         response = self.client.put(
-            reverse("questions-detail", args=[self.test_question.id]),
-            {"item": self.test_item.id, "image": self.image},
+            reverse("questions-detail", args=[self.question.id]),
+            {"item": self.item.id, "image": self.image},
         )
         # the user should be able to update the question
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -581,8 +606,8 @@ class ImageTestCase(BaseTestCase):
         # the newly created image
         uploaded_image_id = response.json()["id"]
         response = self.client.put(
-            reverse("questions-detail", args=[self.test_question.id]),
-            {"item": self.test_item.id, "image": uploaded_image_id},
+            reverse("questions-detail", args=[self.question.id]),
+            {"item": self.item.id, "image": uploaded_image_id},
         )
         # the user should not be able to link an image to
         # a question created by some other user
@@ -621,7 +646,7 @@ class ImageTestCase(BaseTestCase):
         test_image_2 = Image.objects.create()
         self.assertNotEqual(test_image_1.url.name, test_image_2.url.name)
 
-    def test_user_can_duplicate_image(self):
+    def test_duplicate_image(self):
         """Tests the duplicate functionality for images"""
         # duplicate image
         response = self.client.post(f"/api/v1/images/{self.image}/duplicate/")

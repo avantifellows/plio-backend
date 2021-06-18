@@ -64,8 +64,12 @@ class PlioTestCase(BaseTestCase):
             title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         # seed some plios
-        Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user)
-        Plio.objects.create(name="Plio 2", video=self.video, created_by=self.user)
+        self.plio_1 = Plio.objects.create(
+            name="Plio 1", video=self.video, created_by=self.user
+        )
+        self.plio_2 = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user
+        )
 
     def test_guest_cannot_list_plios(self):
         # unset the credentials
@@ -122,9 +126,6 @@ class PlioTestCase(BaseTestCase):
         """Test valid user listing plio uuids when they have plios"""
         # get plio uuids
         response = self.client.get("/api/v1/plios/list_uuid/")
-        plio_uuids = list(
-            Plio.objects.filter(created_by=self.user).values_list("uuid", flat=True)
-        )
 
         self.assertEqual(
             response.data,
@@ -133,7 +134,7 @@ class PlioTestCase(BaseTestCase):
                 "page_size": 5,
                 "next": None,
                 "previous": None,
-                "results": plio_uuids,
+                "results": [self.plio_2.uuid, self.plio_1.uuid],
             },
         )
 

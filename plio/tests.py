@@ -34,18 +34,24 @@ class BaseTestCase(APITestCase):
         self.user = User.objects.create(mobile="+919876543210")
 
         # set up access token for the user
-        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
-        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
-        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
-        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
-        self.access_token = AccessToken.objects.create(
-            user=self.user,
-            application=self.application,
-            token=random_token,
-            expires=expires,
-            scope=scopes,
-        )
+        self.access_token = get_new_access_token(self.user, self.application)
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
+
+
+def get_new_access_token(user, application):
+    """Creates a new access token for the given user and application"""
+    random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+    expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
+    scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
+    expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
+
+    return AccessToken.objects.create(
+        user=user,
+        application=application,
+        token=random_token,
+        expires=expires,
+        scope=scopes,
+    )
 
 
 class PlioTestCase(BaseTestCase):
@@ -86,6 +92,50 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with different user
         self.assertEqual(response.data["count"], 2)
+
+    def test_guest_cannot_list_plio_uuids(self):
+        # unset the credentials
+        self.client.credentials()
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_list_empty_plio_uuids(self):
+        """Test valid user listing plio uuids when they have no plios"""
+        new_user = User.objects.create(mobile="+919988776655")
+        new_access_token = get_new_access_token(new_user, self.application)
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + new_access_token.token)
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        self.assertEqual(
+            response.data,
+            {
+                "count": 0,
+                "page_size": 5,
+                "next": None,
+                "previous": None,
+                "results": [],
+            },
+        )
+
+    def test_user_list_plio_uuids(self):
+        """Test valid user listing plio uuids when they have plios"""
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        plio_uuids = list(
+            Plio.objects.filter(created_by=self.user).values_list("uuid", flat=True)
+        )
+
+        self.assertEqual(
+            response.data,
+            {
+                "count": 2,
+                "page_size": 5,
+                "next": None,
+                "previous": None,
+                "results": plio_uuids,
+            },
+        )
 
     def test_user_can_duplicate_their_plio(self):
         plio = Plio.objects.filter(created_by=self.user).first()

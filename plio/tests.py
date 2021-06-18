@@ -467,9 +467,53 @@ class QuestionTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-    def test_for_question(self):
-        # write API calls here
-        self.assertTrue(True)
+        # seed a video
+        self.video = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # seed a plio
+        self.plio = Plio.objects.create(
+            name="Plio", video=self.video, created_by=self.user
+        )
+        # seed an item
+        self.item = Item.objects.create(type="question", plio=self.plio, time=1)
+
+        # seed a question
+        self.question = Question.objects.create(type="mcq", item=self.item, text="test")
+
+    def test_duplicate_no_item_id(self):
+        """Testing duplicate without providing any item id"""
+        # duplicate question
+        response = self.client.post(f"/api/v1/questions/{self.question.id}/duplicate/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_duplicate_wrong_item_id(self):
+        """Testing duplicate by providing item id that does not exist"""
+        # duplicate question
+        response = self.client.post(
+            f"/api/v1/questions/{self.question.id}/duplicate/",
+            {"itemId": self.item.id + 100},
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            json.loads(response.content)["detail"], "Specified item not found"
+        )
+
+    def test_user_can_duplicate_own_question(self):
+        """User should be able to duplicate a question previously created by the user"""
+        # duplicate question
+        response = self.client.post(
+            f"/api/v1/questions/{self.question.id}/duplicate/", {"itemId": self.item.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertNotEqual(self.question.id, response.data["id"])
+        self.assertEqual(self.question.type, response.data["type"])
+        self.assertEqual(self.question.text, response.data["text"])
+
+    # should only be able to view own questions
+    # + other relevant conditions
+    # + tweak them for org
 
 
 class ImageTestCase(BaseTestCase):

@@ -298,9 +298,9 @@ class ItemViewSet(viewsets.ModelViewSet):
         else:
             return None
 
-        plio_id = self.request.query_params.get("plio")
-        if plio_id is not None:
-            queryset = queryset.filter(plio__uuid=plio_id).order_by("time")
+        plio_uuid = self.request.query_params.get("plio")
+        if plio_uuid is not None:
+            queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
         return queryset
 
     @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])

@@ -337,6 +337,22 @@ class ItemTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
+    def test_user_list_items_by_plio(self):
+        # create a new plio
+        new_plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user
+        )
+        # attach a new item to the new plio
+        Item.objects.create(type="question", plio=new_plio, time=1)
+
+        # get items
+        response = self.client.get(reverse("items-list"), {"plio": self.plio.uuid})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # the number of responses should still be 1 - the item created above
+        # should not be included
+        self.assertEqual(len(response.data), 1)
+
     def test_user_list_own_items(self):
         """A user should only be able to list their own items"""
         # create plio from a different user

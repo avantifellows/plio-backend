@@ -9,8 +9,10 @@ from rest_framework import status
 from oauth2_provider.models import Application
 from oauth2_provider.models import AccessToken
 from django.urls import reverse
+from django.db import connection
 
-from users.models import User
+from users.models import User, Role, OrganizationUser
+from organizations.models import Organization
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
 
@@ -38,6 +40,12 @@ class BaseTestCase(APITestCase):
         self.access_token = get_new_access_token(self.user, self.application)
         self.access_token_2 = get_new_access_token(self.user_2, self.application)
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
+
+        # create org
+        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
+
+        # create roles
+        self.org_view_role = Role.objects.filter(name="org-view").first()
 
 
 def get_new_access_token(user, application):
@@ -96,6 +104,82 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with different user
         self.assertEqual(response.data["count"], 2)
+
+    def test_user_list_own_plios_in_org(self):
+        """A user should be able to list their own plios in org workspace"""
+        # add user to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user
+        )
+
+        # set organization in request
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # get plios
+        response = self.client.get(reverse("plios-list"))
+
+        # the plio created above should be listed
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+
+        # reset the connection
+        connection.set_schema("public")
+
+    def test_user_list_other_plios_in_org(self):
+        """A user should be able to list plios created by others in org workspace"""
+        # add users to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace by user 2
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user_2
+        )
+
+        # set organization in request
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # get plios
+        response = self.client.get(reverse("plios-list"))
+
+        # the plio created above should be listed
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+
+        # reset the connection
+        connection.set_schema("public")
 
     def test_guest_cannot_list_plio_uuids(self):
         # unset the credentials

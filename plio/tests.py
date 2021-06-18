@@ -127,6 +127,9 @@ class PlioTestCase(BaseTestCase):
     #         name="Plio 1", video=video_org, created_by=self.user
     #     )
 
+    # # set db connection back to public (default) schema
+    # connection.set_schema_to_public()
+
     #     # set organization in request
     #     self.client.credentials(
     #         HTTP_ORGANIZATION=self.organization.shortcode,
@@ -166,6 +169,9 @@ class PlioTestCase(BaseTestCase):
     #     plio_org = Plio.objects.create(
     #         name="Plio 1", video=video_org, created_by=self.user_2
     #     )
+
+    # # set db connection back to public (default) schema
+    # connection.set_schema_to_public()
 
     #     # set organization in request
     #     self.client.credentials(
@@ -406,6 +412,9 @@ class ItemTestCase(BaseTestCase):
     #         name="Plio 1", video=video_org, created_by=self.user
     #     )
 
+    # # set db connection back to public (default) schema
+    # connection.set_schema_to_public()
+
     #     # set organization in request
     #     self.client.credentials(
     #         HTTP_ORGANIZATION=self.organization.shortcode,
@@ -451,6 +460,9 @@ class ItemTestCase(BaseTestCase):
     #         HTTP_ORGANIZATION=self.organization.shortcode,
     #         HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
     #     )
+
+    # # set db connection back to public (default) schema
+    # connection.set_schema_to_public()
 
     #     # get plios
     #     response = self.client.get(reverse("plios-list"))
@@ -662,3 +674,6 @@ class ImageTestCase(BaseTestCase):
     # should only be able to view own images
     # should only be able to update own images
     # appropriate tests for org
+
+    # before merge, update Vaibhav's changes for org and new user - use
+    # the vars created by me here

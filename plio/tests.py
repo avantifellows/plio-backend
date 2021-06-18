@@ -1,6 +1,7 @@
 import datetime
 import random
 import string
+import json
 from django.utils import timezone
 
 from rest_framework.test import APIClient
@@ -280,16 +281,6 @@ class PlioTestCase(BaseTestCase):
         self.assertNotEqual(plio.uuid, response.data["uuid"])
         self.assertEqual(plio.name, response.data["name"])
 
-    def test_user_cannot_duplicate_other_user_plio(self):
-        # create plio from a different user
-        plio = Plio.objects.create(
-            name="Plio New User", video=self.video, created_by=self.user_2
-        )
-
-        # duplicate plio
-        response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
     # should not be able to update other's plio
     # should not be able to update other's plio in org
 
@@ -347,19 +338,53 @@ class ItemTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
+    def test_user_list_own_items(self):
+        """A user should only be able to list their own items"""
+        # create plio from a different user
+        new_plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user_2
+        )
+
+        # create item from a different user
+        Item.objects.create(type="question", plio=new_plio, time=1)
+
+        # get items
+        response = self.client.get(reverse("items-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # the count should remain 1 as the new item was created with different user
+        self.assertEqual(len(response.data), 1)
+
+    def test_duplicate_no_plio_id(self):
+        """Testing duplicate without providing any plio id"""
+        # duplicate plio
+        response = self.client.post(f"/api/v1/items/{self.item.id}/duplicate/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_duplicate_wrong_plio_id(self):
+        """Testing duplicate by providing plio id that does not exist"""
+        # duplicate plio
+        response = self.client.post(
+            f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": 2}
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            json.loads(response.content)["detail"], "Specified plio not found"
+        )
+
+    def test_user_can_duplicate_own_item(self):
+        """User should be able to duplicate an item previously created by the user"""
+        # duplicate plio
+        response = self.client.post(
+            f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": self.plio.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertNotEqual(self.item.id, response.data["id"])
+        self.assertEqual(self.item.type, response.data["type"])
+        self.assertEqual(self.item.time, response.data["time"])
+
     # should not be able to update other plio with own item
     # should not be able to update other item
-
-    # def test_user_list_own_items(self):
-    #     """A user should only be able to list their own items"""
-    #     # create item from a different user
-    #     Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user_2)
-
-    #     # get plios
-    #     response = self.client.get(reverse("plios-list"))
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     # the count should remain 2 as the new plio was created with different user
-    #     self.assertEqual(response.data["count"], 2)
 
     # def test_user_list_own_plios_in_org(self):
     #     """A user should be able to list their own plios in org workspace"""

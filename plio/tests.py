@@ -356,13 +356,13 @@ class ItemTestCase(BaseTestCase):
 
     def test_duplicate_no_plio_id(self):
         """Testing duplicate without providing any plio id"""
-        # duplicate plio
+        # duplicate item
         response = self.client.post(f"/api/v1/items/{self.item.id}/duplicate/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_duplicate_wrong_plio_id(self):
         """Testing duplicate by providing plio id that does not exist"""
-        # duplicate plio
+        # duplicate item
         response = self.client.post(
             f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": 2}
         )
@@ -373,7 +373,7 @@ class ItemTestCase(BaseTestCase):
 
     def test_user_can_duplicate_own_item(self):
         """User should be able to duplicate an item previously created by the user"""
-        # duplicate plio
+        # duplicate item
         response = self.client.post(
             f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": self.plio.id}
         )
@@ -490,20 +490,31 @@ class ImageTestCase(BaseTestCase):
         )
         self.test_question = Question.objects.create(item=self.test_item)
 
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(
+                reverse("images-list"), {"url": img, "alt_text": "test image"}
+            )
+        self.image = response.json()["id"]
+
+    def test_user_can_upload_image(self):
+        """
+        Tests whether an authorized user can create/upload an image
+        """
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(reverse("images-list"), {"url": img})
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
     def test_user_can_attach_images_to_their_question(self):
         """
         Tests whether a user can link images to the questions
         that were created by themselves
         """
-        # upload a test image and retrieve the id
-        with open("plio/static/plio/test_image.jpeg", "rb") as img:
-            response = self.client.post(reverse("images-list"), {"url": img})
-        uploaded_image_id = response.json()["id"]
-
         # update the question with the newly uploaded image
         response = self.client.put(
             reverse("questions-detail", args=[self.test_question.id]),
-            {"item": self.test_item.id, "image": uploaded_image_id},
+            {"item": self.test_item.id, "image": self.image},
         )
         # the user should be able to update the question
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -532,15 +543,6 @@ class ImageTestCase(BaseTestCase):
         # the user should not be able to link an image to
         # a question created by some other user
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_user_can_upload_image(self):
-        """
-        Tests whether an authorized user can create/upload an image
-        """
-        with open("plio/static/plio/test_image.jpeg", "rb") as img:
-            response = self.client.post(reverse("images-list"), {"url": img})
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_guest_cannot_upload_image(self):
         """
@@ -574,3 +576,17 @@ class ImageTestCase(BaseTestCase):
         random.seed(10)
         test_image_2 = Image.objects.create()
         self.assertNotEqual(test_image_1.url.name, test_image_2.url.name)
+
+    # def test_user_can_duplicate_image(self):
+    #     """Tests the duplicate functionality for images"""
+    #     # duplicate image
+    #     response = self.client.post(f"/api/v1/images/{self.image.id}/duplicate/")
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    #     self.assertNotEqual(self.item.id, response.data["id"])
+    #     self.assertEqual(self.item.type, response.data["type"])
+    #     self.assertEqual(self.item.time, response.data["time"])
+
+    # should only be able to view own images
+    # should only be able to update own images
+    # appropriate tests for org

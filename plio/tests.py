@@ -30,22 +30,30 @@ class BaseTestCase(APITestCase):
             authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
         )
 
-        # create a user
+        # create 2 users
         self.user = User.objects.create(mobile="+919876543210")
+        self.user_2 = User.objects.create(mobile="+919988776655")
 
         # set up access token for the user
-        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
-        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
-        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
-        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
-        self.access_token = AccessToken.objects.create(
-            user=self.user,
-            application=self.application,
-            token=random_token,
-            expires=expires,
-            scope=scopes,
-        )
+        self.access_token = get_new_access_token(self.user, self.application)
+        self.access_token_2 = get_new_access_token(self.user_2, self.application)
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
+
+
+def get_new_access_token(user, application):
+    """Creates a new access token for the given user and application"""
+    random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+    expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
+    scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
+    expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
+
+    return AccessToken.objects.create(
+        user=user,
+        application=application,
+        token=random_token,
+        expires=expires,
+        scope=scopes,
+    )
 
 
 class PlioTestCase(BaseTestCase):
@@ -58,8 +66,12 @@ class PlioTestCase(BaseTestCase):
             title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         # seed some plios
-        Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user)
-        Plio.objects.create(name="Plio 2", video=self.video, created_by=self.user)
+        self.plio_1 = Plio.objects.create(
+            name="Plio 1", video=self.video, created_by=self.user
+        )
+        self.plio_2 = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user
+        )
 
     def test_guest_cannot_list_plios(self):
         # unset the credentials
@@ -76,16 +88,102 @@ class PlioTestCase(BaseTestCase):
 
     def test_user_list_own_plios(self):
         """A user should only be able to list their own plios"""
-        # create a new user
-        new_user = User.objects.create(mobile="+919988776655")
-        # create plio from the new user
-        Plio.objects.create(name="Plio 1", video=self.video, created_by=new_user)
+        # create plio from a different user
+        Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user_2)
 
         # get plios
         response = self.client.get(reverse("plios-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with different user
         self.assertEqual(response.data["count"], 2)
+
+    def test_guest_cannot_list_plio_uuids(self):
+        # unset the credentials
+        self.client.credentials()
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_list_empty_plio_uuids(self):
+        """Test valid user listing plio uuids when they have no plios"""
+        # change user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
+        )
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        self.assertEqual(
+            response.data,
+            {
+                "count": 0,
+                "page_size": 5,
+                "next": None,
+                "previous": None,
+                "results": [],
+            },
+        )
+
+    def test_user_list_plio_uuids(self):
+        """Test valid user listing plio uuids when they have plios"""
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+
+        self.assertEqual(
+            response.data,
+            {
+                "count": 2,
+                "page_size": 5,
+                "next": None,
+                "previous": None,
+                "results": [self.plio_2.uuid, self.plio_1.uuid],
+            },
+        )
+
+    def test_guest_cannot_play_plio(self):
+        # unset the credentials
+        self.client.credentials()
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_can_play_own_plio(self):
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_can_play_other_public_plio(self):
+        """Test that an authenticated user can play public plios created by others"""
+        # change user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
+        )
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_cannot_play_other_private_plio(self):
+        """Test that an authenticated user cannot play private plios created by others"""
+        # create a private plio
+        private_plio = Plio.objects.create(
+            name="Plio Private", video=self.video, created_by=self.user, is_public=False
+        )
+        # change user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
+        )
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{private_plio.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_can_play_own_private_plio(self):
+        """Test that an authenticated user can play their own private plios"""
+        # create a private plio
+        private_plio = Plio.objects.create(
+            name="Plio Private", video=self.video, created_by=self.user, is_public=False
+        )
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{private_plio.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_can_duplicate_their_plio(self):
         plio = Plio.objects.filter(created_by=self.user).first()
@@ -98,11 +196,9 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(plio.name, response.data["name"])
 
     def test_user_cannot_duplicate_other_user_plio(self):
-        # create a new user
-        new_user = User.objects.create(mobile="+919988776655")
-        # create plio from the new user
+        # create plio from a different user
         plio = Plio.objects.create(
-            name="Plio New User", video=self.video, created_by=new_user
+            name="Plio New User", video=self.video, created_by=self.user_2
         )
 
         # duplicate plio
@@ -194,23 +290,10 @@ class ImageTestCase(BaseTestCase):
         Tests that a user should NOT be able to link images to
         the questions that were created by some other user
         """
-        # create a new user
-        new_user = User.objects.create(mobile="+919988776654")
-
-        # set up access token for the new user
-        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
-        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
-        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
-        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
-        new_access_token = AccessToken.objects.create(
-            user=new_user,
-            application=self.application,
-            token=random_token,
-            expires=expires,
-            scope=scopes,
+        # reset the credentials to that of another user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
         )
-        # reset and set the new credentials
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + new_access_token.token)
 
         # create a new image entry using a test image
         with open("plio/static/plio/test_image.jpeg", "rb") as img:

@@ -280,9 +280,6 @@ class PlioTestCase(BaseTestCase):
         self.assertNotEqual(plio.uuid, response.data["uuid"])
         self.assertEqual(plio.name, response.data["name"])
 
-    # should not be able to update other's plio
-    # should not be able to update other's plio in org
-
 
 class VideoTestCase(BaseTestCase):
     def setUp(self):
@@ -476,91 +473,6 @@ class ItemTestCase(BaseTestCase):
         self.assertEqual(self.item.type, response.data["type"])
         self.assertEqual(self.item.time, response.data["time"])
 
-    # should not be able to update other plio with own item
-    # should not be able to update other item
-
-    # def test_user_list_own_plios_in_org(self):
-    #     """A user should be able to list their own plios in org workspace"""
-    #     # add user to organization
-    #     OrganizationUser.objects.create(
-    #         organization=self.organization, user=self.user, role=self.org_view_role
-    #     )
-
-    #     # set db connection to organization schema
-    #     connection.set_schema(self.organization.schema_name)
-
-    #     # create video in the org workspace
-    #     video_org = Video.objects.create(
-    #         title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
-    #     )
-
-    #     # create plio within the org workspace
-    #     plio_org = Plio.objects.create(
-    #         name="Plio 1", video=video_org, created_by=self.user
-    #     )
-
-    # # set db connection back to public (default) schema
-    # connection.set_schema_to_public()
-
-    #     # set organization in request
-    #     self.client.credentials(
-    #         HTTP_ORGANIZATION=self.organization.shortcode,
-    #         HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
-    #     )
-
-    #     # get plios
-    #     response = self.client.get(reverse("plios-list"))
-
-    #     # the plio created above should be listed
-    #     self.assertEqual(len(response.data["results"]), 1)
-    #     self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
-
-    #     # reset the connection
-    #     connection.set_schema("public")
-
-    # def test_user_list_other_plios_in_org(self):
-    #     """A user should be able to list plios created by others in org workspace"""
-    #     # add users to organization
-    #     OrganizationUser.objects.create(
-    #         organization=self.organization, user=self.user, role=self.org_view_role
-    #     )
-
-    #     OrganizationUser.objects.create(
-    #         organization=self.organization, user=self.user_2, role=self.org_view_role
-    #     )
-
-    #     # set db connection to organization schema
-    #     connection.set_schema(self.organization.schema_name)
-
-    #     # create video in the org workspace
-    #     video_org = Video.objects.create(
-    #         title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
-    #     )
-
-    #     # create plio within the org workspace by user 2
-    #     plio_org = Plio.objects.create(
-    #         name="Plio 1", video=video_org, created_by=self.user_2
-    #     )
-
-    #     # set organization in request
-    #     self.client.credentials(
-    #         HTTP_ORGANIZATION=self.organization.shortcode,
-    #         HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
-    #     )
-
-    # # set db connection back to public (default) schema
-    # connection.set_schema_to_public()
-
-    #     # get plios
-    #     response = self.client.get(reverse("plios-list"))
-
-    #     # the plio created above should be listed
-    #     self.assertEqual(len(response.data["results"]), 1)
-    #     self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
-
-    #     # reset the connection
-    #     connection.set_schema("public")
-
 
 class QuestionTestCase(BaseTestCase):
     def setUp(self):
@@ -636,10 +548,6 @@ class QuestionTestCase(BaseTestCase):
         self.assertEqual(self.question.text, response.data["text"])
         self.assertIsNotNone(response.data["image"])
         self.assertNotEqual(self.question.image, response.data["image"])
-
-    # should only be able to view own questions
-    # + other relevant conditions
-    # + tweak them for org
 
 
 class ImageTestCase(BaseTestCase):
@@ -757,10 +665,6 @@ class ImageTestCase(BaseTestCase):
         self.assertNotEqual(self.image, response.data["id"])
         self.assertEqual(image.alt_text, response.data["alt_text"])
         self.assertEqual(image.url.file.size, new_image.url.file.size)
-
-    # should only be able to view own images
-    # should only be able to update own images
-    # appropriate tests for org
 
     # before merge, update Vaibhav's changes for org and new user - use
     # the vars created by me here

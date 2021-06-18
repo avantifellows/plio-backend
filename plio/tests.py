@@ -1,7 +1,6 @@
 import datetime
 import random
 import string
-from django.utils import timezone
 
 from rest_framework.test import APIClient
 from rest_framework.test import APITestCase
@@ -9,10 +8,13 @@ from rest_framework import status
 from oauth2_provider.models import Application
 from oauth2_provider.models import AccessToken
 from django.urls import reverse
+from django.utils import timezone
+from django.http import FileResponse
 
 from users.models import User
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
+from entries.models import Session
 
 
 class BaseTestCase(APITestCase):
@@ -268,3 +270,44 @@ class ImageTestCase(BaseTestCase):
         random.seed(10)
         test_image_2 = Image.objects.create()
         self.assertNotEqual(test_image_1.url.name, test_image_2.url.name)
+
+
+class PlioDownloadTestCase(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        # seed a video
+        self.video = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # seed a plio
+        self.plio = Plio.objects.create(
+            name="Plio 1", video=self.video, created_by=self.user, status="published"
+        )
+        # seed some sessions for the plio
+        Session.objects.create(plio=self.plio, user=self.user)
+        Session.objects.create(plio=self.plio, user=self.user)
+
+    def test_draft_plio_data_cannot_be_downloaded(self):
+        # change plio status to draft
+        self.plio.status = "draft"
+        self.plio.save()
+        # download plio data
+        response = self.client.get(f"/api/v1/plios/{self.plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_published_plio_data_can_be_downloaded(self):
+        # download plio data
+        response = self.client.get(f"/api/v1/plios/{self.plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response, FileResponse))
+
+    def test_non_plio_owner_cannot_download_data(self):
+        # create new user
+        new_user = User.objects.create(mobile="+919988776655")
+        # make a plio with new user
+        new_user_plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=new_user, status="published"
+        )
+        # download new user plio data
+        response = self.client.get(f"/api/v1/plios/{new_user_plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

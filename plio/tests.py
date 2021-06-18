@@ -9,9 +9,10 @@ from rest_framework import status
 from oauth2_provider.models import Application
 from oauth2_provider.models import AccessToken
 from django.urls import reverse
-from django.db import connection
 
-from users.models import User, Role, OrganizationUser
+# from django.db import connection
+
+from users.models import User, Role
 from organizations.models import Organization
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
@@ -105,81 +106,81 @@ class PlioTestCase(BaseTestCase):
         # the count should remain 2 as the new plio was created with different user
         self.assertEqual(response.data["count"], 2)
 
-    def test_user_list_own_plios_in_org(self):
-        """A user should be able to list their own plios in org workspace"""
-        # add user to organization
-        OrganizationUser.objects.create(
-            organization=self.organization, user=self.user, role=self.org_view_role
-        )
+    # def test_user_list_own_plios_in_org(self):
+    #     """A user should be able to list their own plios in org workspace"""
+    #     # add user to organization
+    #     OrganizationUser.objects.create(
+    #         organization=self.organization, user=self.user, role=self.org_view_role
+    #     )
 
-        # set db connection to organization schema
-        connection.set_schema(self.organization.schema_name)
+    #     # set db connection to organization schema
+    #     connection.set_schema(self.organization.schema_name)
 
-        # create video in the org workspace
-        video_org = Video.objects.create(
-            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
-        )
+    #     # create video in the org workspace
+    #     video_org = Video.objects.create(
+    #         title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+    #     )
 
-        # create plio within the org workspace
-        plio_org = Plio.objects.create(
-            name="Plio 1", video=video_org, created_by=self.user
-        )
+    #     # create plio within the org workspace
+    #     plio_org = Plio.objects.create(
+    #         name="Plio 1", video=video_org, created_by=self.user
+    #     )
 
-        # set organization in request
-        self.client.credentials(
-            HTTP_ORGANIZATION=self.organization.shortcode,
-            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
-        )
+    #     # set organization in request
+    #     self.client.credentials(
+    #         HTTP_ORGANIZATION=self.organization.shortcode,
+    #         HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+    #     )
 
-        # get plios
-        response = self.client.get(reverse("plios-list"))
+    #     # get plios
+    #     response = self.client.get(reverse("plios-list"))
 
-        # the plio created above should be listed
-        self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+    #     # the plio created above should be listed
+    #     self.assertEqual(len(response.data["results"]), 1)
+    #     self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
 
-        # reset the connection
-        connection.set_schema("public")
+    #     # reset the connection
+    #     connection.set_schema("public")
 
-    def test_user_list_other_plios_in_org(self):
-        """A user should be able to list plios created by others in org workspace"""
-        # add users to organization
-        OrganizationUser.objects.create(
-            organization=self.organization, user=self.user, role=self.org_view_role
-        )
+    # def test_user_list_other_plios_in_org(self):
+    #     """A user should be able to list plios created by others in org workspace"""
+    #     # add users to organization
+    #     OrganizationUser.objects.create(
+    #         organization=self.organization, user=self.user, role=self.org_view_role
+    #     )
 
-        OrganizationUser.objects.create(
-            organization=self.organization, user=self.user_2, role=self.org_view_role
-        )
+    #     OrganizationUser.objects.create(
+    #         organization=self.organization, user=self.user_2, role=self.org_view_role
+    #     )
 
-        # set db connection to organization schema
-        connection.set_schema(self.organization.schema_name)
+    #     # set db connection to organization schema
+    #     connection.set_schema(self.organization.schema_name)
 
-        # create video in the org workspace
-        video_org = Video.objects.create(
-            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
-        )
+    #     # create video in the org workspace
+    #     video_org = Video.objects.create(
+    #         title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+    #     )
 
-        # create plio within the org workspace by user 2
-        plio_org = Plio.objects.create(
-            name="Plio 1", video=video_org, created_by=self.user_2
-        )
+    #     # create plio within the org workspace by user 2
+    #     plio_org = Plio.objects.create(
+    #         name="Plio 1", video=video_org, created_by=self.user_2
+    #     )
 
-        # set organization in request
-        self.client.credentials(
-            HTTP_ORGANIZATION=self.organization.shortcode,
-            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
-        )
+    #     # set organization in request
+    #     self.client.credentials(
+    #         HTTP_ORGANIZATION=self.organization.shortcode,
+    #         HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+    #     )
 
-        # get plios
-        response = self.client.get(reverse("plios-list"))
+    #     # get plios
+    #     response = self.client.get(reverse("plios-list"))
 
-        # the plio created above should be listed
-        self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+    #     # the plio created above should be listed
+    #     self.assertEqual(len(response.data["results"]), 1)
+    #     self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
 
-        # reset the connection
-        connection.set_schema("public")
+    #     # reset the connection
+    #     connection.set_schema("public")
 
     def test_guest_cannot_list_plio_uuids(self):
         # unset the credentials
@@ -289,6 +290,9 @@ class PlioTestCase(BaseTestCase):
         response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    # should not be able to update other's plio
+    # should not be able to update other's plio in org
+
 
 class VideoTestCase(BaseTestCase):
     def setUp(self):
@@ -319,9 +323,119 @@ class ItemTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-    def test_for_item(self):
-        # write API calls here
-        self.assertTrue(True)
+        # seed a video
+        self.video = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # seed a plio
+        self.plio = Plio.objects.create(
+            name="Plio", video=self.video, created_by=self.user
+        )
+        # seed an item
+        self.item = Item.objects.create(type="question", plio=self.plio, time=1)
+
+    def test_guest_cannot_list_items(self):
+        # unset the credentials
+        self.client.credentials()
+        # get items
+        response = self.client.get(reverse("items-list"))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_can_list_items(self):
+        # get items
+        response = self.client.get(reverse("items-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    # should not be able to update other plio with own item
+    # should not be able to update other item
+
+    # def test_user_list_own_items(self):
+    #     """A user should only be able to list their own items"""
+    #     # create item from a different user
+    #     Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user_2)
+
+    #     # get plios
+    #     response = self.client.get(reverse("plios-list"))
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     # the count should remain 2 as the new plio was created with different user
+    #     self.assertEqual(response.data["count"], 2)
+
+    # def test_user_list_own_plios_in_org(self):
+    #     """A user should be able to list their own plios in org workspace"""
+    #     # add user to organization
+    #     OrganizationUser.objects.create(
+    #         organization=self.organization, user=self.user, role=self.org_view_role
+    #     )
+
+    #     # set db connection to organization schema
+    #     connection.set_schema(self.organization.schema_name)
+
+    #     # create video in the org workspace
+    #     video_org = Video.objects.create(
+    #         title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+    #     )
+
+    #     # create plio within the org workspace
+    #     plio_org = Plio.objects.create(
+    #         name="Plio 1", video=video_org, created_by=self.user
+    #     )
+
+    #     # set organization in request
+    #     self.client.credentials(
+    #         HTTP_ORGANIZATION=self.organization.shortcode,
+    #         HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+    #     )
+
+    #     # get plios
+    #     response = self.client.get(reverse("plios-list"))
+
+    #     # the plio created above should be listed
+    #     self.assertEqual(len(response.data["results"]), 1)
+    #     self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+
+    #     # reset the connection
+    #     connection.set_schema("public")
+
+    # def test_user_list_other_plios_in_org(self):
+    #     """A user should be able to list plios created by others in org workspace"""
+    #     # add users to organization
+    #     OrganizationUser.objects.create(
+    #         organization=self.organization, user=self.user, role=self.org_view_role
+    #     )
+
+    #     OrganizationUser.objects.create(
+    #         organization=self.organization, user=self.user_2, role=self.org_view_role
+    #     )
+
+    #     # set db connection to organization schema
+    #     connection.set_schema(self.organization.schema_name)
+
+    #     # create video in the org workspace
+    #     video_org = Video.objects.create(
+    #         title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+    #     )
+
+    #     # create plio within the org workspace by user 2
+    #     plio_org = Plio.objects.create(
+    #         name="Plio 1", video=video_org, created_by=self.user_2
+    #     )
+
+    #     # set organization in request
+    #     self.client.credentials(
+    #         HTTP_ORGANIZATION=self.organization.shortcode,
+    #         HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+    #     )
+
+    #     # get plios
+    #     response = self.client.get(reverse("plios-list"))
+
+    #     # the plio created above should be listed
+    #     self.assertEqual(len(response.data["results"]), 1)
+    #     self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+
+    #     # reset the connection
+    #     connection.set_schema("public")
 
 
 class QuestionTestCase(BaseTestCase):

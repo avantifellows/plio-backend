@@ -18,6 +18,14 @@ jobs:
     name: Test cases
     runs-on: ubuntu-latest
     services:
+      redis:
+        image: redis
+        ports:
+          # Maps port 6379 on service container to the host
+          - 6379:6379
+        # Set health checks to wait until redis has started
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
       # Creates a postgres docker where migrations will run.
       db:
         image: postgres:12.3-alpine
@@ -46,6 +54,7 @@ jobs:
       - name: Run Test Cases
         env:
           DB_HOST: 127.0.0.1
+          DB_PORT: 5432
           DB_NAME: github_actions_testing
           DB_USER: postgres
           DB_PASSWORD: postgres
@@ -54,6 +63,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_STORAGE_BUCKET_NAME: ${{ secrets.AWS_STORAGE_BUCKET_NAME }}
+          REDIS_HOSTNAME: 127.0.0.1
+          REDIS_PORT: 6379
         # command to run tests and generate coverage metrics
         run: coverage run manage.py test
 

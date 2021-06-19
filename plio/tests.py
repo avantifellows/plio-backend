@@ -24,7 +24,8 @@ from plio.views import StandardResultsSetPagination
 class BaseTestCase(APITestCase):
     """Base class that sets up generic pre-requisites for all further test classes"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(self):
         self.client = APIClient()
 
         # User access and refresh tokens require an OAuth Provider application to be set up and use it as a foreign key.
@@ -36,6 +37,13 @@ class BaseTestCase(APITestCase):
             authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
         )
 
+        # create org
+        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
+
+        # get role
+        self.org_view_role = Role.objects.filter(name="org-view").first()
+
+    def setUp(self):
         # create 2 users
         self.user = User.objects.create(mobile="+919876543210")
         self.user_2 = User.objects.create(mobile="+919988776655")
@@ -43,13 +51,8 @@ class BaseTestCase(APITestCase):
         # set up access token for the user
         self.access_token = get_new_access_token(self.user, self.application)
         self.access_token_2 = get_new_access_token(self.user_2, self.application)
+
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
-
-        # create org
-        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
-
-        # create roles
-        self.org_view_role = Role.objects.filter(name="org-view").first()
 
 
 def get_new_access_token(user, application):

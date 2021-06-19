@@ -138,6 +138,11 @@ class UserTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.user.id)
 
+    def test_get_analytics_app_access_token(self):
+        response = self.client.post(reverse("get-analytics-token"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access_token", response.json())
+
 
 class UserMetaTestCase(BaseTestCase):
     def setUp(self):

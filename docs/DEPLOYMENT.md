@@ -200,6 +200,12 @@ Follow the steps below to set up the staging environment on AWS.
        - AWS_ACCESS_KEY_ID
        - AWS_SECRET_ACCESS_KEY
        - AWS_REGION
+       - AWS_STORAGE_BUCKET_NAME
+       - ANALYTICS_IDP_TYPE
+       - ANALYTICS_IDP_TOKEN_URL
+       - ANALYTICS_IDP_CLIENT_ID
+       - ANALYTICS_IDP_CLIENT_SECRET
+       - ANALYTICS_IDP_AUDIENCE (optional)
 
 14. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
 

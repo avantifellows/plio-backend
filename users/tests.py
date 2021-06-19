@@ -73,6 +73,11 @@ class UserTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json(), config)
 
+    def test_user_cannot_get_other_user_config(self):
+        # get config
+        response = self.client.get(f"/api/v1/users/{self.user_2.id}/config/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_update_config_no_config_provided(self):
         # update config
         response = self.client.patch(f"/api/v1/users/{self.user.id}/config/", {})
@@ -109,8 +114,14 @@ class UserTestCase(BaseTestCase):
             config,
         )
 
-    # one user should not be able to get config of another user
-    # one user should not be able to update config of another user
+    def test_user_cannot_update_other_user_config(self):
+        # get config
+        response = self.client.patch(
+            f"/api/v1/users/{self.user_2.id}/config/",
+            {"config": {"test": True}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class UserMetaTestCase(BaseTestCase):

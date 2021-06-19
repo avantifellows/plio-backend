@@ -716,6 +716,7 @@ class PlioDownloadTestCase(BaseTestCase):
 
         # set db connection to organization schema
         connection.set_schema(self.organization.schema_name)
+
         # create a video within the organization schema
         new_user_video = Video.objects.create(
             title="Video 2", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
@@ -727,8 +728,7 @@ class PlioDownloadTestCase(BaseTestCase):
             created_by=self.user_2,
             status="published",
         )
-        # set db connection back to public (default) schema
-        connection.set_schema_to_public()
+
         # add the organization shortcode in the request header and download new user plio data
         response = self.client.get(
             f"/api/v1/plios/{new_user_plio.uuid}/download_data/",
@@ -736,3 +736,6 @@ class PlioDownloadTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(isinstance(response, FileResponse))
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()

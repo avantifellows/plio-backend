@@ -1,7 +1,7 @@
 import json
 from rest_framework import status
 from django.urls import reverse
-from users.models import OneTimePassword, User, Role
+from users.models import OneTimePassword, Role, OrganizationUser
 from plio.tests import BaseTestCase
 from organizations.models import Organization
 
@@ -145,21 +145,70 @@ class RoleTestCase(BaseTestCase):
 class OrganizationUserTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
-        # set up an organization
-        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
-        # set up a user that's supposed to be in the organization
-        self.organization_user = User.objects.create(mobile="+919988776655")
+
+        # create another organization
+        self.organization_2 = Organization.objects.create(
+            name="Org 2", shortcode="org-2"
+        )
+
+        # seed some organization users
+        self.org_user_1 = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        self.org_user_2 = OrganizationUser.objects.create(
+            organization=self.organization_2, user=self.user, role=self.org_view_role
+        )
+
+    def test_superuser_can_list_all_organization_users(self):
+        # make the current user as superuser
+        self.user.is_superuser = True
+        self.user.save()
+
+        # get organization users
+        response = self.client.get(reverse("organization-users-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(response.json()[0]["user"], self.user.id)
+        self.assertEqual(response.json()[1]["user"], self.user.id)
+        self.assertEqual(response.json()[0]["organization"], self.organization.id)
+        self.assertEqual(response.json()[1]["organization"], self.organization_2.id)
+
+    def test_normal_user_cannot_list_organization_users(self):
+        # get organization users
+        response = self.client.get(reverse("organization-users-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 0)
+
+    def test_org_admin_can_list_only_their_organization_users(self):
+        # make user 2 org-admin for org 1
+        org_admin_role = Role.objects.filter(name="org-admin").first()
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=org_admin_role
+        )
+
+        # change user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token,
+        )
+
+        # get organization users
+        response = self.client.get(reverse("organization-users-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(response.json()[0]["user"], self.user.id)
+        self.assertEqual(response.json()[0]["organization"], self.organization.id)
+        self.assertEqual(response.json()[1]["user"], self.user_2.id)
+        self.assertEqual(response.json()[1]["organization"], self.organization.id)
 
     def test_normal_user_cannot_create_organization_user(self):
-        # get org-view role
-        role_org_view = Role.objects.filter(name="org-view").first()
         # add organization_user to the organization
         response = self.client.post(
             reverse("organization-users-list"),
             {
-                "user": self.organization_user.id,
+                "user": self.user.id,
                 "organization": self.organization.id,
-                "role": role_org_view.id,
+                "role": self.org_view_role.id,
             },
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -169,15 +218,13 @@ class OrganizationUserTestCase(BaseTestCase):
         self.user.is_superuser = True
         self.user.save()
 
-        # get org-view role
-        role_org_view = Role.objects.filter(name="org-view").first()
         # add organization_user to the organization
         response = self.client.post(
             reverse("organization-users-list"),
             {
-                "user": self.organization_user.id,
+                "user": self.user.id,
                 "organization": self.organization.id,
-                "role": role_org_view.id,
+                "role": self.org_view_role.id,
             },
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

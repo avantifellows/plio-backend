@@ -45,6 +45,20 @@ class OtpAuthTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_valid_otp_should_pass_new_user(self):
+        # new user
+        new_user_mobile = "+919988776654"
+
+        # request otp
+        self.client.post(reverse("request-otp"), {"mobile": new_user_mobile})
+
+        # verify valid otp
+        otp = OneTimePassword.objects.filter(mobile=new_user_mobile).first()
+        response = self.client.post(
+            reverse("verify-otp"), {"mobile": new_user_mobile, "otp": otp.otp}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
 
 class UserMetaTestCase(BaseTestCase):
     def setUp(self):

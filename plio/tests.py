@@ -660,6 +660,3 @@ class ImageTestCase(BaseTestCase):
         self.assertNotEqual(self.image, response.data["id"])
         self.assertEqual(image.alt_text, response.data["alt_text"])
         self.assertEqual(image.url.file.size, new_image.url.file.size)
-
-    # before merge, update Vaibhav's changes for org and new user - use
-    # the vars created by me here

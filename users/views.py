@@ -196,6 +196,12 @@ def verify_otp(request):
 
 @api_view(["GET"])
 def get_by_access_token(request):
+    if "token" not in request.query_params:
+        return Response(
+            {"detail": "token not provided"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     token = request.query_params["token"]
     access_token = AccessToken.objects.filter(token=token).first()
     if access_token:

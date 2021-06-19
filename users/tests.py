@@ -79,11 +79,13 @@ class UserTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_update_config_no_config_provided(self):
+        """Updating config without passing the config to use should fail"""
         # update config
         response = self.client.patch(f"/api/v1/users/{self.user.id}/config/", {})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_update_config_extra_params(self):
+        """Passing params other than config while updating config should fail"""
         # update config
         response = self.client.patch(
             f"/api/v1/users/{self.user.id}/config/",
@@ -180,7 +182,7 @@ class OrganizationUserTestCase(BaseTestCase):
             organization=self.organization_2, user=self.user, role=self.org_view_role
         )
 
-    def test_superuser_can_list_all_organization_users(self):
+    def test_superuser_can_list_all_org_users(self):
         # make the current user as superuser
         self.user.is_superuser = True
         self.user.save()
@@ -194,13 +196,13 @@ class OrganizationUserTestCase(BaseTestCase):
         self.assertEqual(response.json()[0]["organization"], self.organization.id)
         self.assertEqual(response.json()[1]["organization"], self.organization_2.id)
 
-    def test_normal_user_cannot_list_organization_users(self):
+    def test_normal_user_only_sees_empty_list_of_org_users(self):
         # get organization users
         response = self.client.get(reverse("organization-users-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.json()), 0)
 
-    def test_org_admin_can_list_only_their_organization_users(self):
+    def test_org_admin_can_list_only_their_org_users(self):
         # make user 2 org-admin for org 1
         org_admin_role = Role.objects.filter(name="org-admin").first()
         OrganizationUser.objects.create(
@@ -221,7 +223,7 @@ class OrganizationUserTestCase(BaseTestCase):
         self.assertEqual(response.json()[1]["user"], self.user_2.id)
         self.assertEqual(response.json()[1]["organization"], self.organization.id)
 
-    def test_normal_user_cannot_create_organization_user(self):
+    def test_normal_user_cannot_create_org_user(self):
         # add organization_user to the organization
         response = self.client.post(
             reverse("organization-users-list"),
@@ -233,7 +235,7 @@ class OrganizationUserTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_superuser_can_create_organization_user(self):
+    def test_superuser_can_create_org_user(self):
         # make the current user as superuser
         self.user.is_superuser = True
         self.user.save()

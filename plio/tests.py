@@ -1,6 +1,7 @@
 import datetime
 import random
 import string
+import json
 from django.utils import timezone
 
 from rest_framework.test import APIClient
@@ -9,10 +10,13 @@ from rest_framework import status
 from oauth2_provider.models import Application
 from oauth2_provider.models import AccessToken
 from django.urls import reverse
+from django.db import connection
 
-from users.models import User
+from users.models import User, Role, OrganizationUser
+from organizations.models import Organization
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
+from plio.views import StandardResultsSetPagination
 
 
 class BaseTestCase(APITestCase):
@@ -30,22 +34,36 @@ class BaseTestCase(APITestCase):
             authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
         )
 
-        # create a user
+        # create 2 users
         self.user = User.objects.create(mobile="+919876543210")
+        self.user_2 = User.objects.create(mobile="+919988776655")
 
         # set up access token for the user
-        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
-        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
-        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
-        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
-        self.access_token = AccessToken.objects.create(
-            user=self.user,
-            application=self.application,
-            token=random_token,
-            expires=expires,
-            scope=scopes,
-        )
+        self.access_token = get_new_access_token(self.user, self.application)
+        self.access_token_2 = get_new_access_token(self.user_2, self.application)
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
+
+        # create org
+        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
+
+        # create roles
+        self.org_view_role = Role.objects.filter(name="org-view").first()
+
+
+def get_new_access_token(user, application):
+    """Creates a new access token for the given user and application"""
+    random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+    expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
+    scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
+    expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
+
+    return AccessToken.objects.create(
+        user=user,
+        application=application,
+        token=random_token,
+        expires=expires,
+        scope=scopes,
+    )
 
 
 class PlioTestCase(BaseTestCase):
@@ -58,8 +76,12 @@ class PlioTestCase(BaseTestCase):
             title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         # seed some plios
-        Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user)
-        Plio.objects.create(name="Plio 2", video=self.video, created_by=self.user)
+        self.plio_1 = Plio.objects.create(
+            name="Plio 1", video=self.video, created_by=self.user
+        )
+        self.plio_2 = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user
+        )
 
     def test_guest_cannot_list_plios(self):
         # unset the credentials
@@ -76,18 +98,180 @@ class PlioTestCase(BaseTestCase):
 
     def test_user_list_own_plios(self):
         """A user should only be able to list their own plios"""
-        # create a new user
-        new_user = User.objects.create(mobile="+919988776655")
-        # create plio from the new user
-        Plio.objects.create(name="Plio 1", video=self.video, created_by=new_user)
+        # create plio from user 2
+        Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user_2)
 
         # get plios
         response = self.client.get(reverse("plios-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # the count should remain 2 as the new plio was created with different user
+        # the count should remain 2 as the new plio was created with user 2
         self.assertEqual(response.data["count"], 2)
 
-    def test_user_can_duplicate_their_plio(self):
+    def test_user_list_own_plios_in_org(self):
+        """A user should be able to list their own plios in org workspace"""
+        # add user to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user
+        )
+
+        # set organization in request
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # get plios
+        response = self.client.get(reverse("plios-list"))
+
+        # the plio created above should be listed
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+    def test_user_list_other_plios_in_org(self):
+        """A user should be able to list plios created by others in org workspace"""
+        # add users to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace by user 2
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user_2
+        )
+
+        # set organization in request and access token for user 1
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # get plios
+        response = self.client.get(reverse("plios-list"))
+
+        # the plio created above should be listed
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+    def test_guest_cannot_list_plio_uuids(self):
+        # unset the credentials
+        self.client.credentials()
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_list_empty_plio_uuids(self):
+        """Tests that a user with no plios receives an empty list of uuids"""
+        # change user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
+        )
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        self.assertEqual(
+            response.data,
+            {
+                "count": 0,
+                "page_size": StandardResultsSetPagination.page_size,
+                "next": None,
+                "previous": None,
+                "results": [],
+            },
+        )
+
+    def test_user_list_plio_uuids(self):
+        """Test valid user listing plio uuids when they have plios"""
+        # get plio uuids
+        response = self.client.get("/api/v1/plios/list_uuid/")
+
+        self.assertEqual(
+            response.data,
+            {
+                "count": 2,
+                "page_size": StandardResultsSetPagination.page_size,
+                "next": None,
+                "previous": None,
+                "results": [self.plio_2.uuid, self.plio_1.uuid],
+            },
+        )
+
+    def test_guest_cannot_play_plio(self):
+        # unset the credentials
+        self.client.credentials()
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_can_play_own_plio(self):
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_can_play_other_public_plio(self):
+        """Test that an authenticated user can play public plios created by others"""
+        # change user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
+        )
+        # play plio created by user 1
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_cannot_play_other_private_plio(self):
+        """Test that an authenticated user cannot play private plios created by others"""
+        # create a private plio
+        private_plio = Plio.objects.create(
+            name="Plio Private", video=self.video, created_by=self.user, is_public=False
+        )
+        # change user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
+        )
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{private_plio.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_can_play_own_private_plio(self):
+        """Test that an authenticated user can play their own private plios"""
+        # create a private plio
+        private_plio = Plio.objects.create(
+            name="Plio Private", video=self.video, created_by=self.user, is_public=False
+        )
+        # play plio
+        response = self.client.get(f"/api/v1/plios/{private_plio.uuid}/play/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_duplicate(self):
         plio = Plio.objects.filter(created_by=self.user).first()
         # duplicate plio
         response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
@@ -96,18 +280,6 @@ class PlioTestCase(BaseTestCase):
         self.assertNotEqual(plio.id, response.data["id"])
         self.assertNotEqual(plio.uuid, response.data["uuid"])
         self.assertEqual(plio.name, response.data["name"])
-
-    def test_user_cannot_duplicate_other_user_plio(self):
-        # create a new user
-        new_user = User.objects.create(mobile="+919988776655")
-        # create plio from the new user
-        plio = Plio.objects.create(
-            name="Plio New User", video=self.video, created_by=new_user
-        )
-
-        # duplicate plio
-        response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class VideoTestCase(BaseTestCase):
@@ -139,18 +311,238 @@ class ItemTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-    def test_for_item(self):
-        # write API calls here
-        self.assertTrue(True)
+        # seed a video
+        self.video = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # seed a plio
+        self.plio = Plio.objects.create(
+            name="Plio", video=self.video, created_by=self.user
+        )
+        # seed an item
+        self.item = Item.objects.create(type="question", plio=self.plio, time=1)
+
+    def test_guest_cannot_list_items(self):
+        # unset the credentials
+        self.client.credentials()
+        # get items
+        response = self.client.get(reverse("items-list"))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_list_items_by_plio(self):
+        # create a new plio
+        new_plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user
+        )
+        # attach a new item to the new plio
+        Item.objects.create(type="question", plio=new_plio, time=1)
+
+        # get items
+        response = self.client.get(reverse("items-list"), {"plio": self.plio.uuid})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # the number of responses should still be 1 - the item created above
+        # should not be included
+        self.assertEqual(len(response.data), 1)
+
+    def test_user_list_own_items(self):
+        """A user should only be able to list their own items"""
+        # create plio from a user 2
+        new_plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user_2
+        )
+
+        # create item from a user 2
+        Item.objects.create(type="question", plio=new_plio, time=1)
+
+        # get items
+        response = self.client.get(reverse("items-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # the count should remain 1 as the new item was created with user 2
+        self.assertEqual(len(response.data), 1)
+
+    def test_org_user_can_list_own_items(self):
+        # add user to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user
+        )
+
+        item_org = Item.objects.create(type="question", plio=plio_org, time=1)
+
+        # set organization in request
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # get items
+        response = self.client.get(reverse("items-list"))
+
+        # the item created above should be listed
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], item_org.id)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+    def test_org_user_can_list_other_user_items(self):
+        # add users to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user_2
+        )
+
+        item_org = Item.objects.create(type="question", plio=plio_org, time=1)
+
+        # set organization in request
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # get plios
+        response = self.client.get(reverse("items-list"))
+
+        # the plio created above should be listed
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], item_org.id)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+    def test_duplicate_no_plio_id(self):
+        """Testing duplicate without providing any plio id"""
+        # duplicate item
+        response = self.client.post(f"/api/v1/items/{self.item.id}/duplicate/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_duplicate_wrong_plio_id(self):
+        """Testing duplicate by providing plio id that does not exist"""
+        # duplicate item
+        response = self.client.post(
+            f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": 2}
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            json.loads(response.content)["detail"], "Specified plio not found"
+        )
+
+    def test_duplicate(self):
+        """Tests the duplicate functionality"""
+        # duplicate item
+        response = self.client.post(
+            f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": self.plio.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertNotEqual(self.item.id, response.data["id"])
+        self.assertEqual(self.item.type, response.data["type"])
+        self.assertEqual(self.item.time, response.data["time"])
 
 
 class QuestionTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
 
-    def test_for_question(self):
-        # write API calls here
-        self.assertTrue(True)
+        # seed a video
+        self.video = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # seed a plio
+        self.plio = Plio.objects.create(
+            name="Plio", video=self.video, created_by=self.user
+        )
+        # seed an item
+        self.item = Item.objects.create(type="question", plio=self.plio, time=1)
+
+        # seed a question
+        self.question = Question.objects.create(type="mcq", item=self.item, text="test")
+
+    def test_duplicate_no_item_id(self):
+        """Testing duplicate without providing any item id"""
+        # duplicate question
+        response = self.client.post(f"/api/v1/questions/{self.question.id}/duplicate/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_duplicate_wrong_item_id(self):
+        """Testing duplicate by providing item id that does not exist"""
+        # duplicate question
+        response = self.client.post(
+            f"/api/v1/questions/{self.question.id}/duplicate/",
+            {"itemId": self.item.id + 100},
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            json.loads(response.content)["detail"], "Specified item not found"
+        )
+
+    def test_duplicate_own_question(self):
+        """Tests the duplicate functionality"""
+        # duplicate question
+        response = self.client.post(
+            f"/api/v1/questions/{self.question.id}/duplicate/", {"itemId": self.item.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertNotEqual(self.question.id, response.data["id"])
+        self.assertEqual(self.question.type, response.data["type"])
+        self.assertEqual(self.question.text, response.data["text"])
+
+    def test_duplicate_question_with_image(self):
+        """Tests the duplicate functionality for a question which has an image"""
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(
+                reverse("images-list"), {"url": img, "alt_text": "test image"}
+            )
+        image_id = response.json()["id"]
+
+        # attach image id to question
+        response = self.client.put(
+            reverse("questions-detail", args=[self.question.id]),
+            {"item": self.item.id, "image": image_id},
+        )
+
+        # duplicate question
+        response = self.client.post(
+            f"/api/v1/questions/{self.question.id}/duplicate/", {"itemId": self.item.id}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertNotEqual(self.question.id, response.data["id"])
+        self.assertEqual(self.question.type, response.data["type"])
+        self.assertEqual(self.question.text, response.data["text"])
+        self.assertIsNotNone(response.data["image"])
+        self.assertNotEqual(self.question.image, response.data["image"])
 
 
 class ImageTestCase(BaseTestCase):
@@ -163,69 +555,18 @@ class ImageTestCase(BaseTestCase):
             title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         # seed a plio, item and question
-        self.test_plio = Plio.objects.create(
+        self.plio = Plio.objects.create(
             name="test_plio", video=self.video, created_by=self.user
         )
-        self.test_item = Item.objects.create(
-            plio=self.test_plio, type="question", time=1
-        )
-        self.test_question = Question.objects.create(item=self.test_item)
+        self.item = Item.objects.create(plio=self.plio, type="question", time=1)
+        self.question = Question.objects.create(item=self.item)
 
-    def test_user_can_attach_images_to_their_question(self):
-        """
-        Tests whether a user can link images to the questions
-        that were created by themselves
-        """
         # upload a test image and retrieve the id
         with open("plio/static/plio/test_image.jpeg", "rb") as img:
-            response = self.client.post(reverse("images-list"), {"url": img})
-        uploaded_image_id = response.json()["id"]
-
-        # update the question with the newly uploaded image
-        response = self.client.put(
-            reverse("questions-detail", args=[self.test_question.id]),
-            {"item": self.test_item.id, "image": uploaded_image_id},
-        )
-        # the user should be able to update the question
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_user_cannot_attach_image_to_other_user_question(self):
-        """
-        Tests that a user should NOT be able to link images to
-        the questions that were created by some other user
-        """
-        # create a new user
-        new_user = User.objects.create(mobile="+919988776654")
-
-        # set up access token for the new user
-        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
-        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
-        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
-        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
-        new_access_token = AccessToken.objects.create(
-            user=new_user,
-            application=self.application,
-            token=random_token,
-            expires=expires,
-            scope=scopes,
-        )
-        # reset and set the new credentials
-        self.client.credentials(HTTP_AUTHORIZATION="Bearer " + new_access_token.token)
-
-        # create a new image entry using a test image
-        with open("plio/static/plio/test_image.jpeg", "rb") as img:
-            response = self.client.post(reverse("images-list"), {"url": img})
-
-        # try updating the other user's question entry with
-        # the newly created image
-        uploaded_image_id = response.json()["id"]
-        response = self.client.put(
-            reverse("questions-detail", args=[self.test_question.id]),
-            {"item": self.test_item.id, "image": uploaded_image_id},
-        )
-        # the user should not be able to link an image to
-        # a question created by some other user
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            response = self.client.post(
+                reverse("images-list"), {"url": img, "alt_text": "test image"}
+            )
+        self.image = response.json()["id"]
 
     def test_user_can_upload_image(self):
         """
@@ -235,6 +576,44 @@ class ImageTestCase(BaseTestCase):
             response = self.client.post(reverse("images-list"), {"url": img})
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_user_can_attach_images_to_their_question(self):
+        """
+        Tests whether a user can link images to the questions
+        that were created by themselves
+        """
+        # update the question with the newly uploaded image
+        response = self.client.put(
+            reverse("questions-detail", args=[self.question.id]),
+            {"item": self.item.id, "image": self.image},
+        )
+        # the user should be able to update the question
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_cannot_attach_image_to_other_user_question(self):
+        """
+        Tests that a user should NOT be able to link images to
+        the questions that were created by some other user
+        """
+        # reset the credentials to that of another user
+        self.client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
+        )
+
+        # create a new image entry using a test image
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(reverse("images-list"), {"url": img})
+
+        # try updating the other user's question entry with
+        # the newly created image
+        uploaded_image_id = response.json()["id"]
+        response = self.client.put(
+            reverse("questions-detail", args=[self.question.id]),
+            {"item": self.item.id, "image": uploaded_image_id},
+        )
+        # the user should not be able to link an image to
+        # a question created by some other user
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_guest_cannot_upload_image(self):
         """
@@ -268,3 +647,16 @@ class ImageTestCase(BaseTestCase):
         random.seed(10)
         test_image_2 = Image.objects.create()
         self.assertNotEqual(test_image_1.url.name, test_image_2.url.name)
+
+    def test_duplicate_image(self):
+        """Tests the duplicate functionality for images"""
+        # duplicate image
+        response = self.client.post(f"/api/v1/images/{self.image}/duplicate/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        image = Image.objects.filter(id=self.image).first()
+        new_image = Image.objects.filter(id=response.data["id"]).first()
+
+        self.assertNotEqual(self.image, response.data["id"])
+        self.assertEqual(image.alt_text, response.data["alt_text"])
+        self.assertEqual(image.url.file.size, new_image.url.file.size)

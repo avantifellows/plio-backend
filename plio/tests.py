@@ -16,6 +16,7 @@ from users.models import User, Role, OrganizationUser
 from organizations.models import Organization
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
+from plio.views import StandardResultsSetPagination
 
 
 class BaseTestCase(APITestCase):
@@ -97,13 +98,13 @@ class PlioTestCase(BaseTestCase):
 
     def test_user_list_own_plios(self):
         """A user should only be able to list their own plios"""
-        # create plio from a different user
+        # create plio from user 2
         Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user_2)
 
         # get plios
         response = self.client.get(reverse("plios-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # the count should remain 2 as the new plio was created with different user
+        # the count should remain 2 as the new plio was created with user 2
         self.assertEqual(response.data["count"], 2)
 
     def test_user_list_own_plios_in_org(self):
@@ -166,7 +167,7 @@ class PlioTestCase(BaseTestCase):
             name="Plio 1", video=video_org, created_by=self.user_2
         )
 
-        # set organization in request
+        # set organization in request and access token for user 1
         self.client.credentials(
             HTTP_ORGANIZATION=self.organization.shortcode,
             HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
@@ -190,7 +191,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_list_empty_plio_uuids(self):
-        """Test valid user listing plio uuids when they have no plios"""
+        """Tests that a user with no plios receives an empty list of uuids"""
         # change user
         self.client.credentials(
             HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
@@ -201,7 +202,7 @@ class PlioTestCase(BaseTestCase):
             response.data,
             {
                 "count": 0,
-                "page_size": 5,
+                "page_size": StandardResultsSetPagination.page_size,
                 "next": None,
                 "previous": None,
                 "results": [],
@@ -217,7 +218,7 @@ class PlioTestCase(BaseTestCase):
             response.data,
             {
                 "count": 2,
-                "page_size": 5,
+                "page_size": StandardResultsSetPagination.page_size,
                 "next": None,
                 "previous": None,
                 "results": [self.plio_2.uuid, self.plio_1.uuid],
@@ -242,7 +243,7 @@ class PlioTestCase(BaseTestCase):
         self.client.credentials(
             HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
         )
-        # play plio
+        # play plio created by user 1
         response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -328,12 +329,6 @@ class ItemTestCase(BaseTestCase):
         response = self.client.get(reverse("items-list"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_user_can_list_items(self):
-        # get items
-        response = self.client.get(reverse("items-list"))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-
     def test_user_list_items_by_plio(self):
         # create a new plio
         new_plio = Plio.objects.create(
@@ -352,21 +347,21 @@ class ItemTestCase(BaseTestCase):
 
     def test_user_list_own_items(self):
         """A user should only be able to list their own items"""
-        # create plio from a different user
+        # create plio from a user 2
         new_plio = Plio.objects.create(
             name="Plio 2", video=self.video, created_by=self.user_2
         )
 
-        # create item from a different user
+        # create item from a user 2
         Item.objects.create(type="question", plio=new_plio, time=1)
 
         # get items
         response = self.client.get(reverse("items-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # the count should remain 1 as the new item was created with different user
+        # the count should remain 1 as the new item was created with user 2
         self.assertEqual(len(response.data), 1)
 
-    def test_user_can_list_own_items_org(self):
+    def test_org_user_can_list_own_items(self):
         # add user to organization
         OrganizationUser.objects.create(
             organization=self.organization, user=self.user, role=self.org_view_role
@@ -393,17 +388,17 @@ class ItemTestCase(BaseTestCase):
             HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
         )
 
-        # get plios
+        # get items
         response = self.client.get(reverse("items-list"))
 
-        # the plio created above should be listed
+        # the item created above should be listed
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], item_org.id)
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
 
-    def test_user_can_list_other_items_org(self):
+    def test_org_user_can_list_other_user_items(self):
         # add users to organization
         OrganizationUser.objects.create(
             organization=self.organization, user=self.user, role=self.org_view_role

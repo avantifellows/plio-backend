@@ -128,13 +128,10 @@ class PlioViewSet(viewsets.ModelViewSet):
             return Plio.objects.filter(created_by=self.request.user)
 
         # organizational workspace
-        if (
-            self.request.user.is_authenticated
-            and OrganizationUser.objects.filter(
-                organization__shortcode=organization_shortcode,
-                user=self.request.user.id,
-            ).exists()
-        ):
+        if OrganizationUser.objects.filter(
+            organization__shortcode=organization_shortcode,
+            user=self.request.user.id,
+        ).exists():
             # user should be authenticated and a part of the org
             return Plio.objects.filter(
                 Q(is_public=True)
@@ -318,10 +315,27 @@ class ItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, PlioPermission]
 
     def get_queryset(self):
-        queryset = Item.objects.all()
-        plio_id = self.request.query_params.get("plio")
-        if plio_id is not None:
-            queryset = queryset.filter(plio__uuid=plio_id).order_by("time")
+        organization_shortcode = (
+            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
+        )
+
+        # personal workspace
+        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
+            queryset = Item.objects.filter(plio__created_by=self.request.user)
+
+        elif OrganizationUser.objects.filter(
+            organization__shortcode=organization_shortcode,
+            user=self.request.user.id,
+        ).exists():
+            # user should be authenticated and a part of the org
+            queryset = Item.objects.all()
+
+        else:
+            return None
+
+        plio_uuid = self.request.query_params.get("plio")
+        if plio_uuid is not None:
+            queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
         return queryset
 
     @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])

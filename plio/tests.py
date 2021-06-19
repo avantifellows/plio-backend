@@ -694,47 +694,42 @@ class PlioDownloadTestCase(BaseTestCase):
         self.assertTrue(isinstance(response, FileResponse))
 
     def test_non_plio_owner_cannot_download_data(self):
-        # create new user
-        new_user = User.objects.create(mobile="+919988776655")
         # make a plio with new user
         new_user_plio = Plio.objects.create(
-            name="Plio 2", video=self.video, created_by=new_user, status="published"
+            name="Plio 2", video=self.video, created_by=self.user_2, status="published"
         )
         # download new user plio data
         response = self.client.get(f"/api/v1/plios/{new_user_plio.uuid}/download_data/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_user_can_download_data_for_other_user_plio_in_organization(self):
-        # create new user
-        new_user = User.objects.create(mobile="+919988776655")
-        # create a new organization
-        organization = Organization.objects.create(name="Org 1", shortcode="org-1")
 
-        # add both users to the organization
-        role = Role.objects.filter(name="org-view").first()
         OrganizationUser.objects.create(
-            organization=organization, user=self.user, role=role
+            organization=self.organization, user=self.user, role=self.org_view_role
         )
         OrganizationUser.objects.create(
-            organization=organization, user=new_user, role=role
+            organization=self.organization, user=self.user_2, role=self.org_view_role
         )
 
         # set db connection to organization schema
-        connection.set_schema(organization.schema_name)
+        connection.set_schema(self.organization.schema_name)
         # create a video within the organization schema
         new_user_video = Video.objects.create(
             title="Video 2", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         # create a plio with new user inside the organization schema
         new_user_plio = Plio.objects.create(
-            name="Plio 2", video=new_user_video, created_by=new_user, status="published"
+            name="Plio 2",
+            video=new_user_video,
+            created_by=self.user_2,
+            status="published",
         )
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
         # add the organization shortcode in the request header and download new user plio data
         response = self.client.get(
             f"/api/v1/plios/{new_user_plio.uuid}/download_data/",
-            HTTP_ORGANIZATION=organization.shortcode,
+            HTTP_ORGANIZATION=self.organization.shortcode,
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(isinstance(response, FileResponse))

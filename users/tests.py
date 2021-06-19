@@ -123,6 +123,21 @@ class UserTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_get_by_access_token_access_token_not_passed(self):
+        response = self.client.get(reverse("get-by-access-token"))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_by_access_token_access_token_invalid(self):
+        response = self.client.get(reverse("get-by-access-token"), {"token": "1234"})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_by_access_token_valid_user(self):
+        response = self.client.get(
+            reverse("get-by-access-token"), {"token": self.access_token.token}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json()["id"], self.user.id)
+
 
 class UserMetaTestCase(BaseTestCase):
     def setUp(self):

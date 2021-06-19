@@ -87,7 +87,7 @@ urlpatterns = [
     # API routes
     path("api/v1/otp/request/", request_otp, name="request-otp"),
     path("api/v1/otp/verify/", verify_otp, name="verify-otp"),
-    path("api/v1/users/token/", get_by_access_token),
+    path("api/v1/users/token/", get_by_access_token, name="get-by-access-token"),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     path("auth/cubejs-token/", retrieve_analytics_app_access_token),

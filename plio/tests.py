@@ -345,14 +345,14 @@ class ItemTestCase(BaseTestCase):
         # should not be included
         self.assertEqual(len(response.data), 1)
 
-    def test_user_list_other_items(self):
+    def test_user_list_other_user_items(self):
         """A user should be able to list items created by others too"""
-        # create plio from a user 2
+        # create a plio from user 2
         new_plio = Plio.objects.create(
             name="Plio 2", video=self.video, created_by=self.user_2
         )
 
-        # create item from a user 2
+        # create an item from user 2
         Item.objects.create(type="question", plio=new_plio, time=1)
 
         # get items
@@ -455,13 +455,17 @@ class ItemTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+        # check item was updated
+        response = self.client.get(f"/api/v1/items/{self.item.id}/")
+        self.assertEqual(response.json()["time"], 2)
+
     def test_user_cannot_update_other_items(self):
-        # create plio from a user 2
+        # create a plio from user 2
         new_plio = Plio.objects.create(
             name="Plio 2", video=self.video, created_by=self.user_2
         )
 
-        # create item from a user 2
+        # create an item from user 2
         new_item = Item.objects.create(type="question", plio=new_plio, time=1)
 
         # update item
@@ -475,19 +479,23 @@ class ItemTestCase(BaseTestCase):
         self.user.is_superuser = True
         self.user.save()
 
-        # create plio from a user 2
+        # create a plio from user 2
         new_plio = Plio.objects.create(
             name="Plio 2", video=self.video, created_by=self.user_2
         )
 
-        # create item from a user 2
+        # create an item from user 2
         new_item = Item.objects.create(type="question", plio=new_plio, time=1)
 
-        # test that self.user can update item created by user 2
+        # test that self.user (superuser) can update item created by user 2
         response = self.client.put(
             f"/api/v1/items/{new_item.id}/", {"time": 2, "plio": new_plio.id}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # check item was updated
+        response = self.client.get(f"/api/v1/items/{new_item.id}/")
+        self.assertEqual(response.json()["time"], 2)
 
     def test_duplicate_no_plio_id(self):
         """Testing duplicate without providing any plio id"""
@@ -555,16 +563,20 @@ class QuestionTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_user_cannot_update_other_questions(self):
-        # create plio from a user 2
+        # check question was updated
+        response = self.client.get(f"/api/v1/questions/{self.question.id}/")
+        self.assertEqual(response.json()["type"], "subjective")
+
+    def test_user_cannot_update_other_user_questions(self):
+        # create a plio from user 2
         new_plio = Plio.objects.create(
             name="Plio 2", video=self.video, created_by=self.user_2
         )
 
-        # create item from a user 2
+        # create an item from user 2
         new_item = Item.objects.create(type="question", plio=new_plio, time=1)
 
-        # create question from a user 2
+        # create a question from user 2
         new_question = Question.objects.create(type="mcq", item=new_item, text="test-2")
 
         # update question
@@ -579,15 +591,15 @@ class QuestionTestCase(BaseTestCase):
         self.user.is_superuser = True
         self.user.save()
 
-        # create plio from a user 2
+        # create a plio from user 2
         new_plio = Plio.objects.create(
             name="Plio 2", video=self.video, created_by=self.user_2
         )
 
-        # create item from a user 2
+        # create an item from user 2
         new_item = Item.objects.create(type="question", plio=new_plio, time=1)
 
-        # create question from a user 2
+        # create a question from user 2
         new_question = Question.objects.create(type="mcq", item=new_item, text="test-2")
 
         # test that self.user can update question created by user 2
@@ -596,6 +608,10 @@ class QuestionTestCase(BaseTestCase):
             {"type": "subjective", "item": self.item.id},
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # check question was updated
+        response = self.client.get(f"/api/v1/questions/{new_question.id}/")
+        self.assertEqual(response.json()["type"], "subjective")
 
     def test_duplicate_no_item_id(self):
         """Testing duplicate without providing any item id"""

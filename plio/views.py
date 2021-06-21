@@ -277,24 +277,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, PlioPermission]
 
     def get_queryset(self):
-        organization_shortcode = (
-            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
-        )
-
-        # personal workspace
-        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
-            queryset = Item.objects.filter(plio__created_by=self.request.user)
-
-        elif OrganizationUser.objects.filter(
-            organization__shortcode=organization_shortcode,
-            user=self.request.user.id,
-        ).exists():
-            # user should be authenticated and a part of the org
-            queryset = Item.objects.all()
-
-        else:
-            return None
-
+        queryset = Item.objects.all()
         plio_uuid = self.request.query_params.get("plio")
         if plio_uuid is not None:
             queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")

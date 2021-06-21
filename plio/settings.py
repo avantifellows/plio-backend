@@ -315,3 +315,10 @@ DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 AWS_QUERYSTRING_AUTH = False
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 mb
+
+BIGQUERY = {
+    "enabled": True if os.environ.get("BIGQUERY_ENABLED") == "True" else False,
+    "project_id": os.environ.get("BIGQUERY_PROJECT_ID", ""),
+    "location": os.environ.get("BIGQUERY_LOCATION", ""),
+    "credentials": os.environ.get("BIGQUERY_CREDENTIALS", ""),
+}

@@ -3,6 +3,7 @@ import random
 import string
 import json
 from django.utils import timezone
+from django.http import FileResponse
 
 from rest_framework.test import APIClient
 from rest_framework.test import APITestCase
@@ -16,13 +17,15 @@ from users.models import User, Role, OrganizationUser
 from organizations.models import Organization
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
+from entries.models import Session
 from plio.views import StandardResultsSetPagination
 
 
 class BaseTestCase(APITestCase):
     """Base class that sets up generic pre-requisites for all further test classes"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(self):
         self.client = APIClient()
 
         # User access and refresh tokens require an OAuth Provider application to be set up and use it as a foreign key.
@@ -34,6 +37,13 @@ class BaseTestCase(APITestCase):
             authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
         )
 
+        # create org
+        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
+
+        # get role
+        self.org_view_role = Role.objects.filter(name="org-view").first()
+
+    def setUp(self):
         # create 2 users
         self.user = User.objects.create(mobile="+919876543210")
         self.user_2 = User.objects.create(mobile="+919988776655")
@@ -41,13 +51,8 @@ class BaseTestCase(APITestCase):
         # set up access token for the user
         self.access_token = get_new_access_token(self.user, self.application)
         self.access_token_2 = get_new_access_token(self.user_2, self.application)
+
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
-
-        # create org
-        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
-
-        # create roles
-        self.org_view_role = Role.objects.filter(name="org-view").first()
 
 
 def get_new_access_token(user, application):
@@ -786,3 +791,77 @@ class ImageTestCase(BaseTestCase):
         self.assertNotEqual(self.image, response.data["id"])
         self.assertEqual(image.alt_text, response.data["alt_text"])
         self.assertEqual(image.url.file.size, new_image.url.file.size)
+
+
+class PlioDownloadTestCase(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        # seed a video
+        self.video = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # seed a plio
+        self.plio = Plio.objects.create(
+            name="Plio 1", video=self.video, created_by=self.user, status="published"
+        )
+        # seed some sessions for the plio
+        Session.objects.create(plio=self.plio, user=self.user)
+        Session.objects.create(plio=self.plio, user=self.user)
+
+    def test_draft_plio_data_cannot_be_downloaded(self):
+        # change plio status to draft
+        self.plio.status = "draft"
+        self.plio.save()
+        # download plio data
+        response = self.client.get(f"/api/v1/plios/{self.plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_published_plio_data_can_be_downloaded(self):
+        # download plio data
+        response = self.client.get(f"/api/v1/plios/{self.plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response, FileResponse))
+
+    def test_non_plio_owner_cannot_download_data(self):
+        # make a plio with new user
+        new_user_plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user_2, status="published"
+        )
+        # download new user plio data
+        response = self.client.get(f"/api/v1/plios/{new_user_plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_user_can_download_data_for_other_user_plio_in_organization(self):
+
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create a video within the organization schema
+        new_user_video = Video.objects.create(
+            title="Video 2", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # create a plio with new user inside the organization schema
+        new_user_plio = Plio.objects.create(
+            name="Plio 2",
+            video=new_user_video,
+            created_by=self.user_2,
+            status="published",
+        )
+
+        # add the organization shortcode in the request header and download new user plio data
+        response = self.client.get(
+            f"/api/v1/plios/{new_user_plio.uuid}/download_data/",
+            HTTP_ORGANIZATION=self.organization.shortcode,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response, FileResponse))
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()

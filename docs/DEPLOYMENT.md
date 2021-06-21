@@ -19,6 +19,7 @@ Deploying on AWS requires a basic understanding of the following tools and servi
 9. AWS Elastic IPs
 10. AWS Identity and Access Management (IAM)
 11. AWS Relational Database Service (RDS)
+12. Google BigQuery
 
 ## Staging
 
@@ -252,4 +253,6 @@ Setting up a production environment on AWS is almost the same as staging. Additi
    14. Save the scaling policy.
    15. Create or update the service name.
    16. Use [k6.io](https://k6.io/) or other load testing tool to check if auto-scaling is working fine or not. You can lower down the target threshold for testing purposes.
-5.  If you're setting up [Plio Analytics](https://github.com/avantifellows/plio-analytics), also make sure to configure the required [environment variables](./ENV.md#auth0-for-plio-analytics).
+5.  If you're setting up [Plio Analytics](https://github.com/avantifellows/plio-analytics), also make sure to configure the required environment variables:
+    1. [Identity Provider for Plio Analytics](./ENV.md#identity-provider-for-plio-analytics).
+    2. [BigQuery configurations](./ENV.md#bigquery-configurations).

@@ -1,3 +1,6 @@
+from plio.settings import BIGQUERY
+
+
 def get_plio_details_query(plio_uuid: str, schema: str):
     """Returns the details for the given plio"""
     return f"""
@@ -22,7 +25,7 @@ def get_sessions_dump_query(plio_uuid: str, schema: str):
             session.id as session_id,
             session.retention,
             session.watch_time,
-            MD5(session.user_id::varchar(255)) as user_id
+            {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'} as user_id
         FROM {schema}.session AS session
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
         WHERE plio.uuid  = '{plio_uuid}'"""
@@ -33,7 +36,7 @@ def get_responses_dump_query(plio_uuid: str, schema: str):
     return f"""
         SELECT
             session.id as session_id,
-            MD5(session.user_id::varchar(255)) as user_id,
+            {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'} as user_id,
             sessionAnswer.id AS session_answer_id,
             sessionAnswer.answer,
             sessionAnswer.item_id
@@ -48,7 +51,7 @@ def get_events_query(plio_uuid: str, schema: str):
     return f"""
         SELECT
             session.id as session_id,
-            MD5(session.user_id::varchar(255)) as user_id,
+            {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'} as user_id,
             event.type AS event_type,
             event.player_time AS event_player_time,
             event.details AS event_details,

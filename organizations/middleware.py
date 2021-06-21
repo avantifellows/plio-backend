@@ -37,7 +37,8 @@ class OrganizationTenantMiddleware(TenantMainMiddleware):
         tenant = self.get_tenant(request)
         if tenant:
             return tenant.schema_name
-        return None
+        # as get_schema is being used when querying BigQuery datasets, we explicity need to mention `public`
+        return "public"
 
     def process_request(self, request):
         """

@@ -324,6 +324,7 @@ BIGQUERY = {
 }
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
+
 if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
@@ -338,4 +339,5 @@ if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:
         # If you wish to associate users to errors (assuming you are using
         # django.contrib.auth) you may enable sending PII data.
         send_default_pii=True,
+        environment=APP_ENV,
     )

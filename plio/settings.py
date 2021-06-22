@@ -322,3 +322,20 @@ BIGQUERY = {
     "location": os.environ.get("BIGQUERY_LOCATION", ""),
     "credentials": os.environ.get("BIGQUERY_CREDENTIALS", ""),
 }
+
+SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
+if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        # We recommend adjusting this value in production.
+        traces_sample_rate=1.0,
+        # If you wish to associate users to errors (assuming you are using
+        # django.contrib.auth) you may enable sending PII data.
+        send_default_pii=True,
+    )

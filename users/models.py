@@ -69,7 +69,7 @@ class User(SafeDeleteModel, AbstractUser):
     avatar_url = models.ImageField(upload_to="avatars/", null=True, blank=True)
     config = models.JSONField(null=True, default=dict)
     status = models.CharField(
-        max_length=255, choices=user_status_choices, default="waitlist"
+        max_length=255, choices=user_status_choices, default="approved"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

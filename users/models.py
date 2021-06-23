@@ -73,7 +73,7 @@ class User(SafeDeleteModel, AbstractUser):
     avatar_url = models.ImageField(upload_to="avatars/", null=True, blank=True)
     config = models.JSONField(null=True, default=dict)
     status = models.CharField(
-        max_length=255, choices=user_status_choices, default="waitlist"
+        max_length=255, choices=user_status_choices, default="approved"
     )
     auth_type = models.CharField(
         max_length=255, choices=auth_type_choices, default="default"

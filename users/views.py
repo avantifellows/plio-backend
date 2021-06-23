@@ -30,6 +30,7 @@ from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 from users.permissions import UserPermission, OrganizationUserPermission
 from .services import SnsService
+from .config import required_third_party_auth_keys
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -115,6 +116,17 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
         return OrganizationUser.objects.filter(organization__in=organization_ids)
 
 
+def login_user_and_get_access_token(user, request):
+    # define the backend authenticator
+    user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
+    login(request, user)
+
+    # define an application
+    application = Application.objects.get(name=API_APPLICATION_NAME)
+    # get the newly generated access/refresh tokens for the user and application
+    return get_new_access_token(user, application)
+
+
 def get_new_access_token(user, application):
     """Creates a new access + refresh token for the given user and application"""
     expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
@@ -185,15 +197,8 @@ def verify_otp(request):
         if not user:
             user = User.objects.create_user(mobile=mobile)
 
-        # define the backend authenticator
-        user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
-        login(request, user)
-
-        # define an application
-        application = Application.objects.get(name=API_APPLICATION_NAME)
-        # get the newly generated access/refresh tokens for the user and application
-        token = get_new_access_token(user, application)
-
+        # login the user, get the new access token and return
+        token = login_user_and_get_access_token(user, request)
         return Response(token, status=status.HTTP_200_OK)
 
     except OneTimePassword.DoesNotExist:
@@ -223,18 +228,11 @@ def convert_third_party_access_token(request):
     """
     Convert any third party auth token into Plio's internal access token
     """
-    if "auth_type" not in request.data:
-        return Response(
-            {"detail": "auth_type not provided"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    if "unique_id" not in request.data:
-        return Response(
-            {"detail": "unique_id not provided"}, status=status.HTTP_400_BAD_REQUEST
-        )
-    if "access_token" not in request.data:
-        return Response(
-            {"detail": "access_token not provided"}, status=status.HTTP_400_BAD_REQUEST
-        )
+    for key in required_third_party_auth_keys:
+        if key not in request.data:
+            return Response(
+                {"detail": f"{key} not provided"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
     # TODO - verification step - allowed for now
     token_verified = True
@@ -249,20 +247,14 @@ def convert_third_party_access_token(request):
         unique_id=request.data["unique_id"],
     ).first()
 
+    # create a new user if it doesn't already exist
     if not user:
         user = User.objects.create_user(
             auth_type=request.data["auth_type"], unique_id=request.data["unique_id"]
         )
 
-    # define the backend authenticator
-    user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
-    login(request, user)
-
-    # define an application
-    application = Application.objects.get(name=API_APPLICATION_NAME)
-    # get the newly generated access/refresh tokens for the user and application
-    token = get_new_access_token(user, application)
-
+    # login the user, get the new access token and return
+    token = login_user_and_get_access_token(user, request)
     return Response(token, status=status.HTTP_200_OK)
 
 

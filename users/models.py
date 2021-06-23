@@ -15,7 +15,7 @@ class UserManager(SafeDeleteManager):
         is_admin=False,
         is_staff=False,
         is_active=True,
-        auth_type="default",
+        auth_type=None,
         unique_id=None,
     ):
         user = self.model()
@@ -75,9 +75,7 @@ class User(SafeDeleteModel, AbstractUser):
     status = models.CharField(
         max_length=255, choices=user_status_choices, default="approved"
     )
-    auth_type = models.CharField(
-        max_length=255, choices=auth_type_choices, default="default"
-    )
+    auth_type = models.CharField(max_length=255, choices=auth_type_choices, null=True)
     unique_id = models.CharField(max_length=255, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

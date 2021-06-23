@@ -115,6 +115,39 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
         return OrganizationUser.objects.filter(organization__in=organization_ids)
 
 
+def get_new_access_token(user, application):
+    """Creates a new access + refresh token for the given user and application"""
+    expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
+    scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
+    expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
+    random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+    # generate oauth2 access token
+    access_token = AccessToken.objects.create(
+        user=user,
+        application=application,
+        token=random_token,
+        expires=expires,
+        scope=scopes,
+    )
+
+    random_token = "".join(random.choices(string.ascii_lowercase, k=30))
+    # generate oauth2 refresh token
+    refresh_token = RefreshToken.objects.create(
+        user=user,
+        token=random_token,
+        access_token=access_token,
+        application=application,
+    )
+
+    return {
+        "access_token": access_token.token,
+        "token_type": "Bearer",
+        "expires_in": expire_seconds,
+        "refresh_token": refresh_token.token,
+        "scope": scopes,
+    }
+
+
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def request_otp(request):
@@ -156,37 +189,10 @@ def verify_otp(request):
         user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
         login(request, user)
 
-        expire_seconds = OAUTH2_PROVIDER["ACCESS_TOKEN_EXPIRE_SECONDS"]
-        scopes = " ".join(OAUTH2_PROVIDER["DEFAULT_SCOPES"])
-
+        # define an application
         application = Application.objects.get(name=API_APPLICATION_NAME)
-        expires = timezone.now() + datetime.timedelta(seconds=expire_seconds)
-        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
-        # generate oauth2 access token
-        access_token = AccessToken.objects.create(
-            user=user,
-            application=application,
-            token=random_token,
-            expires=expires,
-            scope=scopes,
-        )
-
-        random_token = "".join(random.choices(string.ascii_lowercase, k=30))
-        # generate oauth2 refresh token
-        refresh_token = RefreshToken.objects.create(
-            user=user,
-            token=random_token,
-            access_token=access_token,
-            application=application,
-        )
-
-        token = {
-            "access_token": access_token.token,
-            "token_type": "Bearer",
-            "expires_in": expire_seconds,
-            "refresh_token": refresh_token.token,
-            "scope": scopes,
-        }
+        # get the newly generated access/refresh tokens for the user and application
+        token = get_new_access_token(user, application)
 
         return Response(token, status=status.HTTP_200_OK)
 
@@ -209,6 +215,55 @@ def get_by_access_token(request):
         return Response(UserSerializer(user).data)
 
     return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def convert_third_party_access_token(request):
+    """
+    Convert any third party auth token into Plio's internal access token
+    """
+    if "auth_type" not in request.data:
+        return Response(
+            {"detail": "auth_type not provided"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    if "unique_id" not in request.data:
+        return Response(
+            {"detail": "unique_id not provided"}, status=status.HTTP_400_BAD_REQUEST
+        )
+    if "access_token" not in request.data:
+        return Response(
+            {"detail": "access_token not provided"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # TODO - verification step - allowed for now
+    token_verified = True
+
+    if not token_verified:
+        return Response(
+            {"detail": "access_token invalid"}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    user = User.objects.filter(
+        auth_type=request.data["auth_type"],
+        unique_id=request.data["unique_id"],
+    ).first()
+
+    if not user:
+        user = User.objects.create_user(
+            auth_type=request.data["auth_type"], unique_id=request.data["unique_id"]
+        )
+
+    # define the backend authenticator
+    user.backend = "oauth2_provider.contrib.rest_framework.OAuth2Authentication"
+    login(request, user)
+
+    # define an application
+    application = Application.objects.get(name=API_APPLICATION_NAME)
+    # get the newly generated access/refresh tokens for the user and application
+    token = get_new_access_token(user, application)
+
+    return Response(token, status=status.HTTP_200_OK)
 
 
 @receiver(pre_save, sender=User)

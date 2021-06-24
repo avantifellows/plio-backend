@@ -1,10 +1,11 @@
 import json
 from rest_framework import status
 from django.urls import reverse
+from oauth2_provider.models import AccessToken, RefreshToken
+
 from users.models import OneTimePassword, Role, OrganizationUser, User
 from plio.tests import BaseTestCase
 from organizations.models import Organization
-from oauth2_provider.models import AccessToken, RefreshToken
 
 
 class OtpAuthTestCase(BaseTestCase):
@@ -66,8 +67,6 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
     def setUp(self):
         super().setUp()
-        # unset client credentials token so that the subsequent API calls goes as guest
-        self.client.credentials()
 
     def test_cannot_authenticate_without_all_required_keys(self):
         # keeping only 2 out of the 3 required auth keys
@@ -79,6 +78,9 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         self.assertEqual(response.data["detail"], "access_token not provided")
 
     def test_guest_can_authenticate_using_third_party(self):
+        # unset client credentials token so that the subsequent API calls goes as guest
+        self.client.credentials()
+
         # some dummy third party auth details
         third_party_auth_details = {
             "auth_type": "abcd",
@@ -104,6 +106,60 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         self.assertTrue(access_token_exists)
         self.assertTrue(refresh_token_exists)
         self.assertTrue(user_created)
+
+    def test_third_party_auth_changes_current_logged_in_user(self):
+        # retrieve the currently logged in user from client's credentials
+        current_access_token = self.client._credentials["HTTP_AUTHORIZATION"].split(
+            " "
+        )[1]
+        current_logged_in_user = (
+            AccessToken.objects.filter(token=current_access_token).first().user_id
+        )
+
+        # login a new user via third party authentication
+        self.client.credentials()
+        third_party_auth_details = {
+            "auth_type": "abcd",
+            "unique_id": "1234",
+            "access_token": "qwerty",
+        }
+        response = self.client.post(
+            reverse("convert_third_party_access_token"), third_party_auth_details
+        )
+
+        # verify that the user for which the new access token is generated, is different that the
+        # originally logged in user
+        new_access_token = response.data["access_token"]
+        new_logged_in_user = (
+            AccessToken.objects.filter(token=new_access_token).first().user_id
+        )
+        self.assertNotEqual(current_logged_in_user, new_logged_in_user)
+
+    def test_existing_third_party_user_can_authenticate_again(self):
+        # create a third party user
+        user = User.objects.create(auth_type="test_auth", unique_id="test_id")
+        total_users = User.objects.count()
+
+        # authenticate the same user again via third party auth
+        third_party_auth_details = {
+            "auth_type": "test_auth",
+            "unique_id": "test_id",
+            "access_token": "qwerty",
+        }
+        response = self.client.post(
+            reverse("convert_third_party_access_token"), third_party_auth_details
+        )
+
+        # the request should go through, the generated access_token should be for
+        # the defined user earlier, and no new user should've been created
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            AccessToken.objects.filter(token=response.data["access_token"])
+            .first()
+            .user_id,
+            user.id,
+        )
+        self.assertEqual(total_users, User.objects.count())
 
 
 class UserTestCase(BaseTestCase):

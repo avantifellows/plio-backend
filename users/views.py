@@ -30,7 +30,7 @@ from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 from users.permissions import UserPermission, OrganizationUserPermission
 from .services import SnsService
-from .config import required_third_party_auth_keys
+from .config import required_third_party_auth_keys, auth_type_choices
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -228,18 +228,32 @@ def convert_third_party_access_token(request):
     """
     Convert any third party auth token into Plio's internal access token
     """
+    # all the required auth keys should be present in the request
     for key in required_third_party_auth_keys:
         if key not in request.data:
             return Response(
-                {"detail": f"{key} not provided"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": f"{key} not provided."}, status=status.HTTP_400_BAD_REQUEST
             )
+
+    # `auth_type` should be one of the values from `auth_type_choices`
+    if (
+        len(
+            [
+                choice
+                for choice in auth_type_choices
+                if choice[0] == request.data["auth_type"]
+            ]
+        )
+        == 0
+    ):
+        return Response({"detail": "Invalid auth_type provided."})
 
     # TODO - verification step - allowed for now
     token_verified = True
 
     if not token_verified:
         return Response(
-            {"detail": "access_token invalid"}, status=status.HTTP_401_UNAUTHORIZED
+            {"detail": "access_token invalid."}, status=status.HTTP_401_UNAUTHORIZED
         )
 
     user = User.objects.filter(

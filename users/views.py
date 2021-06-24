@@ -236,15 +236,12 @@ def convert_third_party_access_token(request):
             )
 
     # `auth_type` should be one of the values from `auth_type_choices`
-    if (
-        len(
-            [
-                choice
-                for choice in auth_type_choices
-                if choice[0] == request.data["auth_type"]
-            ]
-        )
-        == 0
+    if not len(
+        [
+            choice
+            for choice in auth_type_choices
+            if choice[0] == request.data["auth_type"]
+        ]
     ):
         return Response(
             {"detail": "Invalid auth_type provided."},

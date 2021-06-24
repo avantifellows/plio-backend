@@ -70,12 +70,12 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
     def test_cannot_authenticate_without_all_required_keys(self):
         # keeping only 2 out of the 3 required auth keys
-        payload = {"auth_type": "abcd", "unique_id": "1234"}
+        payload = {"auth_type": "avanti", "unique_id": "test_id"}
         response = self.client.post(
             reverse("convert_third_party_access_token"), payload
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["detail"], "access_token not provided")
+        self.assertEqual(response.data["detail"], "access_token not provided.")
 
     def test_guest_can_authenticate_using_third_party(self):
         # unset client credentials token so that the subsequent API calls goes as guest
@@ -83,9 +83,9 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
         # some dummy third party auth details
         third_party_auth_details = {
-            "auth_type": "abcd",
-            "unique_id": "1234",
-            "access_token": "qwerty",
+            "auth_type": "avanti",
+            "unique_id": "test_id",
+            "access_token": "test_token",
         }
 
         response = self.client.post(
@@ -119,9 +119,9 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         # login a new user via third party authentication
         self.client.credentials()
         third_party_auth_details = {
-            "auth_type": "abcd",
-            "unique_id": "1234",
-            "access_token": "qwerty",
+            "auth_type": "avanti",
+            "unique_id": "test_id",
+            "access_token": "test_token",
         }
         response = self.client.post(
             reverse("convert_third_party_access_token"), third_party_auth_details
@@ -137,14 +137,14 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
     def test_existing_third_party_user_can_authenticate_again(self):
         # create a third party user
-        user = User.objects.create(auth_type="test_auth", unique_id="test_id")
+        user = User.objects.create(auth_type="avanti", unique_id="test_id")
         total_users = User.objects.count()
 
         # authenticate the same user again via third party auth
         third_party_auth_details = {
-            "auth_type": "test_auth",
+            "auth_type": "avanti",
             "unique_id": "test_id",
-            "access_token": "qwerty",
+            "access_token": "test_token",
         }
         response = self.client.post(
             reverse("convert_third_party_access_token"), third_party_auth_details
@@ -160,6 +160,18 @@ class ThirdPartyAuthTestCase(BaseTestCase):
             user.id,
         )
         self.assertEqual(total_users, User.objects.count())
+
+    def test_unapproved_auth_type_not_allowed(self):
+        # try authenticating with an auth_type that is not supported
+        third_party_auth_details = {
+            "auth_type": "unsupported_auth_type",
+            "unique_id": "test_id",
+            "access_token": "test_token",
+        }
+        response = self.client.post(
+            reverse("convert_third_party_access_token"), third_party_auth_details
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class UserTestCase(BaseTestCase):

@@ -246,7 +246,10 @@ def convert_third_party_access_token(request):
         )
         == 0
     ):
-        return Response({"detail": "Invalid auth_type provided."})
+        return Response(
+            {"detail": "Invalid auth_type provided."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     # TODO - verification step - allowed for now
     token_verified = True

@@ -117,7 +117,6 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         )
 
         # login a new user via third party authentication
-        self.client.credentials()
         third_party_auth_details = {
             "auth_type": "avanti",
             "unique_id": "test_id",

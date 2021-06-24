@@ -1,9 +1,10 @@
 import json
 from rest_framework import status
 from django.urls import reverse
-from users.models import OneTimePassword, Role, OrganizationUser
+from users.models import OneTimePassword, Role, OrganizationUser, User
 from plio.tests import BaseTestCase
 from organizations.models import Organization
+from oauth2_provider.models import AccessToken, RefreshToken
 
 
 class OtpAuthTestCase(BaseTestCase):
@@ -58,6 +59,51 @@ class OtpAuthTestCase(BaseTestCase):
             reverse("verify-otp"), {"mobile": new_user_mobile, "otp": otp.otp}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class ThirdPartyAuthTestCase(BaseTestCase):
+    """Tests the third party auth functionality"""
+
+    def setUp(self):
+        super().setUp()
+        # unset client credentials token so that the subsequent API calls goes as guest
+        self.client.credentials()
+
+    def test_cannot_authenticate_without_all_required_keys(self):
+        # keeping only 2 out of the 3 required auth keys
+        payload = {"auth_type": "abcd", "unique_id": "1234"}
+        response = self.client.post(
+            reverse("convert_third_party_access_token"), payload
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "access_token not provided")
+
+    def test_guest_can_authenticate_using_third_party(self):
+        # some dummy third party auth details
+        third_party_auth_details = {
+            "auth_type": "abcd",
+            "unique_id": "1234",
+            "access_token": "qwerty",
+        }
+
+        response = self.client.post(
+            reverse("convert_third_party_access_token"), third_party_auth_details
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        access_token_exists = AccessToken.objects.filter(
+            token=response.data["access_token"]
+        ).exists()
+        refresh_token_exists = RefreshToken.objects.filter(
+            token=response.data["refresh_token"]
+        ).exists()
+        user_created = User.objects.filter(
+            auth_type=third_party_auth_details["auth_type"],
+            unique_id=third_party_auth_details["unique_id"],
+        ).exists()
+        self.assertTrue(access_token_exists)
+        self.assertTrue(refresh_token_exists)
+        self.assertTrue(user_created)
 
 
 class UserTestCase(BaseTestCase):

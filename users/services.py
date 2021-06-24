@@ -13,7 +13,4 @@ class SnsService:
 
     def publish(self, mobile, message):
         self.client.set_sms_attributes(attributes={"DefaultSMSType": "Transactional"})
-        self.client.publish(
-            PhoneNumber=mobile,
-            Message=message,
-        )
+        self.client.publish(PhoneNumber=mobile, Message=message)

@@ -211,10 +211,23 @@ def get_by_access_token(request):
     return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
 
+def send_welcome_sms(mobile):
+    """Send a welcome SMS to a new or newly approved user through AWS SNS"""
+    if SMS_DRIVER == "sns":
+        sms = SnsService()
+        sms.publish(
+            mobile,
+            "We are so excited to welcome you to Plio! :) \n \n With Plio, you can unlock the true potential of videos by making them interactive and understanding how your viewers engage with them. Watch this demo video to understand how you can easily make your videos interactive using Plio: https://www.youtube.com/watch?v=7twYCdb32PE \n \n Start using Plio now: https://app.plio.in \n Talk to us by joining our discord: https://discord.gg/TZHEgnpvJE",
+        )
+
+
 @receiver(pre_save, sender=User)
 def update_user(sender, instance: User, **kwargs):
     if not instance.id:
         # new user is created
+        if instance.status == "approved" and instance.mobile:
+            # the new user has logged in through phone number
+            send_welcome_sms(instance.mobile)
         return
 
     # existing user is updated
@@ -228,20 +241,25 @@ def update_user(sender, instance: User, **kwargs):
             user_group_name, {"type": "send_user", "data": user_data}
         )
 
-        # send an email if the user has been approved
-        if instance.email and instance.status == "approved":
-            subject = "Congrats - You're off the Plio waitlist! 🎉"
-            recipient_list = [
-                instance.email,
-            ]
-            html_message = render_to_string("waitlist-approve-email.html")
-            send_mail(
-                subject=subject,
-                message=None,
-                from_email=DEFAULT_FROM_EMAIL,
-                recipient_list=recipient_list,
-                html_message=html_message,
-            )
+        if instance.status == "approved":
+            # send an email or an sms if the user has been approved
+            if instance.email:
+                # user signed up with email
+                subject = "Congrats - You're off the Plio waitlist! 🎉"
+                recipient_list = [
+                    instance.email,
+                ]
+                html_message = render_to_string("waitlist-approve-email.html")
+                send_mail(
+                    subject=subject,
+                    message=None,
+                    from_email=DEFAULT_FROM_EMAIL,
+                    recipient_list=recipient_list,
+                    html_message=html_message,
+                )
+            elif instance.mobile:
+                # user signed up with mobile
+                send_welcome_sms(instance.mobile)
 
 
 @receiver(post_save, sender=OrganizationUser)

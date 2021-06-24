@@ -10,7 +10,7 @@ If you're setting up Plio for staging or production, you may also wish to captur
 
 ### Enable error logging
 1. Set up env variable for `SENTRY_DSN`. You can get the value of DSN for your projects from `Project Settings > SDK Setup > Client Keys (DSN)`
-2. Make sure your `NODE_ENV` is either 'staging' or 'production'.
+2. Make sure your `APP_ENV` is either 'staging' or 'production'.
 3. Trigger an error by adding the following line in your `urls.py` file:
     ```py
     from django.urls import path

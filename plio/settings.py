@@ -329,7 +329,7 @@ if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
 
-    # Refer Sentry documentation for more configs: https://docs.sentry.io/platforms/python/configuration/
+    # Refer Sentry documentation for more configs: https://docs.sentry.io/platforms/python/guides/django/configuration/
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],

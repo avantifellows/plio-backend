@@ -11,7 +11,7 @@ If you're setting up Plio for staging or production, you may also wish to captur
 ### Enable error logging
 1. Set up env variable for `SENTRY_DSN`. You can get the value of DSN for your projects from `Project Settings > SDK Setup > Client Keys (DSN)`
 2. Make sure your `APP_ENV` is either 'staging' or 'production'.
-3. Trigger an error by adding the following line in your `urls.py` file:
+3. Test your set up by triggering an error - add the following line in your `urls.py` file:
     ```py
     from django.urls import path
     def trigger_error(request):
@@ -22,13 +22,13 @@ If you're setting up Plio for staging or production, you may also wish to captur
         # other paths
     ]
     ```
-4. You should now see the error at your Sentry dashboard as well from `Issues` tab.
+4. You should now see the error at your Sentry dashboard as well from the `Issues` tab.
 
 ### Enable reporting
 By default, Sentry sends error reports to your inbox. However, you may prefer other channels to receive error notifications.
 
 At Plio, we use Discord to receive real-time alerts using Sentry Webhooks. If you're also using Discord, or a different tool that supports webhooks, follow the steps below to start receiving alerts:
-1. Create a new channel at Discord where you want to receive the alerts. Then, enable the webhook and copy webhook url. `Channel settings > Integrations > Webhook`
+1. Create a new channel at Discord where you want to receive the alerts. Then, enable the webhook and copy the webhook url. `Channel settings > Integrations > Webhook`
 2. Create a SentryDiscord webhook.
    1. Visit [this page at SentryDiscord.dev](https://sentrydiscord.dev/create).
    2. Paste the Discord webhook that you copied in the first step.

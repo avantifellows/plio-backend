@@ -147,7 +147,7 @@ The BigQuery project id that contains the datasets.
 The location of the BigQuery project. All datasets must be in the same location.
 
 #### `BIGQUERY CREDENTIALS`
-This is a base64 encoded value of your Google Cloud Platform's service account. You can learn more about acquiring service account credentials [here](https://cloud.google.com/docs/authentication/getting-started) and [here](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts?supportedpurview=project). The service account must have BigQuery admin permissions.
+This is a base64 encoded value of your Google Cloud Platform's service account. You can learn more about acquiring service account credentials [here](https://cloud.google.com/docs/authentication/getting-started) and [here](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts?supportedpurview=project). The service account must have BigQuery admin permissions .
 
 Once you have downloaded the JSON file, run the following commands and use the output for this environment variable:
 ```sh

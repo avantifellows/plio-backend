@@ -249,11 +249,11 @@ def convert_third_party_access_token(request):
         )
 
     # TODO - verification step - allowed for now
-    token_verified = True
+    token_verified = False
 
     if not token_verified:
         return Response(
-            {"detail": "access_token invalid."}, status=status.HTTP_401_UNAUTHORIZED
+            {"detail": "access_token invalid."}, status=status.HTTP_400_BAD_REQUEST
         )
 
     user = User.objects.filter(

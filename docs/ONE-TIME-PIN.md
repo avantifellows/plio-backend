@@ -13,7 +13,15 @@ We support text messaging through AWS Simple Notification Service.
     AWS_REGION="your_aws_region"
     ```
     **NOTE:** Make sure your region & country is supported by AWS SNS. [Read more here](https://docs.aws.amazon.com/sns/latest/dg/sns-supported-regions-countries.html).
-4. Enable delivery logs (optional, recommeded for production)
+4. Enable usage logs (optional, recommended for production)
+   1. Create a new S3 bucket where SMS usage will be stored. For example: `plio-sms-usage`.
+   2. Visit the SNS dashboard and go to `Text messaging (SMS)`.
+   3. Navigate to `Text messaging preferences` and click on `Edit` button.
+   4. Go to `Details` section.
+   5. Set the `Amazon S3 bucket name for usage reports` and enter the bucket name.
+   6. Click on `Save changes`.
+   7. The daily logs will be stored inside this bucket.
+5. Enable delivery logs (optional, recommeded for production)
    1. Visit the SNS dashboard and go to `Text messaging (SMS)`.
    2. Navigate to `Text messaging preferences` and click on `Edit` button.
    3. Go to `Delivery status logging` section.

@@ -183,6 +183,15 @@ Follow the steps below to set up the staging environment on AWS.
           4. In the `Source` box, choose `Anywhere`.
           5. Click `Save`.
       19. Find the endpoints of your redis instance using [this](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Endpoints.html) and copy them somewhere for later use.
+      20. Enable access logs for your redis instance (optional, recommended for production)
+          1. Switch to the Redis listing screen and click on your redis instance
+          2. Switch to `Logs` tab.
+          3. Click on `Enable slow log` button.
+          4. Select log format as `Text` (or `JSON` if you prefer that).
+          5. Select destination type as `CloudWatch Logs`.
+          6. Set Log destination as `Create new` and enter then name of the log group that should be created. For example: `/redis/plio-staging`.
+          7. Click on save and you should see the log status as "enabling". Wait for some time and it should turn to "active".
+          8. Click on `log destination` link to access the log stream for the redis instance.
 
 12. Connect the redis instance to the `plio-backend-staging` service that was created above.
     1. Go to the ECS dashboard and select `plio-staging-cluster`.

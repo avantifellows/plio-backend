@@ -109,6 +109,10 @@ Follow the steps below to set up the staging environment on AWS.
    5. In the subnet mappings, check the first desired zone and use Elastic IP under IPv4 settings for that subnet.
    6. Under listeners and routing, select the target group `plio-backend-staging` for TCP port 80.
    7. Proceed to create the load balancer. You will see the created load balancer in the list of all load balancers.
+   8. Enable access logs for your load balancer (optional, recommended for production)
+      1. Go to your S3 dashboard and create a new bucket. Name it as `plio-nlb-logs`.
+      2. All public access to be blocked.
+      3. Select the load balancer from the list and click on `Edit Attributes` from the `Actions` dropdown.
 
 7. Go to ECR and create a new repository named `plio-backend-staging` and set the settings as per your needs.
 

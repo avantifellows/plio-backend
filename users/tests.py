@@ -100,7 +100,7 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         ).exists()
         user_created = User.objects.filter(
             unique_id=third_party_auth_details["unique_id"],
-            organizations__id=self.organization.id,
+            org=self.organization,
         ).exists()
         self.assertTrue(access_token_exists)
         self.assertTrue(refresh_token_exists)
@@ -133,12 +133,7 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
     def test_existing_third_party_user_can_authenticate_again(self):
         # create a third party user
-        user = User.objects.create(unique_id="test_id")
-        # link it to an organization
-        OrganizationUser.objects.create(
-            organization=self.organization, user=user, role=self.org_view_role
-        )
-
+        user = User.objects.create(unique_id="test_id", org=self.organization)
         total_users = User.objects.count()
 
         # authenticate the same user again via third party auth
@@ -275,14 +270,16 @@ class RoleTestCase(BaseTestCase):
 
 
 class OrganizationUserTestCase(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-
+    @classmethod
+    def setUpTestData(self):
+        super().setUpTestData()
         # create another organization
         self.organization_2 = Organization.objects.create(
             name="Org 2", shortcode="org-2"
         )
 
+    def setUp(self):
+        super().setUp()
         # seed some organization users
         self.org_user_1 = OrganizationUser.objects.create(
             organization=self.organization, user=self.user, role=self.org_view_role

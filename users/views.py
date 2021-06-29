@@ -247,8 +247,9 @@ def convert_api_key_to_token(request):
     # the org to which this api_key belongs to
     requested_org = api_key.first()
 
+    # check if the requested user exists or not
     user = User.objects.filter(
-        unique_id=request.data["unique_id"], organizations__id=requested_org.id
+        unique_id=request.data["unique_id"], org=requested_org
     ).first()
 
     # create a new user and link it to the org
@@ -256,10 +257,7 @@ def convert_api_key_to_token(request):
     if not user:
         user = User.objects.create_user(
             unique_id=request.data["unique_id"],
-        )
-        org_view_role = Role.objects.filter(name="org-view").first()
-        OrganizationUser.objects.create(
-            organization=requested_org, user=user, role=org_view_role
+            org=requested_org
         )
 
     # login the user, get the new access token and return

@@ -27,7 +27,7 @@ from users.views import (
     verify_otp,
     get_by_access_token,
     retrieve_analytics_app_access_token,
-    convert_third_party_access_token,
+    convert_api_key_to_token,
 )
 from organizations.views import OrganizationViewSet
 from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
@@ -90,9 +90,9 @@ urlpatterns = [
     path("api/v1/otp/verify/", verify_otp, name="verify-otp"),
     path("api/v1/users/token/", get_by_access_token, name="get-by-access-token"),
     path(
-        "auth/convert-third-party-token/",
-        convert_third_party_access_token,
-        name="convert_third_party_access_token",
+        "auth/convert-api-key-token/",
+        convert_api_key_to_token,
+        name="convert_api_key_to_token",
     ),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),

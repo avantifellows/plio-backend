@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from organizations.models import Organization
 from safedelete.models import SafeDeleteModel, SafeDeleteManager, SOFT_DELETE
-from .config import user_status_choices, auth_type_choices
+from .config import user_status_choices
 
 
 class UserManager(SafeDeleteManager):
@@ -15,7 +15,6 @@ class UserManager(SafeDeleteManager):
         is_admin=False,
         is_staff=False,
         is_active=True,
-        auth_type=None,
         unique_id=None,
     ):
         user = self.model()
@@ -25,7 +24,6 @@ class UserManager(SafeDeleteManager):
         user.is_superuser = is_admin
         user.is_staff = is_staff
         user.is_active = is_active
-        user.auth_type = auth_type
         user.unique_id = unique_id
         user.save(using=self._db)
         return user
@@ -75,7 +73,6 @@ class User(SafeDeleteModel, AbstractUser):
     status = models.CharField(
         max_length=255, choices=user_status_choices, default="approved"
     )
-    auth_type = models.CharField(max_length=255, choices=auth_type_choices, null=True)
     unique_id = models.CharField(max_length=255, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

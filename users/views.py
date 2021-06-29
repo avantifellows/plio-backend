@@ -26,11 +26,12 @@ from plio.settings import (
     ANALYTICS_IDP,
     SMS_DRIVER,
 )
-from users.models import User, OneTimePassword, OrganizationUser
+from users.models import User, OneTimePassword, OrganizationUser, Role
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 from users.permissions import UserPermission, OrganizationUserPermission
+from organizations.models import Organization
 from .services import SnsService
-from .config import required_third_party_auth_keys, auth_type_choices
+from .config import required_third_party_auth_keys
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -224,9 +225,9 @@ def get_by_access_token(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
-def convert_third_party_access_token(request):
+def convert_api_key_to_token(request):
     """
-    Convert any third party auth token into Plio's internal access token
+    Convert an api_key that Plio created for a third party org, into Plio's internal access token
     """
     # all the required auth keys should be present in the request
     for key in required_third_party_auth_keys:
@@ -235,36 +236,30 @@ def convert_third_party_access_token(request):
                 {"detail": f"{key} not provided."}, status=status.HTTP_400_BAD_REQUEST
             )
 
-    # `auth_type` should be one of the values from `auth_type_choices`
-    if not len(
-        [
-            choice
-            for choice in auth_type_choices
-            if choice[0] == request.data["auth_type"]
-        ]
-    ):
+    # check if the api_key is valid and exists
+    api_key = Organization.objects.filter(api_key=request.data["api_key"])
+    if not api_key.exists():
         return Response(
-            {"detail": "Invalid auth_type provided."},
+            {"detail": "Invalid api_key provided."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # TODO - verification step - allowed for now
-    token_verified = False
-
-    if not token_verified:
-        return Response(
-            {"detail": "access_token invalid."}, status=status.HTTP_400_BAD_REQUEST
-        )
+    # the org to which this api_key belongs to
+    requested_org = api_key.first()
 
     user = User.objects.filter(
-        auth_type=request.data["auth_type"],
-        unique_id=request.data["unique_id"],
+        unique_id=request.data["unique_id"], organizations__id=requested_org.id
     ).first()
 
-    # create a new user if it doesn't already exist
+    # create a new user and link it to the org
+    # if it doesn't already exist
     if not user:
         user = User.objects.create_user(
-            auth_type=request.data["auth_type"], unique_id=request.data["unique_id"]
+            unique_id=request.data["unique_id"],
+        )
+        org_view_role = Role.objects.filter(name="org-view").first()
+        OrganizationUser.objects.create(
+            organization=requested_org, user=user, role=org_view_role
         )
 
     # login the user, get the new access token and return

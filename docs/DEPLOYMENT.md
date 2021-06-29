@@ -111,11 +111,38 @@ Follow the steps below to set up the staging environment on AWS.
    7. Proceed to create the load balancer. You will see the created load balancer in the list of all load balancers.
    8. Enable access logs for your load balancer (optional, recommended for production)
       1. Go to your S3 dashboard and create a new bucket. Name it as `plio-nlb-logs`.
-      2. All public access to be blocked. Click on `Create` button.
-      3. Go back to the load balancer dashboard and select your load balancer.
-      4. Select the load balancer from the list and click on `Edit Attributes` from the `Actions` dropdown.
-      5. Enable `Access logs` option.
-      6. Enter the S3 location you created in previous step. If you want to use same bucket for multiple load balancer access logs, add a sub-directory after S3 bucket name in this step. For example: `plio-nlb-logs/plio-backend-staging`.
+      2. Enable server-side encryption with Amazon S3-Managed Encryption Keys (SSE-S3).
+      3. All public access to be blocked. Click on `Create` button.
+      4. After creating the bucket, edit the bucket policy from `Permissions` tab and add the following. Make sure to edit the bucket name below if you have named it different. This policy is to allow bucket put objects permissions to the load balancer logger.
+      ```json
+       {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AWSLogDeliveryWrite",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "delivery.logs.amazonaws.com"
+                    },
+                    "Action": "s3:PutObject",
+                    "Resource": "arn:aws:s3:::plio-nlb-logs/*"
+                },
+                {
+                    "Sid": "AWSLogDeliveryAclCheck",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "delivery.logs.amazonaws.com"
+                    },
+                    "Action": "s3:GetBucketAcl",
+                    "Resource": "arn:aws:s3:::plio-nlb-logs"
+                }
+            ]
+        }
+      ```
+      5. Go back to the load balancer dashboard and select your load balancer.
+      6. Select the load balancer from the list and click on `Edit Attributes` from the `Actions` dropdown.
+      7. Enable `Access logs` option.
+      8. Enter the S3 location you created in previous step. If you want to use same bucket for multiple load balancer access logs, add a sub-directory after S3 bucket name in this step. For example: `plio-nlb-logs/plio-backend-staging`.
 
 7. Go to ECR and create a new repository named `plio-backend-staging` and set the settings as per your needs.
 

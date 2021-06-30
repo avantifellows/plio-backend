@@ -5,8 +5,9 @@ from django.urls import reverse
 
 
 class OrganizationTestCase(BaseTestCase):
-    def setUp(self):
-        super().setUp()
+    @classmethod
+    def setUpTestData(self):
+        super().setUpTestData()
         # seed some organizations
         Organization.objects.create(name="Org 1", shortcode="org-1")
         Organization.objects.create(name="Org 2", shortcode="org-2")

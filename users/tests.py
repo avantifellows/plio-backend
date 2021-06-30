@@ -72,9 +72,18 @@ class ThirdPartyAuthTestCase(BaseTestCase):
     def test_cannot_authenticate_without_all_required_keys(self):
         # not sending all the required auth keys
         payload = {"unique_id": "test_id"}
-        response = self.client.post(reverse("convert_api_key_to_token"), payload)
+        response = self.client.post(
+            reverse("generate_external_auth_access_token"), payload
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data["detail"], "api_key not provided.")
+
+        payload = {"api_key": "api_key_1"}
+        response = self.client.post(
+            reverse("generate_external_auth_access_token"), payload
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "unique_id not provided.")
 
     def test_guest_can_authenticate_using_third_party(self):
         # unset client credentials token so that the subsequent API calls goes as guest
@@ -87,7 +96,7 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         }
 
         response = self.client.post(
-            reverse("convert_api_key_to_token"), third_party_auth_details
+            reverse("generate_external_auth_access_token"), third_party_auth_details
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -100,7 +109,7 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         ).exists()
         user_created = User.objects.filter(
             unique_id=third_party_auth_details["unique_id"],
-            org=self.organization,
+            auth_org=self.organization,
         ).exists()
         self.assertTrue(access_token_exists)
         self.assertTrue(refresh_token_exists)
@@ -121,7 +130,7 @@ class ThirdPartyAuthTestCase(BaseTestCase):
             "api_key": self.organization.api_key,
         }
         response = self.client.post(
-            reverse("convert_api_key_to_token"), third_party_auth_details
+            reverse("generate_external_auth_access_token"), third_party_auth_details
         )
         # verify that the user for which the new access token is generated, is different than the
         # originally logged in user
@@ -133,7 +142,7 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
     def test_existing_third_party_user_can_authenticate_again(self):
         # create a third party user
-        user = User.objects.create(unique_id="test_id", org=self.organization)
+        user = User.objects.create(unique_id="test_id", auth_org=self.organization)
         total_users = User.objects.count()
 
         # authenticate the same user again via third party auth
@@ -142,7 +151,7 @@ class ThirdPartyAuthTestCase(BaseTestCase):
             "api_key": self.organization.api_key,
         }
         response = self.client.post(
-            reverse("convert_api_key_to_token"), third_party_auth_details
+            reverse("generate_external_auth_access_token"), third_party_auth_details
         )
 
         # the request should go through, the generated access_token should be for
@@ -160,7 +169,7 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         # try authenticating with an api_key that doesn't exist
         third_party_auth_details = {"unique_id": "test_id", "api_key": "dummy_api_key"}
         response = self.client.post(
-            reverse("convert_api_key_to_token"), third_party_auth_details
+            reverse("generate_external_auth_access_token"), third_party_auth_details
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 

@@ -16,7 +16,7 @@ class UserManager(SafeDeleteManager):
         is_staff=False,
         is_active=True,
         unique_id=None,
-        org=None,
+        auth_org=None,
     ):
         user = self.model()
         if email:
@@ -26,7 +26,7 @@ class UserManager(SafeDeleteManager):
         user.is_staff = is_staff
         user.is_active = is_active
         user.unique_id = unique_id
-        user.org = org
+        user.auth_org = auth_org
         user.save(using=self._db)
         return user
 
@@ -76,11 +76,12 @@ class User(SafeDeleteModel, AbstractUser):
         max_length=255, choices=user_status_choices, default="approved"
     )
     unique_id = models.CharField(max_length=255, null=True)
-    org = models.ForeignKey(
-        Organization, on_delete=models.DO_NOTHING, 
-        related_name="org",
+    auth_org = models.ForeignKey(
+        Organization,
+        on_delete=models.DO_NOTHING,
+        related_name="auth_org",
         null=True,
-        blank=True
+        blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

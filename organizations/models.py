@@ -20,7 +20,7 @@ class Organization(TenantMixin, SafeDeleteModel):
     class Meta:
         db_table = "organization"
 
-    def _generate_random_cryptographically_secure_string(self, length=20):
+    def _generate_random_secure_string(self, length=20):
         """Generates a cryptographically secure random string of given length"""
         return "".join(
             [
@@ -42,15 +42,16 @@ class Organization(TenantMixin, SafeDeleteModel):
 
     def _generate_unique_api_key(self):
         """Generates a unique api_key."""
-        api_key = self._generate_random_cryptographically_secure_string()
+        api_key = self._generate_random_secure_string()
         while Organization.objects.filter(api_key=api_key).exists():
-            api_key = self._generate_random_cryptographically_secure_string()
+            api_key = self._generate_random_secure_string()
         return api_key
 
     def save(self, *args, **kwargs):
         """Organization save method. Before checking it creates a unique schema name if does not exist already."""
         if not self.schema_name:
             self.schema_name = self._generate_unique_schema_name()
+        if not self.api_key:
             self.api_key = self._generate_unique_api_key()
         super().save(*args, **kwargs)
 

@@ -25,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
             "organizations",
             "status",
             "unique_id",
-            "org",
+            "auth_org",
         ]
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ["is_superuser", "is_staff"]

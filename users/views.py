@@ -26,7 +26,7 @@ from plio.settings import (
     ANALYTICS_IDP,
     SMS_DRIVER,
 )
-from users.models import User, OneTimePassword, OrganizationUser, Role
+from users.models import User, OneTimePassword, OrganizationUser
 from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer
 from users.permissions import UserPermission, OrganizationUserPermission
 from organizations.models import Organization
@@ -225,9 +225,9 @@ def get_by_access_token(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
-def convert_api_key_to_token(request):
+def generate_external_auth_access_token(request):
     """
-    Convert an api_key that Plio created for a third party org, into Plio's internal access token
+    Generate an access token for the given combination of unique user id and an org's API_KEY
     """
     # all the required auth keys should be present in the request
     for key in required_third_party_auth_keys:
@@ -245,19 +245,18 @@ def convert_api_key_to_token(request):
         )
 
     # the org to which this api_key belongs to
-    requested_org = api_key.first()
+    requesting_org = api_key.first()
 
     # check if the requested user exists or not
     user = User.objects.filter(
-        unique_id=request.data["unique_id"], org=requested_org
+        unique_id=request.data["unique_id"], auth_org=requesting_org
     ).first()
 
     # create a new user and link it to the org
     # if it doesn't already exist
     if not user:
         user = User.objects.create_user(
-            unique_id=request.data["unique_id"],
-            org=requested_org
+            unique_id=request.data["unique_id"], auth_org=requesting_org
         )
 
     # login the user, get the new access token and return

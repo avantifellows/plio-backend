@@ -2,6 +2,7 @@ from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
 import string
 import random
+import secrets
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
 
 
@@ -10,6 +11,7 @@ class Organization(TenantMixin, SafeDeleteModel):
 
     name = models.CharField(max_length=255)
     shortcode = models.SlugField()
+    api_key = models.CharField(null=True, max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -17,6 +19,15 @@ class Organization(TenantMixin, SafeDeleteModel):
 
     class Meta:
         db_table = "organization"
+
+    def _generate_random_secure_string(self, length=20):
+        """Generates a cryptographically secure random string of given length"""
+        return "".join(
+            [
+                secrets.choice(string.ascii_letters + string.digits)
+                for _ in range(length)
+            ]
+        )
 
     def _generate_random_string(self, length=10):
         """Generates a random string of given length."""
@@ -29,10 +40,19 @@ class Organization(TenantMixin, SafeDeleteModel):
             schema_name = self._generate_random_string()
         return schema_name
 
+    def _generate_unique_api_key(self):
+        """Generates a unique api_key."""
+        api_key = self._generate_random_secure_string()
+        while Organization.objects.filter(api_key=api_key).exists():
+            api_key = self._generate_random_secure_string()
+        return api_key
+
     def save(self, *args, **kwargs):
         """Organization save method. Before checking it creates a unique schema name if does not exist already."""
         if not self.schema_name:
             self.schema_name = self._generate_unique_schema_name()
+        if not self.api_key:
+            self.api_key = self._generate_unique_api_key()
         super().save(*args, **kwargs)
 
     def __str__(self):

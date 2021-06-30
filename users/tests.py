@@ -2,10 +2,8 @@ import json
 from rest_framework import status
 from django.urls import reverse
 
-# ---- UNCOMMENT CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-# from oauth2_provider.models import AccessToken, RefreshToken
-# from users.models import User
-
+from oauth2_provider.models import AccessToken, RefreshToken
+from users.models import User
 from users.models import OneTimePassword, Role, OrganizationUser
 from plio.tests import BaseTestCase
 from organizations.models import Organization
@@ -72,120 +70,106 @@ class ThirdPartyAuthTestCase(BaseTestCase):
         super().setUp()
 
     def test_cannot_authenticate_without_all_required_keys(self):
-        # keeping only 2 out of the 3 required auth keys
-        payload = {"auth_type": "avanti", "unique_id": "test_id"}
+        # not sending all the required auth keys
+        payload = {"unique_id": "test_id"}
         response = self.client.post(
-            reverse("convert_third_party_access_token"), payload
+            reverse("generate_external_auth_access_token"), payload
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["detail"], "access_token not provided.")
+        self.assertEqual(response.data["detail"], "api_key not provided.")
+
+        payload = {"api_key": "api_key_1"}
+        response = self.client.post(
+            reverse("generate_external_auth_access_token"), payload
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "unique_id not provided.")
 
     def test_guest_can_authenticate_using_third_party(self):
         # unset client credentials token so that the subsequent API calls goes as guest
         self.client.credentials()
 
-        # some dummy third party auth details
+        # some valid dummy third party auth details
         third_party_auth_details = {
-            "auth_type": "avanti",
             "unique_id": "test_id",
-            "access_token": "test_token",
+            "api_key": self.organization.api_key,
         }
 
         response = self.client.post(
-            reverse("convert_third_party_access_token"), third_party_auth_details
+            reverse("generate_external_auth_access_token"), third_party_auth_details
         )
-        # ---- REMOVE CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        # ---- UNCOMMENT CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # access_token_exists = AccessToken.objects.filter(
-        #     token=response.data["access_token"]
-        # ).exists()
-        # refresh_token_exists = RefreshToken.objects.filter(
-        #     token=response.data["refresh_token"]
-        # ).exists()
-        # user_created = User.objects.filter(
-        #     auth_type=third_party_auth_details["auth_type"],
-        #     unique_id=third_party_auth_details["unique_id"],
-        # ).exists()
-        # self.assertTrue(access_token_exists)
-        # self.assertTrue(refresh_token_exists)
-        # self.assertTrue(user_created)
+        access_token_exists = AccessToken.objects.filter(
+            token=response.data["access_token"]
+        ).exists()
+        refresh_token_exists = RefreshToken.objects.filter(
+            token=response.data["refresh_token"]
+        ).exists()
+        user_created = User.objects.filter(
+            unique_id=third_party_auth_details["unique_id"],
+            auth_org=self.organization,
+        ).exists()
+        self.assertTrue(access_token_exists)
+        self.assertTrue(refresh_token_exists)
+        self.assertTrue(user_created)
 
     def test_third_party_auth_changes_current_logged_in_user(self):
-        # ---- UNCOMMENT CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-        # # retrieve the currently logged in user from client's credentials
-        # current_access_token = self.client._credentials["HTTP_AUTHORIZATION"].split(
-        #     " "
-        # )[1]
-        # current_logged_in_user = (
-        #     AccessToken.objects.filter(token=current_access_token).first().user_id
-        # )
+        # retrieve the currently logged in user from client's credentials
+        current_access_token = self.client._credentials["HTTP_AUTHORIZATION"].split(
+            " "
+        )[1]
+        current_logged_in_user = (
+            AccessToken.objects.filter(token=current_access_token).first().user_id
+        )
 
         # login a new user via third party authentication
         third_party_auth_details = {
-            "auth_type": "avanti",
             "unique_id": "test_id",
-            "access_token": "test_token",
+            "api_key": self.organization.api_key,
         }
         response = self.client.post(
-            reverse("convert_third_party_access_token"), third_party_auth_details
+            reverse("generate_external_auth_access_token"), third_party_auth_details
         )
-
-        # ---- REMOVE CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        # ---- UNCOMMENT CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-        # # verify that the user for which the new access token is generated, is different that the
-        # # originally logged in user
-        # new_access_token = response.data["access_token"]
-        # new_logged_in_user = (
-        #     AccessToken.objects.filter(token=new_access_token).first().user_id
-        # )
-        # self.assertNotEqual(current_logged_in_user, new_logged_in_user)
+        # verify that the user for which the new access token is generated, is different than the
+        # originally logged in user
+        new_access_token = response.data["access_token"]
+        new_logged_in_user = (
+            AccessToken.objects.filter(token=new_access_token).first().user_id
+        )
+        self.assertNotEqual(current_logged_in_user, new_logged_in_user)
 
     def test_existing_third_party_user_can_authenticate_again(self):
-        # ---- UNCOMMENT CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-        # # create a third party user
-        # user = User.objects.create(auth_type="avanti", unique_id="test_id")
-        # total_users = User.objects.count()
+        # create a third party user
+        user = User.objects.create(unique_id="test_id", auth_org=self.organization)
+        total_users = User.objects.count()
 
         # authenticate the same user again via third party auth
         third_party_auth_details = {
-            "auth_type": "avanti",
             "unique_id": "test_id",
-            "access_token": "test_token",
+            "api_key": self.organization.api_key,
         }
         response = self.client.post(
-            reverse("convert_third_party_access_token"), third_party_auth_details
+            reverse("generate_external_auth_access_token"), third_party_auth_details
         )
 
-        # ---- REMOVE CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # the request should go through, the generated access_token should be for
+        # the defined user earlier, and no new user should've been created
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            AccessToken.objects.filter(token=response.data["access_token"])
+            .first()
+            .user_id,
+            user.id,
+        )
+        self.assertEqual(total_users, User.objects.count())
 
-        # ---- UNCOMMENT CODE BELOW WHEN THIRD PARTY AUTH IS COMPLETE ----
-        # # the request should go through, the generated access_token should be for
-        # # the defined user earlier, and no new user should've been created
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # self.assertEqual(
-        #     AccessToken.objects.filter(token=response.data["access_token"])
-        #     .first()
-        #     .user_id,
-        #     user.id,
-        # )
-        # self.assertEqual(total_users, User.objects.count())
-
-    def test_unapproved_auth_type_not_allowed(self):
-        # try authenticating with an auth_type that is not supported
-        third_party_auth_details = {
-            "auth_type": "unsupported_auth_type",
-            "unique_id": "test_id",
-            "access_token": "test_token",
-        }
+    def test_unapproved_api_key_not_allowed(self):
+        # try authenticating with an api_key that doesn't exist
+        third_party_auth_details = {"unique_id": "test_id", "api_key": "dummy_api_key"}
         response = self.client.post(
-            reverse("convert_third_party_access_token"), third_party_auth_details
+            reverse("generate_external_auth_access_token"), third_party_auth_details
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -295,14 +279,16 @@ class RoleTestCase(BaseTestCase):
 
 
 class OrganizationUserTestCase(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-
+    @classmethod
+    def setUpTestData(self):
+        super().setUpTestData()
         # create another organization
         self.organization_2 = Organization.objects.create(
             name="Org 2", shortcode="org-2"
         )
 
+    def setUp(self):
+        super().setUp()
         # seed some organization users
         self.org_user_1 = OrganizationUser.objects.create(
             organization=self.organization, user=self.user, role=self.org_view_role

@@ -175,11 +175,11 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
 
 class UserTestCase(BaseTestCase):
-    def test_user_with_email(self):
+    def test_user_manager_create_user_with_email(self):
         test_email = "test@gmail.com"
-        response = self.client.post("/api/v1/users/", {"email": test_email})
+        user = User.objects.create_user(email=test_email)
 
-        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(user.email, test_email)
 
     def test_user_property_name(self):
         test_first_name = "first"
@@ -188,7 +188,7 @@ class UserTestCase(BaseTestCase):
         self.user.last_name = test_last_name
         self.user.save()
 
-        self.assertTrue(self.user.name, f"{test_first_name} {test_last_name}")
+        self.assertEqual(self.user.name, f"{test_first_name} {test_last_name}")
 
     def test_user_string_representation(self):
         test_first_name = "first"
@@ -197,7 +197,7 @@ class UserTestCase(BaseTestCase):
         self.user.last_name = test_last_name
         self.user.save()
 
-        self.assertTrue(
+        self.assertEqual(
             str(self.user), f"{self.user.id}: {test_first_name} {test_last_name}"
         )
 

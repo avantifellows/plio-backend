@@ -181,6 +181,30 @@ class UserTestCase(BaseTestCase):
 
         self.assertTrue(response.status_code, status.HTTP_200_OK)
 
+    def test_user_property_name(self):
+        test_first_name = "first"
+        test_last_name = "last"
+        self.user.first_name = test_first_name
+        self.user.last_name = test_last_name
+        self.user.save()
+
+        self.assertTrue(self.user.name, f"{test_first_name} {test_last_name}")
+
+    def test_user_string_representation(self):
+        test_first_name = "first"
+        test_last_name = "last"
+        self.user.first_name = test_first_name
+        self.user.last_name = test_last_name
+        self.user.save()
+
+        self.assertTrue(
+            str(self.user), f"{self.user.id}: {test_first_name} {test_last_name}"
+        )
+
+    def test_user_role_not_part_of_org(self):
+        """Tests get_role_for_organization for user who is not part of the given org"""
+        self.assertIsNone(self.user.get_role_for_organization(self.organization.id))
+
     def test_get_config(self):
         config = {"test": True}
         # set config

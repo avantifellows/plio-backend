@@ -158,4 +158,4 @@ cat /path/to/gcp-service-account-filename.json | base64
 Plio supports error monitoring on your app with [Sentry](https://sentry.io/). Visit our guide on [Error Monitoring](./docs/../ERROR-MONITORING.md) to enable it for your Plio setup.
 
 #### `SENTRY_DSN`
-The Sentry Data Source Name. This is a unique link that identifies your Sentry project and sends error reports to Sentry dashboard. You can get the value of DSN for your projects from `Sentry dashboard > Project Settings > SDK Setup > Client Keys (DSN)`.
+The Sentry Data Source Name. This is a unique link that identifies your Sentry project and sends error reports to Sentry dashboard. You can get the value of DSN for your projects from `Sentry dashboard > Settings > Project > {PROJECT_NAME} > SDK Setup > Client Keys (DSN)`.

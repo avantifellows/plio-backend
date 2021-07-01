@@ -82,8 +82,16 @@ api_router.register(
 )
 api_router.register(r"images", ImageViewSet, basename="images")
 
+
+def trigger_error(request):
+    """Triggers an error - This is for testing purpose"""
+    division_by_zero = 1 / 0
+    return division_by_zero
+
+
 # http/https url patterns
 urlpatterns = [
+    path("trigger-error/", trigger_error),
     path("admin/", admin.site.urls),
     # API routes
     path("api/v1/otp/request/", request_otp, name="request-otp"),

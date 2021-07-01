@@ -181,6 +181,17 @@ class UserTestCase(BaseTestCase):
 
         self.assertEqual(user.email, test_email)
 
+    def test_general_user_cannot_list_users(self):
+        response = self.client.get("/api/v1/users/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_superuser_can_list_users(self):
+        self.user.is_superuser = True
+        self.user.save()
+
+        response = self.client.get("/api/v1/users/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_user_property_name(self):
         test_first_name = "first"
         test_last_name = "last"

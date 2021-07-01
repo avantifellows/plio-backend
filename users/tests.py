@@ -522,3 +522,37 @@ class OrganizationUserTestCase(BaseTestCase):
             },
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_orgview_user_cannot_create_user_to_org(self):
+        super_admin_role = Role.objects.filter(name="super-admin").first()
+        org_admin_role = Role.objects.filter(name="org-admin").first()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

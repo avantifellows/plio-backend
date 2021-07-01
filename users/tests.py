@@ -428,3 +428,97 @@ class OrganizationUserTestCase(BaseTestCase):
             },
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_cannot_create_org_user_if_role_not_present(self):
+        # try adding organization_user to the organization
+        # without sending role in the param
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user.id,
+                "organization": self.organization.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_org_superadmin_cannot_create_another_superadmin(self):
+        super_admin_role = Role.objects.filter(name="super-admin").first()
+        self.org_user_1.role = super_admin_role
+        self.org_user_1.save()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_org_superadmin_can_create_orgadmin_orgview_user(self):
+        org_admin_role = Role.objects.filter(name="org-admin").first()
+        super_admin_role = Role.objects.filter(name="super-admin").first()
+        self.org_user_1.role = super_admin_role
+        self.org_user_1.save()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_orgadmin_cannot_create_superadmin_orgadmin(self):
+        super_admin_role = Role.objects.filter(name="super-admin").first()
+        org_admin_role = Role.objects.filter(name="org-admin").first()
+        self.org_user_1.role = org_admin_role
+        self.org_user_1.save()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_orgadmin_can_create_orgview_user(self):
+        org_admin_role = Role.objects.filter(name="org-admin").first()
+        self.org_user_1.role = org_admin_role
+        self.org_user_1.save()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)

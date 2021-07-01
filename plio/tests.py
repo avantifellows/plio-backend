@@ -40,8 +40,10 @@ class BaseTestCase(APITestCase):
         # create org
         self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
 
-        # get role
+        # get roles
         self.org_view_role = Role.objects.filter(name="org-view").first()
+        self.org_admin_role = Role.objects.filter(name="org-admin").first()
+        self.super_admin_role = Role.objects.filter(name="super-admin").first()
 
     def setUp(self):
         # create 2 users

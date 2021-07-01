@@ -175,6 +175,13 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
 
 class UserTestCase(BaseTestCase):
+    def test_user_with_email(self):
+        test_email = "test@gmail.com"
+        User.objects.create(email=test_email)
+        created_email_user = User.objects.filter(email=test_email).first()
+
+        self.assertTrue(created_email_user)
+
     def test_get_config(self):
         config = {"test": True}
         # set config

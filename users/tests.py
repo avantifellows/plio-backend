@@ -205,6 +205,27 @@ class UserTestCase(BaseTestCase):
         """Tests get_role_for_organization for user who is not part of the given org"""
         self.assertIsNone(self.user.get_role_for_organization(self.organization.id))
 
+    def test_create_superuser_no_email(self):
+        with self.assertRaises(TypeError):
+            User.objects.create_superuser()
+
+    def test_create_superuser_empty_email(self):
+        with self.assertRaises(ValueError):
+            User.objects.create_superuser(email="")
+
+        with self.assertRaises(ValueError):
+            User.objects.create_superuser(email=None)
+
+    def test_create_superuser_no_password(self):
+        with self.assertRaises(ValueError):
+            User.objects.create_superuser(email="test@gmail.com")
+
+    def test_create_superuser_valid_args(self):
+        superuser = User.objects.create_superuser(
+            email="test@gmail.com", password="test123"
+        )
+        self.assertTrue(superuser.is_superuser)
+
     def test_get_config(self):
         config = {"test": True}
         # set config

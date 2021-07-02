@@ -363,7 +363,7 @@ class PlioTestCase(BaseTestCase):
 
         # seed sessions such that the three plios have this decending
         # configuration of number of unique viewers
-        # plio_3 - 3 | plio_2 - 2 | plio_1 - 2
+        # plio_3 - 3 | plio_2 - 2 | plio_1 - 1
         Session.objects.create(plio=plio_3, user=user_3)
         Session.objects.create(plio=plio_3, user=self.user_2)
         Session.objects.create(plio=plio_3, user=self.user)
@@ -371,7 +371,6 @@ class PlioTestCase(BaseTestCase):
         Session.objects.create(plio=self.plio_2, user=self.user_2)
         Session.objects.create(plio=self.plio_2, user=self.user)
 
-        Session.objects.create(plio=self.plio_1, user=self.user_2)
         Session.objects.create(plio=self.plio_1, user=self.user)
 
         # 'list_uuid` should give the result ordered as [plio_3, plio_2, plio_1]
@@ -386,6 +385,10 @@ class PlioTestCase(BaseTestCase):
         # ordering by "-unique_viewers" and "name"
         # 'list_uuid` should give the result ordered as [plio_3, plio_1, plio_2]
         # when ordering is specified as "-unique_viewers" and "name"
+
+        # add one more unique_view to plio_1 so that plio_1 and plio_2 both have 2 views each
+        # that way, the second ordering will be done using the "name"
+        Session.objects.create(plio=self.plio_1, user=self.user_2)
         response = self.client.get(
             "/api/v1/plios/list_uuid/", {"ordering": "-unique_viewers,name"}
         )

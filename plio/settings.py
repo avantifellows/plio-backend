@@ -322,3 +322,34 @@ BIGQUERY = {
     "location": os.environ.get("BIGQUERY_LOCATION", ""),
     "credentials": os.environ.get("BIGQUERY_CREDENTIALS", ""),
 }
+
+SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
+
+if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    def strip_sensitive_data(event, hint):
+        """Strips user email and username from the event/error details. Only data remains is event['user']['id']."""
+        try:
+            event["user"].pop("email")
+            event["user"].pop("username")
+        except Exception:
+            pass
+        return event
+
+    # Refer Sentry documentation for more configs: https://docs.sentry.io/platforms/python/guides/django/configuration/
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        traces_sample_rate=1.0,
+        # strip sensitive data before sending error details to Sentry
+        before_send=strip_sensitive_data,
+        # If you wish to associate users to errors (assuming you are using
+        # django.contrib.auth) you may enable sending PII data.
+        # By default, it sends id, email and username.
+        send_default_pii=True,
+        environment=APP_ENV,
+    )

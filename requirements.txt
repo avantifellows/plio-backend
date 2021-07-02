@@ -38,3 +38,4 @@ django-rest-framework-social-oauth2==1.1.0
 coverage==5.5
 google-cloud-bigquery==2.20.0
 pyarrow==4.0.1
+sentry-sdk==1.1.0

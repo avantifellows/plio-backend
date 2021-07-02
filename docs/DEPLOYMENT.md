@@ -109,6 +109,40 @@ Follow the steps below to set up the staging environment on AWS.
    5. In the subnet mappings, check the first desired zone and use Elastic IP under IPv4 settings for that subnet.
    6. Under listeners and routing, select the target group `plio-backend-staging` for TCP port 80.
    7. Proceed to create the load balancer. You will see the created load balancer in the list of all load balancers.
+   8. Enable access logs for your load balancer (optional, recommended for production)
+      1. Go to your S3 dashboard and create a new bucket. Name it as `plio-nlb-logs`.
+      2. Enable server-side encryption with Amazon S3-Managed Encryption Keys (SSE-S3).
+      3. All public access to be blocked. Click on `Create` button.
+      4. After creating the bucket, edit the bucket policy from `Permissions` tab and add the following. Make sure to edit the bucket name below if you have named it different. This policy is to allow bucket put objects permissions to the load balancer logger.
+      ```json
+       {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AWSLogDeliveryWrite",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "delivery.logs.amazonaws.com"
+                    },
+                    "Action": "s3:PutObject",
+                    "Resource": "arn:aws:s3:::plio-nlb-logs/*"
+                },
+                {
+                    "Sid": "AWSLogDeliveryAclCheck",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "delivery.logs.amazonaws.com"
+                    },
+                    "Action": "s3:GetBucketAcl",
+                    "Resource": "arn:aws:s3:::plio-nlb-logs"
+                }
+            ]
+        }
+      ```
+      5. Go back to the load balancer dashboard and select your load balancer.
+      6. Select the load balancer from the list and click on `Edit Attributes` from the `Actions` dropdown.
+      7. Enable `Access logs` option.
+      8. Enter the S3 location you created in previous step. If you want to use same bucket for multiple load balancer access logs, add a sub-directory after S3 bucket name in this step. For example: `plio-nlb-logs/plio-backend-staging`.
 
 7. Go to ECR and create a new repository named `plio-backend-staging` and set the settings as per your needs.
 
@@ -179,6 +213,15 @@ Follow the steps below to set up the staging environment on AWS.
           4. In the `Source` box, choose `Anywhere`.
           5. Click `Save`.
       19. Find the endpoints of your redis instance using [this](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Endpoints.html) and copy them somewhere for later use.
+      20. Enable access logs for your redis instance (optional, recommended for production)
+          1. Switch to the Redis listing screen and click on your redis instance
+          2. Switch to `Logs` tab.
+          3. Click on `Enable slow log` button.
+          4. Select log format as `Text` (or `JSON` if you prefer that).
+          5. Select destination type as `CloudWatch Logs`.
+          6. Set Log destination as `Create new` and enter then name of the log group that should be created. For example: `/redis/plio-staging`.
+          7. Click on save and you should see the log status as "enabling". Wait for some time and it should turn to "active".
+          8. Click on `log destination` link to access the log stream for the redis instance.
 
 12. Connect the redis instance to the `plio-backend-staging` service that was created above.
     1. Go to the ECS dashboard and select `plio-staging-cluster`.

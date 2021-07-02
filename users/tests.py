@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from oauth2_provider.models import AccessToken, RefreshToken
 from users.models import User
-from users.models import OneTimePassword, Role, OrganizationUser
+from users.models import OneTimePassword, OrganizationUser
 from plio.tests import BaseTestCase
 from organizations.models import Organization
 
@@ -175,6 +175,69 @@ class ThirdPartyAuthTestCase(BaseTestCase):
 
 
 class UserTestCase(BaseTestCase):
+    def test_user_manager_create_user_with_email(self):
+        test_email = "test@gmail.com"
+        user = User.objects.create_user(email=test_email)
+
+        self.assertEqual(user.email, test_email)
+
+    def test_general_user_cannot_list_users(self):
+        response = self.client.get("/api/v1/users/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_superuser_can_list_users(self):
+        # make self.user superuser
+        self.user.is_superuser = True
+        self.user.save()
+
+        response = self.client.get("/api/v1/users/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_property_name(self):
+        test_first_name = "first"
+        test_last_name = "last"
+        self.user.first_name = test_first_name
+        self.user.last_name = test_last_name
+        self.user.save()
+
+        self.assertEqual(self.user.name, f"{test_first_name} {test_last_name}")
+
+    def test_user_string_representation(self):
+        test_first_name = "first"
+        test_last_name = "last"
+        self.user.first_name = test_first_name
+        self.user.last_name = test_last_name
+        self.user.save()
+
+        self.assertEqual(
+            str(self.user), f"{self.user.id}: {test_first_name} {test_last_name}"
+        )
+
+    def test_user_role_not_part_of_org(self):
+        """Tests get_role_for_organization for user who is not part of the given org"""
+        self.assertIsNone(self.user.get_role_for_organization(self.organization.id))
+
+    def test_create_superuser_no_email(self):
+        with self.assertRaises(TypeError):
+            User.objects.create_superuser()
+
+    def test_create_superuser_empty_email(self):
+        with self.assertRaises(ValueError):
+            User.objects.create_superuser(email="")
+
+        with self.assertRaises(ValueError):
+            User.objects.create_superuser(email=None)
+
+    def test_create_superuser_no_password(self):
+        with self.assertRaises(ValueError):
+            User.objects.create_superuser(email="test@gmail.com")
+
+    def test_create_superuser_valid_args(self):
+        superuser = User.objects.create_superuser(
+            email="test@gmail.com", password="test123"
+        )
+        self.assertTrue(superuser.is_superuser)
+
     def test_get_config(self):
         config = {"test": True}
         # set config
@@ -320,9 +383,8 @@ class OrganizationUserTestCase(BaseTestCase):
 
     def test_org_admin_can_list_only_their_org_users(self):
         # make user 2 org-admin for org 1
-        org_admin_role = Role.objects.filter(name="org-admin").first()
         OrganizationUser.objects.create(
-            organization=self.organization, user=self.user_2, role=org_admin_role
+            organization=self.organization, user=self.user_2, role=self.org_admin_role
         )
 
         # change user
@@ -366,3 +428,327 @@ class OrganizationUserTestCase(BaseTestCase):
             },
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_cannot_create_org_user_if_role_not_present(self):
+        # try adding organization_user to the organization
+        # without sending role in the param
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user.id,
+                "organization": self.organization.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_org_superadmin_cannot_create_another_superadmin(self):
+        self.org_user_1.role = self.super_admin_role
+        self.org_user_1.save()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_org_superadmin_can_create_orgadmin_orgview_user(self):
+        self.org_user_1.role = self.super_admin_role
+        self.org_user_1.save()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_orgadmin_cannot_create_superadmin_orgadmin(self):
+        self.org_user_1.role = self.org_admin_role
+        self.org_user_1.save()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_orgadmin_can_create_orgview_user(self):
+        self.org_user_1.role = self.org_admin_role
+        self.org_user_1.save()
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_orgview_user_cannot_create_user_to_org(self):
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_superuser_can_update_orguser(self):
+        # make self.user superuser
+        self.user.is_superuser = True
+        self.user.save()
+
+        # create user_2 as new org user
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_superadmin_cannot_update_superadmin(self):
+        self.org_user_1.role = self.super_admin_role
+        self.org_user_1.save()
+
+        # create user_2 as new org superadmin
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.super_admin_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_superadmin_can_update_orgadmin_orgview_user(self):
+        self.org_user_1.role = self.super_admin_role
+        self.org_user_1.save()
+
+        # create user_2 as new orgview user
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # create user_2 as new orgadmin user
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_admin_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_superadmin_cannot_update_orgadmin_orgview_to_superadmin(self):
+        self.org_user_1.role = self.super_admin_role
+        self.org_user_1.save()
+
+        # create user_2 as new orgview user
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # create user_2 as new orgadmin user
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_admin_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_orgadmin_cannot_update_superadmin_orgadmin(self):
+        self.org_user_1.role = self.org_admin_role
+        self.org_user_1.save()
+
+        # create user_2 as new org superadmin
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.super_admin_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # create user_2 as new orgadmin
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_admin_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_view_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_orgadmin_cannot_update_orgview_user(self):
+        self.org_user_1.role = self.org_admin_role
+        self.org_user_1.save()
+
+        # create user_2 as new orgview user
+        org_user = OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+        response = self.client.put(
+            f"/api/v1/organization-users/{org_user.id}/",
+            {
+                "user": self.user_2.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_orgview_user_cannot_update_self(self):
+        self.org_user_1.role = self.org_view_role
+        self.org_user_1.save()
+
+        response = self.client.put(
+            f"/api/v1/organization-users/{self.org_user_1.id}/",
+            {
+                "user": self.user.id,
+                "organization": self.organization.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self.client.put(
+            f"/api/v1/organization-users/{self.org_user_1.id}/",
+            {
+                "user": self.user.id,
+                "organization": self.organization.id,
+                "role": self.super_admin_role.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

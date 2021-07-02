@@ -146,10 +146,16 @@ The BigQuery project id that contains the datasets.
 #### `BIGQUERY_LOCATION`
 The location of the BigQuery project. All datasets must be in the same location.
 
-#### `BIGQUERY CREDENTIALS`
+#### `BIGQUERY_CREDENTIALS`
 This is a base64 encoded value of your Google Cloud Platform's service account. You can learn more about acquiring service account credentials [here](https://cloud.google.com/docs/authentication/getting-started) and [here](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts?supportedpurview=project). The service account must have BigQuery admin permissions.
 
 Once you have downloaded the JSON file, run the following commands and use the output for this environment variable:
 ```sh
 cat /path/to/gcp-service-account-filename.json | base64
 ```
+
+### Error monitoring
+Plio supports error monitoring on your app with [Sentry](https://sentry.io/). Visit our guide on [Error Monitoring](./docs/../ERROR-MONITORING.md) to enable it for your Plio setup.
+
+#### `SENTRY_DSN`
+The Sentry Data Source Name. This is a unique link that identifies your Sentry project and sends error reports to Sentry dashboard. You can get the value of DSN for your projects from `Sentry dashboard > Settings > Project > {PROJECT_NAME} > SDK Setup > Client Keys (DSN)`.

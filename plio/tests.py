@@ -288,6 +288,124 @@ class PlioTestCase(BaseTestCase):
         self.assertNotEqual(plio.uuid, response.data["uuid"])
         self.assertEqual(plio.name, response.data["name"])
 
+    def test_default_ordering_when_no_ordering_specified(self):
+        # create a third plio
+        Plio.objects.create(name="Plio 3", video=self.video, created_by=self.user)
+
+        # make a request to list the plio uuids without specifying any order
+        # NOTE: default ordering should come out to be '-updated_at'
+        # order of plios should be [plio_3, plio_2, plio_1]
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        self.assertListEqual(
+            [plio.uuid for plio in Plio.objects.order_by("-updated_at")],
+            response.data["results"],
+        )
+
+        # update the first plio - ordering should change according to 'updated_at'
+        self.plio_1.name = "updated Plio 1"
+        self.plio_1.save()
+
+        # make a request to list the plio uuids
+        # NOTE: default ordering should come out to be '-updated_at'
+        # order of plios should be [plio_1, plio_3, plio_2]
+        response = self.client.get("/api/v1/plios/list_uuid/")
+        self.assertListEqual(
+            [plio.uuid for plio in Plio.objects.order_by("-updated_at")],
+            response.data["results"],
+        )
+
+    def test_ordering_applied_as_specified(self):
+        # create a third plio
+        plio_3 = Plio.objects.create(
+            name="Plio 3", video=self.video, created_by=self.user
+        )
+
+        # ordering by "name"
+        # update the names
+        self.plio_1.name = "A_plio"
+        self.plio_1.save()
+        self.plio_2.name = "B_plio"
+        self.plio_2.save()
+        plio_3.name = "C_plio"
+        plio_3.save()
+
+        # `list_uuid` should give the result ordered as [plio_1, plio_2, plio_3]
+        # when "name" ordering is specified
+        response = self.client.get("/api/v1/plios/list_uuid/", {"ordering": "name"})
+        self.assertListEqual(
+            [plio.uuid for plio in Plio.objects.order_by("name")],
+            response.data["results"],
+        )
+
+        # ordering by "-name"
+        # 'list_uuid` should give the result ordered as [plio_3, plio_2, plio_1]
+        # when "-name" ordering is specified
+        response = self.client.get("/api/v1/plios/list_uuid/", {"ordering": "-name"})
+        self.assertListEqual(
+            [plio.uuid for plio in Plio.objects.order_by("-name")],
+            response.data["results"],
+        )
+
+        # ordering by 'created_at'
+        # 'list_uuid` should give the result ordered as [plio_1, plio_2, plio_3]
+        # when "created_at" ordering is specified
+        response = self.client.get(
+            "/api/v1/plios/list_uuid/", {"ordering": "created_at"}
+        )
+        self.assertListEqual(
+            [plio.uuid for plio in Plio.objects.order_by("created_at")],
+            response.data["results"],
+        )
+
+        # ordering by "-unique_viewers"
+        # stimulate some users watching the created plios
+        user_3 = User.objects.create(mobile="+918877665544")
+
+        # seed sessions such that the three plios have this decending
+        # configuration of number of unique viewers
+        # plio_3 - 3 | plio_2 - 2 | plio_1 - 2
+        Session.objects.create(plio=plio_3, user=user_3)
+        Session.objects.create(plio=plio_3, user=self.user_2)
+        Session.objects.create(plio=plio_3, user=self.user)
+
+        Session.objects.create(plio=self.plio_2, user=self.user_2)
+        Session.objects.create(plio=self.plio_2, user=self.user)
+
+        Session.objects.create(plio=self.plio_1, user=self.user_2)
+        Session.objects.create(plio=self.plio_1, user=self.user)
+
+        # 'list_uuid` should give the result ordered as [plio_3, plio_2, plio_1]
+        # when "-unique_viewers" ordering is specified
+        response = self.client.get(
+            "/api/v1/plios/list_uuid/", {"ordering": "-unique_viewers"}
+        )
+        self.assertListEqual(
+            [plio_3.uuid, self.plio_2.uuid, self.plio_1.uuid], response.data["results"]
+        )
+
+        # ordering by "-unique_viewers" and "name"
+        # 'list_uuid` should give the result ordered as [plio_3, plio_1, plio_2]
+        # when ordering is specified as "-unique_viewers" and "name"
+        response = self.client.get(
+            "/api/v1/plios/list_uuid/", {"ordering": "-unique_viewers,name"}
+        )
+        self.assertListEqual(
+            [plio_3.uuid, self.plio_1.uuid, self.plio_2.uuid], response.data["results"]
+        )
+
+    def test_invalid_ordering_results_in_default_ordering(self):
+        # create a third plio
+        Plio.objects.create(name="Plio 3", video=self.video, created_by=self.user)
+
+        # order by some invalid ordering string - "xyz"
+        # `list_uuid` should give the result ordered as [plio_3, plio_2, plio_1]
+        # because an invalid ordering field will result in the default ordering
+        response = self.client.get("/api/v1/plios/list_uuid/", {"ordering": "xyz"})
+        self.assertListEqual(
+            [plio.uuid for plio in Plio.objects.order_by("-updated_at")],
+            response.data["results"],
+        )
+
 
 class VideoTestCase(BaseTestCase):
     def setUp(self):

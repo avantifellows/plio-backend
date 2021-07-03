@@ -290,7 +290,9 @@ class PlioTestCase(BaseTestCase):
 
     def test_default_ordering_when_no_ordering_specified(self):
         # create a third plio
-        Plio.objects.create(name="Plio 3", video=self.video, created_by=self.user)
+        plio_3 = Plio.objects.create(
+            name="Plio 3", video=self.video, created_by=self.user
+        )
 
         # make a request to list the plio uuids without specifying any order
         # NOTE: default ordering should come out to be '-updated_at'
@@ -298,6 +300,11 @@ class PlioTestCase(BaseTestCase):
         response = self.client.get("/api/v1/plios/list_uuid/")
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("-updated_at")],
+            response.data["results"],
+        )
+        # also manually checking the order
+        self.assertListEqual(
+            [plio_3.uuid, self.plio_2.uuid, self.plio_1.uuid],
             response.data["results"],
         )
 
@@ -311,6 +318,11 @@ class PlioTestCase(BaseTestCase):
         response = self.client.get("/api/v1/plios/list_uuid/")
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("-updated_at")],
+            response.data["results"],
+        )
+        # also manually checking the order
+        self.assertListEqual(
+            [self.plio_1.uuid, plio_3.uuid, self.plio_2.uuid],
             response.data["results"],
         )
 
@@ -336,6 +348,11 @@ class PlioTestCase(BaseTestCase):
             [plio.uuid for plio in Plio.objects.order_by("name")],
             response.data["results"],
         )
+        # also manually checking the order
+        self.assertListEqual(
+            [self.plio_1.uuid, self.plio_2.uuid, plio_3.uuid],
+            response.data["results"],
+        )
 
         # ordering by "-name"
         # 'list_uuid` should give the result ordered as [plio_3, plio_2, plio_1]
@@ -343,6 +360,11 @@ class PlioTestCase(BaseTestCase):
         response = self.client.get("/api/v1/plios/list_uuid/", {"ordering": "-name"})
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("-name")],
+            response.data["results"],
+        )
+        # also manually checking the order
+        self.assertListEqual(
+            [plio_3.uuid, self.plio_2.uuid, self.plio_1.uuid],
             response.data["results"],
         )
 
@@ -354,6 +376,11 @@ class PlioTestCase(BaseTestCase):
         )
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("created_at")],
+            response.data["results"],
+        )
+        # also manually checking the order
+        self.assertListEqual(
+            [self.plio_1.uuid, self.plio_2.uuid, plio_3.uuid],
             response.data["results"],
         )
 

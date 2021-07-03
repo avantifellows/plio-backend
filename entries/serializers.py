@@ -27,13 +27,41 @@ class SessionSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def validate_plio(self, plio):
-        """Ensure that a session is created only for a published plio"""
-        if plio.status == "draft":
+    def validate(self, data):
+        """
+        All validation checks happen in this method. Currently these checks are defined
+        - A session can only be created for a published plio
+        - `is_first` is set properly depending on if a session already exists or not
+        """
+        # import ipdb; ipdb.set_trace()
+        # validate plio's status
+        if data["plio"].status == "draft":
             raise serializers.ValidationError(
                 "A session can only be created for a published plio"
             )
-        return plio
+
+        # set `is_first` properly
+        last_session = (
+            Session.objects.filter(plio_id=data["plio"].id)
+            .filter(user_id=data["user"].id)
+            .first()
+        )
+
+        if self.context["view"].action == "create":
+            # while creating a session, check if any session already exists
+            if last_session:
+                data["is_first"] = False
+            else:
+                data["is_first"] = True
+        elif self.context["view"].action == "update":
+            # while updating a session, check if the session being updated
+            # is the very first session
+            if f"{last_session.id}" == self.context["view"].kwargs["pk"]:
+                data["is_first"] = True
+            else:
+                data["is_first"] = False
+
+        return data
 
     def create(self, validated_data):
         """
@@ -58,9 +86,6 @@ class SessionSerializer(serializers.ModelSerializer):
             for key in keys_to_check:
                 if key not in validated_data:
                     validated_data[key] = last_session_data[key]
-
-        else:
-            validated_data["is_first"] = True
 
         # get the newly created session object
         session = Session.objects.create(**validated_data)

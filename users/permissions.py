@@ -70,16 +70,16 @@ class OrganizationUserPermission(permissions.BasePermission):
         # allow anyone to retrieve the instance
         if view.action == "retrieve":
             return True
-        
+
         if view.action == "destroy":
-            # When deleting an organization-user, we will only send the primary key. 
-            # So to determine if logged-in user is authorized to perform action, 
+            # When deleting an organization-user, we will only send the primary key.
+            # So to determine if logged-in user is authorized to perform action,
             # we need to pick org id from object
             organization_id = obj.organization_id
         else:
-            # When updating an organization user, we will also send a new org id. 
-            # So to determine if logged-in user is authorized to perform action, 
-            # we need to pick org id from the request (which is the updated 
+            # When updating an organization user, we will also send a new org id.
+            # So to determine if logged-in user is authorized to perform action,
+            # we need to pick org id from the request (which is the updated
             # org id for that organization-user)
             organization_id = request.data["organization"]
 

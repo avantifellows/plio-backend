@@ -33,7 +33,6 @@ class SessionSerializer(serializers.ModelSerializer):
         - A session can only be created for a published plio
         - `is_first` is set properly depending on if a session already exists or not
         """
-        # import ipdb; ipdb.set_trace()
         # validate plio's status
         if data["plio"].status == "draft":
             raise serializers.ValidationError(

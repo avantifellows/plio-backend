@@ -17,6 +17,6 @@ python manage.py pliotenant
 python manage.py pliosuperuser
 
 # start the server
-python manage.py runserver 0.0.0.0:${APP_PORT}
+python manage.py runserver 0.0.0.0:${APP_PORT} --http_timeout=${HTTP_TIMEOUT}
 
 exec "$@"

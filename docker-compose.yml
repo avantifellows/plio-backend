@@ -14,6 +14,14 @@ services: # the different images that will be running as containers
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     restart: "on-failure"
+
+  redis: # service name
+    image: "redis:5" # image name of the redis database. during build, this will be pulled from dockerhub and a container spun up from it
+    ports:
+      - "6379:6379" # default redis port
+    depends_on:
+      - web # cannot start if web service is not up and running
+
   web: # service name
     # platform defined to fix python packages installation issues on Apple Silicon
     platform: linux/amd64
@@ -21,8 +29,10 @@ services: # the different images that will be running as containers
     stdin_open: true
     tty: true
     build: . # build the image for the web service from the dockerfile in parent directory.
+    command: gunicorn plio.wsgi:application --bind 0.0.0.0:${APP_PORT}
     volumes:
       - .:/app # map data and files from parent directory in host to plio directory in docker container
+      - static:/app/static/
     env_file: # file where env variables are stored. Used as best practice so as not to expose secret keys
       - .env # name of the env file
     image: plio-backend # name of the image
@@ -31,12 +41,16 @@ services: # the different images that will be running as containers
     restart: "on-failure"
     depends_on: # cannot start if db service is not up and running
       - db
-  redis: # service name
-    image: "redis:5" # image name of the redis database. during build, this will be pulled from dockerhub and a container spun up from it
+
+  nginx:
+    build: ./nginx
+    volumes:
+      - static:/app/static/
     ports:
-      - "6379:6379" # default redis port
+      - 8008:80
     depends_on:
-      - web # cannot start if web service is not up and running
+      - web
 
 volumes:
   postgres_data:
+  static:

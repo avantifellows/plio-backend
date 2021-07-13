@@ -41,13 +41,20 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: plio-backend-staging
+          ECR_BACKEND_NGINX_REPOSITORY: plio-backend-staging-nginx
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build a docker container and push it to ECR
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG  .
-          echo "Pushing image to ECR..."
+
+          # Build a docker container for nginx and push it to ECR
+          docker build -t $ECR_REGISTRY:$ECR_BACKEND_NGINX_REPOSITORY:$IMAGE_TAG -f nginx/Dockerfile .
+
+          echo "Pushing images to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push $ECR_REGISTRY/$ECR_BACKEND_NGINX_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=nginx-image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
       # Download the task definition created at AWS ECS
       - name: Download task definition
@@ -62,6 +69,15 @@ jobs:
           task-definition: task-definition.json
           container-name: plio-backend-staging
           image: ${{ steps.build-image.outputs.image }}
+
+      # Creates a new revision of the task definition with latest image id for nginx.
+      - name: Fill in the new nginx image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: plio-backend-staging-nginx
+          image: ${{ steps.build-image.outputs.nginx-image }}
 
       # Uses the ECS service for backend to create a new task from the new task definition. The new task is created while the previous task is already running. This happens based on the minimum healthy percentage and maximum percentage configured during service creation.
       # After service completion and stability, it removes the previous task from older task definition.

@@ -16,5 +16,7 @@ python manage.py pliotenant
 # create default superuser
 python manage.py pliosuperuser
 
+# start the server
+gunicorn plio.wsgi:application --bind 0.0.0.0:8001
 
 exec "$@"

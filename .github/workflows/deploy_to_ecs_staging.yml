@@ -85,7 +85,7 @@ jobs:
         id: render-container-nginx
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ steps.render-web-container.outputs.task-definition }}
+          task-definition: ${{ steps.render-container-web.outputs.task-definition }}
           container-name: plio-backend-staging-nginx
           image: ${{ steps.build-image-nginx.outputs.image }}
 

@@ -36,22 +36,6 @@ jobs:
 
       # build the docker image and push to Elastic Container Registry.
       # Sets the name of the image as output to be used in further steps.
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image-web
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: plio-backend-staging
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          # Build a docker container and push it to ECR
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG  .
-
-          echo "Pushing image to ECR..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=nginx-image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-      # build the docker image and push to Elastic Container Registry.
-      # Sets the name of the image as output to be used in further steps.
       - name: Build, tag, and push image to Amazon ECR - nginx
         id: build-image-nginx
         env:
@@ -65,6 +49,22 @@ jobs:
           echo "Pushing image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      # build the docker image and push to Elastic Container Registry.
+      # Sets the name of the image as output to be used in further steps.
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image-web
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: plio-backend-staging
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build a docker container and push it to ECR
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG  .
+
+          echo "Pushing image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=nginx-image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
       # Download the task definition created at AWS ECS
       - name: Download task definition

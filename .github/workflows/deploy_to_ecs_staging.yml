@@ -56,8 +56,8 @@ jobs:
         id: build-image-nginx
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: plio-backend-staging
-          IMAGE_TAG: ${{ github.sha }}nginx
+          ECR_REPOSITORY: plio-backend-staging-nginx
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build a docker container and push it to ECR
           docker build -t $ECR_REGISTRY:$ECR_REPOSITORY:$IMAGE_TAG -f nginx/Dockerfile .

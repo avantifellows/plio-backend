@@ -984,7 +984,7 @@ class PlioDownloadTestCase(BaseTestCase):
     def test_user_can_download_data_for_other_user_plio_in_organization(self):
 
         OrganizationUser.objects.create(
-            organization=self.organization, user=self.user, role=self.org_view_role
+            organization=self.organization, user=self.user, role=self.org_admin_role
         )
         OrganizationUser.objects.create(
             organization=self.organization, user=self.user_2, role=self.org_view_role

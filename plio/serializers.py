@@ -46,7 +46,7 @@ class PlioSerializer(serializers.ModelSerializer):
             "config",
             "created_by",
             "video",
-            "created_at",
+            "temp_field" "created_at",
             "updated_at",
         ]
         read_only_fields = ["uuid"]

@@ -18,7 +18,7 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 
 from organizations.middleware import OrganizationTenantMiddleware
-from users.models import OrganizationUser
+from users.models import OrganizationUser, Role
 from plio.models import Video, Plio, Item, Question, Image
 from plio.serializers import (
     VideoSerializer,
@@ -236,6 +236,28 @@ class PlioViewSet(viewsets.ModelViewSet):
         # schema name to query in
         schema_name = OrganizationTenantMiddleware().get_schema(self.request)
 
+        # if the plio belongs to an org schema
+        is_org_plio = False if (schema_name == "public") else True
+
+        # if the plio belongs to an org, is the user requesting the data
+        # an org admin or not
+        is_user_org_admin = False
+        if is_org_plio:
+            organization_shortcode = (
+                OrganizationTenantMiddleware.get_organization_shortcode(self.request)
+            )
+            is_user_org_admin = OrganizationUser.objects.filter(
+                organization__shortcode=organization_shortcode,
+                user=self.request.user.id,
+                role=Role.objects.filter(name="org-admin").first().id,
+            ).exists()
+
+        # extra data to be passed to the queries
+        extra_data = {
+            "is_org_plio": is_org_plio,
+            "is_user_org_admin": is_user_org_admin,
+        }
+
         if BIGQUERY["enabled"]:
             gcp_service_account_file = "/tmp/gcp-service-account.json"
             with open(gcp_service_account_file, "wb") as file:
@@ -255,10 +277,14 @@ class PlioViewSet(viewsets.ModelViewSet):
         def save_query_results(cursor, query_method, filename):
             if BIGQUERY["enabled"]:
                 # execute the sql query using BigQuery client and create a dataframe
-                df = client.query(query_method(uuid, schema=schema_name)).to_dataframe()
+                df = client.query(
+                    query_method(uuid, schema=schema_name, extra_data=extra_data)
+                ).to_dataframe()
             else:
                 # execute the sql query using postgres DB connection cursor
-                cursor.execute(query_method(uuid, schema=schema_name))
+                cursor.execute(
+                    query_method(uuid, schema=schema_name, extra_data=extra_data)
+                )
                 # extract column names as cursor.description returns a tuple
                 columns = [col[0] for col in cursor.description]
                 # create a dataframe from the rows and the columns

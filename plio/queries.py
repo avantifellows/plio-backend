@@ -2,7 +2,13 @@ from plio.settings import BIGQUERY
 
 
 def get_plio_details_query(plio_uuid: str, schema: str, extra_data: dict):
-    """Returns the details for the given plio"""
+    """
+    Returns the details for the given plio
+
+    plio_uuid: The plio to fetch the details for.
+    schema: The schema from which the tables are to be accessed.
+    extra_data: Any extra data that's needed to complete the query. (not required here)
+    """
     return f"""
         SELECT
             item.id AS item_id,
@@ -19,7 +25,16 @@ def get_plio_details_query(plio_uuid: str, schema: str, extra_data: dict):
 
 
 def get_sessions_dump_query(plio_uuid: str, schema: str, extra_data: dict):
-    """Returns the dump of all the sessions for the given plio"""
+    """
+    Returns the dump of all the sessions for the given plio
+
+    plio_uuid: The plio to fetch the details for.
+    schema: The schema from which the tables are to be accessed.
+    extra_data: Any extra data that's needed to complete the query.
+            `is_org_plio`: If the `plio_uuid` belongs to an org workspace
+            `is_user_org_admin`: If the user making this query is that
+                                 org's admin
+    """
     return f"""
         SELECT
             session.id as session_id,
@@ -37,7 +52,16 @@ def get_sessions_dump_query(plio_uuid: str, schema: str, extra_data: dict):
 
 
 def get_responses_dump_query(plio_uuid: str, schema: str, extra_data: dict):
-    """Returns the dump of all the session responses for the given plio"""
+    """
+    Returns the dump of all the session responses for the given plio
+
+    plio_uuid: The plio to fetch the details for.
+    schema: The schema from which the tables are to be accessed.
+    extra_data: Any extra data that's needed to complete the query.
+            `is_org_plio`: If the `plio_uuid` belongs to an org workspace
+            `is_user_org_admin`: If the user making this query is that
+                                 org's admin
+    """
     return f"""
         SELECT
             session.id as session_id,
@@ -57,7 +81,16 @@ def get_responses_dump_query(plio_uuid: str, schema: str, extra_data: dict):
 
 
 def get_events_query(plio_uuid: str, schema: str, extra_data: dict):
-    """Returns the dump of all events across all sessions for the given plio"""
+    """
+    Returns the dump of all events across all sessions for the given plio
+
+    plio_uuid: The plio to fetch the details for.
+    schema: The schema from which the tables are to be accessed.
+    extra_data: Any extra data that's needed to complete the query.
+            `is_org_plio`: If the `plio_uuid` belongs to an org workspace
+            `is_user_org_admin`: If the user making this query is that
+                                 org's admin
+    """
     return f"""
         SELECT
             session.id as session_id,

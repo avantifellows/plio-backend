@@ -246,12 +246,11 @@ class PlioViewSet(viewsets.ModelViewSet):
             organization_shortcode = (
                 OrganizationTenantMiddleware.get_organization_shortcode(self.request)
             )
-            if OrganizationUser.objects.filter(
+            is_user_org_admin = OrganizationUser.objects.filter(
                 organization__shortcode=organization_shortcode,
                 user=self.request.user.id,
                 role=Role.objects.filter(name="org-admin").first().id,
-            ).exists():
-                is_user_org_admin = True
+            ).exists()
 
         # extra data to be passed to the queries
         extra_data = {

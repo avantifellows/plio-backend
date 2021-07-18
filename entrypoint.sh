@@ -17,6 +17,6 @@ python manage.py pliotenant
 python manage.py pliosuperuser
 
 # start the server
-gunicorn plio.wsgi:application --bind 0.0.0.0:8001
+gunicorn plio.wsgi:application --bind 0.0.0.0:8001 --workers 4 --timeout 300
 
 exec "$@"

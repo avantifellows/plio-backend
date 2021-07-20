@@ -315,11 +315,10 @@ class ItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, PlioPermission]
 
     def get_queryset(self):
-        queryset = Item.objects.all()
         plio_uuid = self.request.query_params.get("plio")
         if plio_uuid is not None:
-            queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
-        return queryset
+            return Item.objects.filter(plio__uuid=plio_uuid).order_by("time")
+        return Item.objects.all()
 
     @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
     def duplicate(self, request, pk):

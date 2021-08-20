@@ -42,7 +42,9 @@ services: # the different images that will be running as containers
       - db
 
   nginx:
-    build: ./nginx
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
     volumes:
       - static:/app/static/
     ports:

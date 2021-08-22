@@ -126,17 +126,17 @@ class SessionSerializer(serializers.ModelSerializer):
 
         return session
 
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response["plio"] = PlioSerializer(instance.plio).data
-        response["user"] = UserSerializer(instance.user).data
-        if instance.experiment:
-            response["experiment"] = ExperimentSerializer(instance.experiment).data
-        response["last_event"] = EventSerializer(instance.last_global_event).data
+    # def to_representation(self, instance):
+    #     response = super().to_representation(instance)
+    #     response["plio"] = PlioSerializer(instance.plio).data
+    #     response["user"] = UserSerializer(instance.user).data
+    #     if instance.experiment:
+    #         response["experiment"] = ExperimentSerializer(instance.experiment).data
+    #     response["last_event"] = EventSerializer(instance.last_global_event).data
 
-        # fetch and return all session answers tied to this session
-        response["session_answers"] = instance.sessionanswer_set.values()
-        return response
+    #     # fetch and return all session answers tied to this session
+    #     response["session_answers"] = instance.sessionanswer_set.values()
+    #     return response
 
 
 class SessionAnswerSerializer(serializers.ModelSerializer):

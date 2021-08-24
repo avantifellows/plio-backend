@@ -67,8 +67,6 @@ class CustomOrderingFilter(OrderingFilter):
                     unique_viewers=Coalesce(Subquery(plios_unique_users_count), 0)
                 )
 
-            print("abc")
-            print(queryset)
             return queryset.order_by(*ordering)
 
         return queryset

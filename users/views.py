@@ -262,15 +262,9 @@ def generate_external_auth_access_token(request):
             unique_id=request.data["unique_id"], auth_org=requesting_org
         )
 
-    # login the user, get the new access token,
-    # attach requesting org info and return
+    # login the user, get the new access token and return
     token = login_user_and_get_access_token(user, request)
-    external_auth_info = {
-        "token": token,
-        "active_workspace": requesting_org.shortcode,
-    }
-
-    return Response(external_auth_info, status=status.HTTP_200_OK)
+    return Response(token, status=status.HTTP_200_OK)
 
 
 def send_welcome_sms(mobile):

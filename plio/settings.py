@@ -50,6 +50,7 @@ SHARED_APPS = (
     "oauth2_provider",
     "social_django",
     "rest_framework_social_oauth2",
+    "silk",
 )
 
 TENANT_APPS = (
@@ -84,6 +85,7 @@ INSTALLED_APPS = [
     "social_django",
     "rest_framework_social_oauth2",
     "storages",
+    "silk",
 ]
 
 TENANT_MODEL = "organizations.Organization"
@@ -112,6 +114,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
 ]
 
 MIDDLEWARE = [
+    "silk.middleware.SilkyMiddleware",
     "organizations.middleware.OrganizationTenantMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",

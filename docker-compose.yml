@@ -31,7 +31,6 @@ services: # the different images that will be running as containers
     build: . # build the image for the web service from the dockerfile in parent directory.
     volumes:
       - .:/app # map data and files from parent directory in host to plio directory in docker container
-      - static:/app/static/
     env_file: # file where env variables are stored. Used as best practice so as not to expose secret keys
       - .env # name of the env file
     image: plio-backend # name of the image
@@ -41,17 +40,5 @@ services: # the different images that will be running as containers
     depends_on: # cannot start if db service is not up and running
       - db
 
-  nginx:
-    build:
-      context: .
-      dockerfile: Dockerfile.nginx
-    volumes:
-      - static:/app/static/
-    ports:
-      - 8008:80
-    depends_on:
-      - web
-
 volumes:
   postgres_data:
-  static:

@@ -75,13 +75,13 @@ class ItemSerializer(serializers.ModelSerializer):
         response = super().to_representation(instance)
         # add the question details to the item response if it exists
         if instance.type == "question":
-            question = instance.question_set.all().first()
+            # question = instance.question_set.all().first()
+            question = instance.question_set.first()
             if question:
                 response["details"] = QuestionSerializer(question).data
             else:
                 response["details"] = {}
         return response
-
 
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:

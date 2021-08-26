@@ -315,6 +315,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, PlioPermission]
 
     def get_queryset(self):
+        # return []
         plio_id = self.request.query_params.get("plio")
         if plio_id is not None:
             return Item.objects.filter(plio=plio_id).order_by("time")

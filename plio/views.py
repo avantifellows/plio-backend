@@ -138,7 +138,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                 | (Q(is_public=False) & Q(created_by=self.request.user))
             )
 
-        return None
+        return Plio.objects.none()
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)

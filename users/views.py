@@ -100,6 +100,9 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # get all organizations where the current user is a super-admin or org-admin
+        if not self.request.user:
+            return OrganizationUser.objects.none()
+
         if self.request.user.is_superuser:
             return OrganizationUser.objects.all()
 

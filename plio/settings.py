@@ -357,9 +357,7 @@ if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:
         environment=APP_ENV,
     )
 
-# silk query profiling settings
+# settings for django-silk query profiling
 SILKY_AUTHENTICATION = True  # User must login
 SILKY_AUTHORISATION = True  # User must have permissions
-SILKY_PERMISSIONS = lambda user: user.is_superuser
 SILKY_INTERCEPT_PERCENT = 100 if APP_ENV in ["local", "staging"] else 0
-

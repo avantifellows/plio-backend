@@ -109,6 +109,8 @@ urlpatterns = [
     ),
 ]
 
+urlpatterns += [url(r'^silk/', include('silk.urls', namespace='silk'))]
+
 # ws/wss url patterns
 websocket_urlpatterns = [
     # consumer for a particular user

@@ -37,7 +37,7 @@ jobs:
       # build the docker image and push to Elastic Container Registry.
       # Sets the name of the image as output to be used in further steps.
       - name: Build, tag, and push image to Amazon ECR
-        id: build-image-web
+        id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: plio-backend-staging
@@ -45,23 +45,6 @@ jobs:
         run: |
           # Build a docker container and push it to ECR
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG  .
-
-          echo "Pushing image to ECR..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-      # build the docker image and push to Elastic Container Registry.
-      # Sets the name of the image as output to be used in further steps.
-      - name: Build, tag, and push image to Amazon ECR - nginx
-        id: build-image-nginx
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: plio-backend-staging
-          IMAGE_TAG: ${{ github.sha }}-nginx
-        run: |
-          # Build a docker container and push it to ECR
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile.nginx  .
-
           echo "Pushing image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
@@ -73,28 +56,19 @@ jobs:
 
       # Creates a new revision of the task definition with latest image id.
       - name: Fill in the new image ID in the Amazon ECS task definition
-        id: render-container-web
+        id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition.json
           container-name: plio-backend-staging
-          image: ${{ steps.build-image-web.outputs.image }}
-
-      # Creates a new revision of the task definition with latest image id for nginx.
-      - name: Fill in the new nginx image ID in the Amazon ECS task definition
-        id: render-container-nginx
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ${{ steps.render-container-web.outputs.task-definition }}
-          container-name: plio-backend-staging-nginx
-          image: ${{ steps.build-image-nginx.outputs.image }}
+          image: ${{ steps.build-image.outputs.image }}
 
       # Uses the ECS service for backend to create a new task from the new task definition. The new task is created while the previous task is already running. This happens based on the minimum healthy percentage and maximum percentage configured during service creation.
       # After service completion and stability, it removes the previous task from older task definition.
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ${{ steps.render-container-nginx.outputs.task-definition }}
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: plio-backend-staging
           cluster: plio-staging-cluster
           wait-for-service-stability: true

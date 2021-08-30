@@ -3,7 +3,7 @@ from django.db import models
 import string
 import random
 import os
-from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from safedelete.models import SafeDeleteModel, SOFT_DELETE, SOFT_DELETE_CASCADE
 from plio.config import plio_status_choices, item_type_choices, question_type_choices
 
 
@@ -62,7 +62,7 @@ class Video(SafeDeleteModel):
 
 
 class Plio(SafeDeleteModel):
-    _safedelete_policy = SOFT_DELETE
+    _safedelete_policy = SOFT_DELETE_CASCADE
 
     video = models.ForeignKey(Video, null=True, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=255, blank=True, default="")
@@ -104,9 +104,9 @@ class Plio(SafeDeleteModel):
 
 
 class Item(SafeDeleteModel):
-    _safedelete_policy = SOFT_DELETE
+    _safedelete_policy = SOFT_DELETE_CASCADE
 
-    plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
+    plio = models.ForeignKey(Plio, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=255, choices=item_type_choices, default="question"
     )
@@ -123,10 +123,10 @@ class Item(SafeDeleteModel):
 
 
 class Question(SafeDeleteModel):
-    _safedelete_policy = SOFT_DELETE
+    _safedelete_policy = SOFT_DELETE_CASCADE
 
     image = models.ForeignKey(Image, null=True, on_delete=models.DO_NOTHING)
-    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=255, choices=question_type_choices, default="mcq"
     )

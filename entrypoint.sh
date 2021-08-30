@@ -18,7 +18,7 @@ python manage.py pliosuperuser
 
 # start the server
 # gunicorn plio.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8001 --timeout 600 --reload
-gunicorn plio.asgi:application --bind 0.0.0.0:8001 --workers 4 --timeout 600 --reload
+gunicorn plio.wsgi:application --bind 0.0.0.0:8001 --workers 4 --timeout 600 --reload
 # python manage.py runserver 0.0.0.0:${APP_PORT} --http_timeout=${HTTP_TIMEOUT}
 # python manage.py runserver 0.0.0.0:${APP_PORT}
 

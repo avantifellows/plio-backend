@@ -436,6 +436,20 @@ class PlioTestCase(BaseTestCase):
             response.data["results"],
         )
 
+    def test_delete(self):
+        """Tests the delete functionality"""
+        # fetching plio 1 works at first
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # delete plio 1
+        response = self.client.delete(f"/api/v1/plios/{self.plio_1.uuid}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # fetching plio 1 should now give an error
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class VideoTestCase(BaseTestCase):
     def setUp(self):
@@ -681,6 +695,20 @@ class ItemTestCase(BaseTestCase):
         self.assertEqual(self.item.type, response.data["type"])
         self.assertEqual(self.item.time, response.data["time"])
 
+    def test_deleting_plio_deletes_items(self):
+        """Deleting a plio should delete the items associated with it"""
+        # fetching the created item works at first
+        response = self.client.get(f"/api/v1/items/{self.item.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # delete the plio associated with the item
+        response = self.client.delete(f"/api/v1/plios/{self.plio.uuid}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # fetching the item should now give an error
+        response = self.client.get(f"/api/v1/items/{self.item.id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class QuestionTestCase(BaseTestCase):
     def setUp(self):
@@ -824,6 +852,20 @@ class QuestionTestCase(BaseTestCase):
         self.assertEqual(self.question.text, response.data["text"])
         self.assertIsNotNone(response.data["image"])
         self.assertNotEqual(self.question.image, response.data["image"])
+
+    def test_deleting_plio_deletes_questions(self):
+        """Deleting a plio should delete the questions associated with it"""
+        # fetching the created question works at first
+        response = self.client.get(f"/api/v1/questions/{self.question.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # delete the plio associated with the question
+        response = self.client.delete(f"/api/v1/plios/{self.plio.uuid}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # fetching the question should now give an error
+        response = self.client.get(f"/api/v1/questions/{self.question.id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class ImageTestCase(BaseTestCase):

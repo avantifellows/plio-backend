@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 from plio.models import Plio
-from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from safedelete.models import SafeDeleteModel, SOFT_DELETE, SOFT_DELETE_CASCADE
 from experiments.config import experiment_type_choices
 
 
@@ -25,8 +25,10 @@ class Experiment(SafeDeleteModel):
 
 
 class ExperimentPlio(SafeDeleteModel):
+    _safedelete_policy = SOFT_DELETE_CASCADE
+
     experiment = models.ForeignKey(Experiment, on_delete=models.DO_NOTHING)
-    plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
+    plio = models.ForeignKey(Plio, on_delete=models.CASCADE)
     split_percentage = models.FloatField()
 
     class Meta:

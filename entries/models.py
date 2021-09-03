@@ -2,15 +2,15 @@ from django.conf import settings
 from django.db import models
 from plio.models import Plio, Item
 from experiments.models import Experiment
-from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from safedelete.models import SafeDeleteModel, SOFT_DELETE_CASCADE
 from entries.config import event_type_choices
 
 
 class Session(SafeDeleteModel):
-    _safedelete_policy = SOFT_DELETE
+    _safedelete_policy = SOFT_DELETE_CASCADE
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.DO_NOTHING)
-    plio = models.ForeignKey(Plio, on_delete=models.DO_NOTHING)
+    plio = models.ForeignKey(Plio, on_delete=models.CASCADE)
     experiment = models.ForeignKey(Experiment, on_delete=models.DO_NOTHING, null=True)
     retention = models.TextField(default="")
     watch_time = models.FloatField(default=0)
@@ -57,10 +57,10 @@ class Session(SafeDeleteModel):
 
 
 class SessionAnswer(SafeDeleteModel):
-    _safedelete_policy = SOFT_DELETE
+    _safedelete_policy = SOFT_DELETE_CASCADE
 
-    session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
-    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
     answer = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -71,9 +71,9 @@ class SessionAnswer(SafeDeleteModel):
 
 
 class Event(SafeDeleteModel):
-    _safedelete_policy = SOFT_DELETE
+    _safedelete_policy = SOFT_DELETE_CASCADE
 
-    session = models.ForeignKey(Session, on_delete=models.DO_NOTHING)
+    session = models.ForeignKey(Session, on_delete=models.CASCADE)
     type = models.CharField(max_length=255, choices=event_type_choices)
     player_time = models.FloatField()
     details = models.JSONField(null=True)

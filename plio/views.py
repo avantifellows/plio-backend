@@ -326,7 +326,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
             # move the README for the data dump to the directory
             shutil.copyfile(
-                "./plio/static/plio/docs/READ-ME-FIRST.pdf",
+                "./plio/static/plio/docs/download_csv_README.pdf",
                 os.path.join(data_dump_dir, "READ-ME-FIRST.pdf"),
             )
 

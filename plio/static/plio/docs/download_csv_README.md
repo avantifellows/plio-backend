@@ -50,7 +50,7 @@ This section will clarify what each of the `.csv` files in the folder contains:
   | item_id | item_type | item_time | question_type | question_text                                   | question_options                                             | question_correct_answer |
   | ------- | --------- | --------- | ------------- | ----------------------------------------------- | ------------------------------------------------------------ | ----------------------- |
   | 2783    | question  | 10        | Subjective    | What is the difference between hips and glutes? |                                                              |                         |
-  | 2788    | question  | 20        | Mcc           | NaOH + HCl → ?                                  | [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ] | 2                       |
+  | 2788    | question  | 20        | Mcc           | NaOH + HCl → ?                                  | [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ] | 3                       |
 
 - `responses.csv`: contains the responses to each interaction by every user in every session. The columns represent the following:
 

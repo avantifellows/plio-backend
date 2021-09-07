@@ -28,7 +28,7 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `name`: the name of the plio as set by you
   - `video`: the link of the YouTube video used to create the plio
 
-  Example -
+  Example:
   | id         | name                    | video                                       |
   |------------|-------------------------|---------------------------------------------|
   | ash1lasnan | Introduction to Circles | https://www.youtube.com/watch?v=m9dpeG2rKdY |
@@ -46,34 +46,25 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `question_options`: the options for the question
   - `question_correct_answer`: the correct answer for the given question. For `question_type = mcq`, this represents the index of the correct answer among the `question_options`.
 
-  Example - 
-  |   item_id  |   item_type  |   item_time  |   question_type  |   question_text                                                             |   question_options                                                                         |   question_correct_answer  |
-  |------------|--------------|--------------|------------------|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|----------------------------|
-  |   2783     |   question   |   9.9        |   mcq            |   Lactic Acid is found in __________  लैक्टिक अम्ल, _______में पाया जाता है.      | [   "A) Lemon / नींबू ",    "B) Spinach / पालक ",    "C) Grape / अंगूर ",    "D) Curd /दही" ]  |   3                        |
-  |   2788     |   question   |   97.5       |   mcq            |   NaOH + HCl → ?                                                            |   [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ]     |   2                        |
+  Example:
+  | item_id | item_type | item_time | question_type | question_text                                   | question_options                                             | question_correct_answer |
+  | ------- | --------- | --------- | ------------- | ----------------------------------------------- | ------------------------------------------------------------ | ----------------------- |
+  | 2783    | question  | 10        | Subjective    | What is the difference between hips and glutes? |                                                              |                         |
+  | 2788    | question  | 20        | Mcc           | NaOH + HCl → ?                                  | [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ] | 2                       |
 
 - `responses.csv`: contains the responses to each interaction by every user in every session. The columns represent the following:
 
   - `session_id`: the unique identifier for the session
-  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. Organizations can access the PII by logging in by an email id which has the org-admin access.
+  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy.
   - `answer`: the user's actual answer to the interaction
   - `item_id`: the unique identifier of the interaction that this answer belongs to. You can compare this value with the `id` column in `plio-interaction-details.csv` to identify which item did this answer belong to.
 
-  Example
-  - Without the PII
-    |   session_id  |   user_identifier                   |   session_answer_id  |   answer  |   item_id  |
-    |---------------|-------------------------------------|----------------------|-----------|------------|
-    |   902         |   a532400ed62e772b9dc0b86f46e583ff  |   7976               |   0       |   2781     |
-    |   1056        |   d7a728a67d909e714c0774e22cb806f2  |   9552               |   0       |   2781     |
-    |   1131        |   fae0b27c451c728867a567e8c1bb4e53  |   10411              |   0       |   2781     | 
-
-
-  - With the PII included (requires an organization workspace and org-admin access to the user who's accessing the report)
-    |   session_id  |   user_identifier           |   session_answer_id  |   answer  |   item_id  |
-    |---------------|-----------------------------|----------------------|-----------|------------|
-    |   902         |   temporaryemail@gmail.com  |   7976               |   0       |   2781     |
-    |   1056        |   919999999999              |   9552               |   0       |   2781     |
-    |   1131        |   91888888888               |   10411              |   0       |   2781     |
+  Example:
+  | session_id | user_identifier                  | answer | item_id |
+  | ---------- | -------------------------------- | ------ | ------- |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | 0      | 2781    |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | 1      | 2782    |
+  | 1131       | fae0b27c451c728867a567e8c1bb4e53 | 0      | 2781    |
 
 
 - `sessions.csv`: contains the details of each session of every user. The columns represent the following:
@@ -82,31 +73,29 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `user_identifier`: the unique identifier for the user associated with this session
   - `watch_time`: the amount of time the user has watched the video (in seconds) - the most recent session of any user includes the total time across all previous sessions by that user.
   - `retention`: the retention array over the video for the given user. The length of the array is the number of seconds of the video and each value represents how many times the user has visited that particular second of the video while watching the plio. For example, if your video is 4 minutes long, each row of this column will have 240 values (one for each second). If a user did not reach the end of the video, the values towards the end would be 0. If a user has rewatched the first 10 seconds 5 times, the first 10 values would be 5. Ignore this field if it contains something like `NaN, NaN, ...`.
- 
-  Example
-  |   session_id  |   retention                                                       |   watch_time         |   user_identifier                   |
-  |---------------|-------------------------------------------------------------------|----------------------|-------------------------------------|
-  |   1951        |   1,1,1,10,0,2,2,2,2,2,2,2,3,4,5,4,...,0,0,0,0,0,1,1,1,1,0,0,0,0  |   70.84999999999810  |   addfa9b7e234254d26e9c7f2af1005cb  |
 
-
+  Example:
+  | session_id | retention                                  | watch_time | user_identifier                  |
+  | ---------- | ------------------------------------------ | ---------- | -------------------------------- |
+  | 1951       | 1,1,1,10,1,2,...,0,0,0,0,0,1,1,1,1,0,0,0,0 | 50         | addfa9b7e234254d26e9c7f2af1005cb |
 
 - `events.csv`: contains the details of each event in each session of every user. The columns represent the following:
 
   - `session_id`: the unique identifier for the session
-  - `user_identifier`: the unique identifier for the user associated with this session.
+  - `user_identifier`: the unique identifier for the user associated with this session
   - `event_type`: the type of the event (e.g. `played`, `paused`, etc.). The full list of event types and their meanings can be found in the [Events](#events) section.
   - `event_player_time`: the current time in the video when the event was triggered (in seconds)
-  - `event_details`: further details for the event based on the event type (e.g. question number for events related to questions, etc.) 
-     **Note: The indexes present in the details, like `itemIndex` and `optionIndex` are 0-indexed, i.e. `indexIndex: 1` would mean the second item and so on**
+  - `event_details`: further details for the event based on the event type (e.g. question number for events related to questions, etc.)
+     **Note: The indexes present in the event details, like `itemIndex` and `optionIndex` are [0-indexed](https://en.wikipedia.org/wiki/Zero-based_numbering), i.e. `itemIndex: 1` would mean the second item and so on**.
   - `event_global_time`: the global time when the event took place to help you track the order in which the events took place.
-  
+
   Example
-  |   session_id  |   user_identifier                   |   event_type       |   event_player_time    |   event_details                         |   event_details                         |
-  |---------------|-------------------------------------|--------------------|------------------------|-----------------------------------------|-----------------------------------------| 
-  |   770         |   d64a340bcb633f536d56e51874281454  |   option_selected  |   2.503544             |   {"itemIndex": 1, "optionIndex": 1}    |   {"itemIndex": 1, "optionIndex": 1}    |
-  |   770         |   d64a340bcb633f536d56e51874281454  |   video_seeked     |   0.08447506484985350  |   {"currentTime": 0.08447506484985351}  |   {"currentTime": 0.08447506484985351}  |
-  |   3844        |   4b0250793549726d5c1ea3906726ebfe  |   paused           |   122.1142             |   {}                                    |   {}                                    |
-  
+  | session_id | user_identifier                  | event_type      | event_player_time | event_details                      |
+  | ---------- | -------------------------------- | --------------- | ----------------- | ---------------------------------- |
+  | 770        | d64a340bcb633f536d56e51874281454 | option_selected | 2.5               | {"itemIndex": 1, "optionIndex": 1} |
+  | 770        | d64a340bcb633f536d56e51874281454 | video_seeked    | 0.08              | {"currentTime": 0.08}              |
+  | 3844       | 4b0250793549726d5c1ea3906726ebfe | paused          | 122               | {}                                 |
+
 
 ## Events
 

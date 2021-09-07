@@ -89,7 +89,7 @@ This section will clarify what each of the `.csv` files in the folder contains:
      **Note: The indexes present in the event details, like `itemIndex` and `optionIndex` are [0-indexed](https://en.wikipedia.org/wiki/Zero-based_numbering), i.e. `itemIndex: 1` would mean the second item and so on**.
   - `event_global_time`: the global time when the event took place to help you track the order in which the events took place.
 
-  Example
+  Example:
   | session_id | user_identifier                  | event_type      | event_player_time | event_details                      |
   | ---------- | -------------------------------- | --------------- | ----------------- | ---------------------------------- |
   | 770        | d64a340bcb633f536d56e51874281454 | option_selected | 2.5               | {"itemIndex": 1, "optionIndex": 1} |

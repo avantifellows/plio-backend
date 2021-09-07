@@ -310,6 +310,10 @@ class PlioViewSet(viewsets.ModelViewSet):
             # for MCQ questions, make it 1-indexed
             df = run_query(cursor, get_plio_details_query)
 
+            # convert correct_answer values from string to int
+            df["question_correct_answer"] = df["question_correct_answer"].apply(
+                lambda answer: answer if not answer else int(answer)
+            )
             # find the rows where the question type is MCQ
             # and update the correct answer there
             df[df["question_type"] == "mcq"]["question_correct_answer"] += 1

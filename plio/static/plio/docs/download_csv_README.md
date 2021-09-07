@@ -28,6 +28,11 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `name`: the name of the plio as set by you
   - `video`: the link of the YouTube video used to create the plio
 
+  Example:
+  | id         | name                    | video                                       |
+  |------------|-------------------------|---------------------------------------------|
+  | ash1lasnan | Introduction to Circles | https://www.youtube.com/watch?v=m9dpeG2rKdY |
+
 - `plio-interaction-details.csv`: contains the details of each interaction (referred to as `item` as explained above) added to the plio. The columns represent the following:
 
   - `item_id`: the unique identifier for the interaction item
@@ -41,12 +46,26 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `question_options`: the options for the question
   - `question_correct_answer`: the correct answer for the given question. For `question_type = mcq`, this represents the index of the correct answer among the `question_options`.
 
+  Example:
+  | item_id | item_type | item_time | question_type | question_text                                   | question_options                                             | question_correct_answer |
+  | ------- | --------- | --------- | ------------- | ----------------------------------------------- | ------------------------------------------------------------ | ----------------------- |
+  | 2783    | question  | 10        | Subjective    | What is the difference between hips and glutes? |                                                              |                         |
+  | 2788    | question  | 20        | Mcc           | NaOH + HCl → ?                                  | [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ] | 3                       |
+
 - `responses.csv`: contains the responses to each interaction by every user in every session. The columns represent the following:
 
   - `session_id`: the unique identifier for the session
   - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy.
   - `answer`: the user's actual answer to the interaction
   - `item_id`: the unique identifier of the interaction that this answer belongs to. You can compare this value with the `id` column in `plio-interaction-details.csv` to identify which item did this answer belong to.
+
+  Example:
+  | session_id | user_identifier                  | answer | item_id |
+  | ---------- | -------------------------------- | ------ | ------- |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | 0      | 2781    |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | 1      | 2782    |
+  | 1131       | fae0b27c451c728867a567e8c1bb4e53 | 0      | 2781    |
+
 
 - `sessions.csv`: contains the details of each session of every user. The columns represent the following:
 
@@ -55,6 +74,11 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `watch_time`: the amount of time the user has watched the video (in seconds) - the most recent session of any user includes the total time across all previous sessions by that user.
   - `retention`: the retention array over the video for the given user. The length of the array is the number of seconds of the video and each value represents how many times the user has visited that particular second of the video while watching the plio. For example, if your video is 4 minutes long, each row of this column will have 240 values (one for each second). If a user did not reach the end of the video, the values towards the end would be 0. If a user has rewatched the first 10 seconds 5 times, the first 10 values would be 5. Ignore this field if it contains something like `NaN, NaN, ...`.
 
+  Example:
+  | session_id | retention                                  | watch_time | user_identifier                  |
+  | ---------- | ------------------------------------------ | ---------- | -------------------------------- |
+  | 1951       | 1,1,1,10,1,2,...,0,0,0,0,0,1,1,1,1,0,0,0,0 | 50         | addfa9b7e234254d26e9c7f2af1005cb |
+
 - `events.csv`: contains the details of each event in each session of every user. The columns represent the following:
 
   - `session_id`: the unique identifier for the session
@@ -62,14 +86,24 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `event_type`: the type of the event (e.g. `played`, `paused`, etc.). The full list of event types and their meanings can be found in the [Events](#events) section.
   - `event_player_time`: the current time in the video when the event was triggered (in seconds)
   - `event_details`: further details for the event based on the event type (e.g. question number for events related to questions, etc.)
+     **Note: The indexes present in the event details, like `itemIndex` and `optionIndex` are [0-indexed](https://en.wikipedia.org/wiki/Zero-based_numbering), i.e. `itemIndex: 1` would mean the second item and so on**.
   - `event_global_time`: the global time when the event took place to help you track the order in which the events took place.
+
+  Example:
+  | session_id | user_identifier                  | event_type      | event_player_time | event_details                      |
+  | ---------- | -------------------------------- | --------------- | ----------------- | ---------------------------------- |
+  | 770        | d64a340bcb633f536d56e51874281454 | option_selected | 2.5               | {"itemIndex": 1, "optionIndex": 1} |
+  | 770        | d64a340bcb633f536d56e51874281454 | video_seeked    | 0.08              | {"currentTime": 0.08}              |
+  | 3844       | 4b0250793549726d5c1ea3906726ebfe | paused          | 122               | {}                                 |
+
 
 ## Events
 
 The full list of event types and their meanings can be found below:
 
-| ready             | The video was loaded                                         |
+| Event Type        | Meaning of the event type
 | ----------------- | ------------------------------------------------------------ |
+| ready             | The video was loaded                                         |
 | played            | The video was played                                         |
 | paused            | The video was paused                                         |
 | enter_fullscreen  | User entered the fullscreen mode of the video                |

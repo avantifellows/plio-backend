@@ -2,12 +2,14 @@ from rest_framework import serializers
 from plio.models import Item, Video
 from plio.serializers import PlioSerializer
 from entries.models import Session, SessionAnswer, Event
-from experiments.serializers import ExperimentSerializer
-from users.serializers import UserSerializer
+
+# from experiments.serializers import ExperimentSerializer
+# from users.serializers import UserSerializer
 from users.models import User
 
 
 class SessionSerializer(serializers.ModelSerializer):
+    plios = PlioSerializer(many=True, read_only=True)
     user = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), default=serializers.CurrentUserDefault()
     )
@@ -25,6 +27,7 @@ class SessionSerializer(serializers.ModelSerializer):
             "is_first",
             "created_at",
             "updated_at",
+            "plios",
         ]
 
     def validate(self, data):
@@ -126,17 +129,17 @@ class SessionSerializer(serializers.ModelSerializer):
 
         return session
 
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        response["plio"] = PlioSerializer(instance.plio).data
-        response["user"] = UserSerializer(instance.user).data
-        if instance.experiment:
-            response["experiment"] = ExperimentSerializer(instance.experiment).data
-        response["last_event"] = EventSerializer(instance.last_global_event).data
+    # def to_representation(self, instance):
+    #     response = super().to_representation(instance)
+    #     response["plio"] = PlioSerializer(instance.plio).data
+    #     response["user"] = UserSerializer(instance.user).data
+    #     if instance.experiment:
+    #         response["experiment"] = ExperimentSerializer(instance.experiment).data
+    #     response["last_event"] = EventSerializer(instance.last_global_event).data
 
-        # fetch and return all session answers tied to this session
-        response["session_answers"] = instance.sessionanswer_set.values()
-        return response
+    #     # fetch and return all session answers tied to this session
+    #     response["session_answers"] = instance.sessionanswer_set.values()
+    #     return response
 
 
 class SessionAnswerSerializer(serializers.ModelSerializer):

@@ -361,3 +361,21 @@ if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:
 SILKY_AUTHENTICATION = True  # User must login
 SILKY_AUTHORISATION = True  # User must have permissions
 SILKY_INTERCEPT_PERCENT = 100 if APP_ENV in ["local", "staging"] else 0
+
+
+# CACHES = {
+#     'default': {
+#         # 'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+#         'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+#         'LOCATION': 'memcached:11211',
+#     }
+# }
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOSTNAME}:{REDIS_PORT}",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}

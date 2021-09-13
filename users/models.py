@@ -5,6 +5,9 @@ from organizations.models import Organization
 from safedelete.models import SafeDeleteModel, SafeDeleteManager, SOFT_DELETE
 from .config import user_status_choices
 
+# from django.db.models.signals import post_delete, post_save, m2m_changed
+# from django.dispatch import receiver
+
 
 class UserManager(SafeDeleteManager):
     def create_user(

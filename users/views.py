@@ -32,9 +32,11 @@ from users.permissions import UserPermission, OrganizationUserPermission
 from organizations.models import Organization
 from .services import SnsService
 from .config import required_third_party_auth_keys
+from drf_cached_instances.mixins import CachedViewMixin
+from .cache import UserCache
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(CachedViewMixin, viewsets.ModelViewSet):
     """
     User ViewSet description
 
@@ -50,6 +52,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, UserPermission]
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    cache_class = UserCache
 
     @action(
         detail=True,
@@ -328,6 +331,27 @@ def update_organization_user(sender, instance: OrganizationUser, **kwargs):
     async_to_sync(channel_layer.group_send)(
         user_group_name, {"type": "send_user", "data": user_data}
     )
+
+
+def update_cache_for_instance(model_name, instance_pk, instance):
+    print("update_cache_for_instance")
+    cache = UserCache()
+    version = cache.default_version
+    to_update = cache.update_instance(model_name, instance_pk, instance, version)
+    for related_name, related_pk, related_version in to_update:
+        update_cache_for_instance(related_name, related_pk, version=related_version)
+
+
+@receiver(post_delete, sender=User, dispatch_uid="post_delete_update_cache")
+def post_delete_user_update_cache(sender, instance, **kwargs):
+    update_cache_for_instance("User", instance.pk, instance)
+
+
+@receiver(post_save, sender=User, dispatch_uid="post_save_update_cache")
+def post_save_user_update_cache(sender, instance, created, raw, **kwargs):
+    if raw:
+        return
+    update_cache_for_instance("User", instance.pk, instance)
 
 
 @api_view(["POST"])

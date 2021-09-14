@@ -4,9 +4,9 @@ from django.contrib.auth.models import AbstractUser
 from organizations.models import Organization
 from safedelete.models import SafeDeleteModel, SafeDeleteManager, SOFT_DELETE
 from .config import user_status_choices
-from django.core.cache import cache
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete
+from plio.cache import invalidate_cache_for_instance
 
 
 class UserManager(SafeDeleteManager):
@@ -166,17 +166,7 @@ class OneTimePassword(models.Model):
         db_table = "one_time_password"
 
 
-def invalidate_cache_for_instance(model_name, instance_pk, instance):
-    cache_key = f"user_{instance_pk}"
-    cache.delete(cache_key)
-    # invalidate cache for related fields
-
-    # to_update = cache.update_instance(model_name, instance_pk, instance, version)
-    # for related_name, related_pk, related_version in to_update:
-    #     invalidate_cache_for_instance(related_name, related_pk, version=related_version)
-
-
 @receiver(post_save, sender=User)
 @receiver(post_delete, sender=User)
-def post_save_user_update_cache(sender, instance, created, raw, **kwargs):
-    invalidate_cache_for_instance("User", instance.pk, instance)
+def user_update_cache(sender, instance, created, raw, **kwargs):
+    invalidate_cache_for_instance(instance)

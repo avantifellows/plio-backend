@@ -33,8 +33,8 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["is_superuser", "is_staff"]
 
     def to_representation(self, instance):
-        # check if a cached version exists and return it
-        cache_key = get_cache_key("User", instance)
+        # check if a cached version exists and if it does, return it as the response
+        cache_key = get_cache_key(instance)
         cachedResponse = cache.get(cache_key)
         if cachedResponse:
             return cachedResponse

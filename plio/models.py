@@ -5,6 +5,9 @@ import random
 import os
 from safedelete.models import SafeDeleteModel, SOFT_DELETE, SOFT_DELETE_CASCADE
 from plio.config import plio_status_choices, item_type_choices, question_type_choices
+from plio.cache import invalidate_cache_for_instance, invalidate_cache_for_instances
+from django.dispatch import receiver
+from django.db.models.signals import post_save, post_delete
 
 
 class Image(SafeDeleteModel):
@@ -140,3 +143,20 @@ class Question(SafeDeleteModel):
 
     class Meta:
         db_table = "question"
+
+
+@receiver(post_save, sender=Plio)
+@receiver(post_delete, sender=Plio)
+def plio_update_cache(sender, instance, **kwargs):
+    invalidate_cache_for_instance(instance)
+
+
+@receiver(post_save, sender=Video)
+@receiver(post_delete, sender=Video)
+def video_update_cache(sender, instance, **kwargs):
+    # fetch all plio with video id
+    plios = Plio.objects.filter(video_id=instance.id)
+    print("plios")
+    print(plios)
+    # foreach plio, invalidate the cache
+    invalidate_cache_for_instances(plios)

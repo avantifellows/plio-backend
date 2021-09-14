@@ -1,18 +1,34 @@
 from django.core.cache import cache
 
 
-def get_cache_key(model_name, instance):
+def get_cache_key(instance):
+    """Calculates cache key for an instance"""
+    instance_class = instance.__class__.__name__
     return {
+        "Video": f"video_{instance.pk}",
+        "Plio": f"plio_{instance.pk}",
+        "Session": f"session_{instance.pk}",
         "User": f"user_{instance.pk}",
         "UserMeta": f"user_meta_{instance.pk}",
-    }.get(model_name, f"user_{instance.pk}")
+    }.get(instance_class, None)
 
 
-def invalidate_cache_for_instance(model_name, instance):
-    cache_key = get_cache_key(model_name, instance)
-    cache.delete(cache_key)
-    # invalidate cache for related fields
+def invalidate_cache_for_instance(instance):
+    """Deletes cache for a particular instance"""
+    cache_key = get_cache_key(instance)
+    if cache_key:
+        cache.delete(cache_key)
 
-    # to_update = cache.update_instance(model_name, instance_pk, instance, version)
-    # for related_name, related_pk, related_version in to_update:
-    #     invalidate_cache_for_instance(related_name, related_pk, version=related_version)
+
+def get_cache_keys(instances):
+    """Calculates cache keys for a list of instances"""
+    keys = []
+    for instance in instances:
+        keys.append(get_cache_key(instance))
+    return keys
+
+
+def invalidate_cache_for_instances(instances):
+    """Deletes cache for a list of instances"""
+    cache_keys = get_cache_keys(instances)
+    cache.delete_many(cache_keys)

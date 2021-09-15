@@ -55,7 +55,9 @@ class PlioSerializer(serializers.ModelSerializer):
         response = super().to_representation(instance)
         response["video"] = VideoSerializer(instance.video).data
         response["created_by"] = UserSerializer(instance.created_by).data
-        response["items"] = ItemSerializer(instance.item_set.all(), many=True).data
+        response["items"] = ItemSerializer(
+            instance.item_set.order_by("time"), many=True
+        ).data
         return response
 
 

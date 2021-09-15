@@ -450,6 +450,20 @@ class PlioTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_items_sorted_with_time(self):
+        """Tests that the items returned while getting a plio are sorted by time"""
+        # seed an item
+        item_1 = Item.objects.create(type="question", plio=self.plio_1, time=10)
+
+        # seed another item with timestamp less than the first item
+        item_2 = Item.objects.create(type="question", plio=self.plio_1, time=1)
+
+        # while fetching the plio for the items above, the second item should
+        # come before the first item
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/")
+        self.assertEqual(response.data["items"][0]["id"], item_2.id)
+        self.assertEqual(response.data["items"][1]["id"], item_1.id)
+
 
 class VideoTestCase(BaseTestCase):
     def setUp(self):

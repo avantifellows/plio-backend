@@ -274,7 +274,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                 location=BIGQUERY["location"],
             )
 
-        def save_query_results(cursor, query_method, filename):
+        def run_query(cursor, query_method):
             if BIGQUERY["enabled"]:
                 # execute the sql query using BigQuery client and create a dataframe
                 df = client.query(
@@ -290,17 +290,37 @@ class PlioViewSet(viewsets.ModelViewSet):
                 # create a dataframe from the rows and the columns
                 df = pd.DataFrame(cursor.fetchall(), columns=columns)
 
+            return df
+
+        def save_query_results(df, filename):
             # save to csv
             df.to_csv(os.path.join(data_dump_dir, filename), index=False)
 
+        def run_and_save_query_results(cursor, query_method, filename):
+            df = run_query(cursor, query_method)
+            save_query_results(df, filename)
+
         # create the individual dump files
         with connection.cursor() as cursor:
-            save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
-            save_query_results(cursor, get_responses_dump_query, "responses.csv")
-            save_query_results(
-                cursor, get_plio_details_query, "plio-interaction-details.csv"
+            run_and_save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
+            run_and_save_query_results(
+                cursor, get_responses_dump_query, "responses.csv"
             )
-            save_query_results(cursor, get_events_query, "events.csv")
+            # handle plio interaction details differently
+            # for MCQ questions, make it 1-indexed
+            df = run_query(cursor, get_plio_details_query)
+
+            # convert correct_answer values from string to int
+            df["question_correct_answer"] = df["question_correct_answer"].apply(
+                lambda answer: answer if not answer else int(answer)
+            )
+            # find the rows where the question type is MCQ
+            # and update the correct answer there
+            df[df["question_type"] == "mcq"]["question_correct_answer"] += 1
+
+            save_query_results(df, "plio-interaction-details.csv")
+
+            run_and_save_query_results(cursor, get_events_query, "events.csv")
 
             df = pd.DataFrame(
                 [[plio.uuid, plio.name, plio.video.url]],
@@ -310,8 +330,8 @@ class PlioViewSet(viewsets.ModelViewSet):
 
             # move the README for the data dump to the directory
             shutil.copyfile(
-                "./plio/static/plio/docs/download_csv_README.md",
-                os.path.join(data_dump_dir, "README.md"),
+                "./plio/static/plio/docs/download_csv_README.pdf",
+                os.path.join(data_dump_dir, "READ-ME-FIRST.pdf"),
             )
 
         # create the zip

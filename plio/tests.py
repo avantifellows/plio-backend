@@ -12,6 +12,8 @@ from oauth2_provider.models import Application
 from oauth2_provider.models import AccessToken
 from django.urls import reverse
 from django.db import connection
+from django.core.cache import cache
+from django_redis import get_redis_connection
 
 from users.models import User, Role, OrganizationUser
 from organizations.models import Organization
@@ -19,6 +21,7 @@ from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
 from entries.models import Session
 from plio.views import StandardResultsSetPagination
+from plio.cache import get_cache_key
 
 
 class BaseTestCase(APITestCase):
@@ -45,6 +48,11 @@ class BaseTestCase(APITestCase):
         self.org_admin_role = Role.objects.filter(name="org-admin").first()
         self.super_admin_role = Role.objects.filter(name="super-admin").first()
 
+    @classmethod
+    def tearDownClass(self):
+        # flush the cache
+        get_redis_connection("default").flushall()
+
     def setUp(self):
         # create 2 users
         self.user = User.objects.create(mobile="+919876543210")
@@ -55,6 +63,9 @@ class BaseTestCase(APITestCase):
         self.access_token_2 = get_new_access_token(self.user_2, self.application)
 
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
+
+        # flush the cache
+        get_redis_connection("default").flushall()
 
 
 def get_new_access_token(user, application):
@@ -463,6 +474,46 @@ class PlioTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/")
         self.assertEqual(response.data["items"][0]["id"], item_2.id)
         self.assertEqual(response.data["items"][1]["id"], item_1.id)
+
+    def test_retrieving_video_sets_instance_cache(self):
+        # verify cache data doesn't exist
+        cache_key_name = get_cache_key(self.plio_1)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # make a get request
+        response = self.client.get(
+            reverse("plios-detail", kwargs={"uuid": self.plio_1.uuid})
+        )
+
+        # verify cache data exists
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(response.data, cache.get(cache_key_name))
+
+    def test_updating_plio_recreates_instance_cache(self):
+        # create a third plio
+        plio_3 = Plio.objects.create(
+            name="Plio 3", video=self.video, created_by=self.user
+        )
+
+        # verify cache data doesn't exist
+        cache_key_name = get_cache_key(plio_3)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # make a get request
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio_3.uuid}))
+
+        # verify cache data exists
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+
+        # make an update
+        new_name = "Plio name update"
+        self.client.patch(
+            reverse("plios-detail", kwargs={"uuid": plio_3.uuid}), {"name": new_name}
+        )
+
+        # verify cache data exist with the updated value
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(cache.get(cache_key_name)["name"], new_name)
 
 
 class VideoTestCase(BaseTestCase):

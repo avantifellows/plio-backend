@@ -9,7 +9,6 @@ from users.models import User
 
 
 class SessionSerializer(serializers.ModelSerializer):
-    plios = PlioSerializer(many=True, read_only=True)
     user = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), default=serializers.CurrentUserDefault()
     )
@@ -27,7 +26,6 @@ class SessionSerializer(serializers.ModelSerializer):
             "is_first",
             "created_at",
             "updated_at",
-            "plios",
         ]
 
     def validate(self, data):

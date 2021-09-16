@@ -33,9 +33,6 @@ from organizations.models import Organization
 from .services import SnsService
 from .config import required_third_party_auth_keys
 
-# from drf_cached_instances.mixins import CachedViewMixin
-# from .cache import UserCache
-
 
 class UserViewSet(viewsets.ModelViewSet):
     """

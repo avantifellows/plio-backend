@@ -156,7 +156,5 @@ def plio_update_cache(sender, instance, **kwargs):
 def video_update_cache(sender, instance, **kwargs):
     # fetch all plio with video id
     plios = Plio.objects.filter(video_id=instance.id)
-    print("plios")
-    print(plios)
-    # foreach plio, invalidate the cache
+    # invalidate saved cache for the plios
     invalidate_cache_for_instances(plios)

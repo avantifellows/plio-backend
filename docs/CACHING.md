@@ -9,8 +9,7 @@ Plio's caching mechanism can be explained in three simple steps:
 2. Searches for the requested data in the cache
 3. If not present, query the database and save the response in cache for future requests
 
-Caching workflow explained via flow diagram
-
+##### Caching workflow explained via flow diagram
 ![Overview of caching](images/caching-workflow.png)
 
 
@@ -24,8 +23,7 @@ When a particular instance is updated, its cached value gets deleted along with 
 
 The new cache will be set when the first fresh response is calculated from the database and will be used for subsequent requests.
 
-Cache invalidation explained via flow diagram
-
+##### Cache invalidation explained via flow diagram
 ![Overview of caching](images/cache-invalidation-workflow.png)
 
 
@@ -35,9 +33,3 @@ We only have implemented caching for data that has high GET requests. The follow
 2. Users
 
 For more details on the caching implementation for above, refer to the corresponding `serializers.py` files.
-
-<style>
-  img {
-    width: 50%;
-  }
-</style>

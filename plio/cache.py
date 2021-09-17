@@ -1,15 +1,26 @@
 from django.core.cache import cache
+from django.db import connection
 
 
 def get_cache_key(instance):
-    """Calculates the cache key for an instance"""
+    """Calculates the cache key for an instance based on selected schema and """
+    schema_name = connection.schema_name
     instance_class = instance.__class__.__name__
+
+    # the following list of key-value pairs returns the value if key matches instance_class, otherwise None
     return {
-        "Video": f"video_{instance.pk}",
-        "Plio": f"plio_{instance.pk}",
-        "Session": f"session_{instance.pk}",
+        # instances that are tenant specific
+        "Video": f"video_{schema_name}_{instance.pk}",
+        "Plio": f"plio_{schema_name}_{instance.pk}",
+        "Item": f"item_{schema_name}_{instance.pk}",
+        "Question": f"question_{schema_name}_{instance.pk}",
+        "Image": f"image_{schema_name}_{instance.pk}",
+        "Experiment": f"experiment_{schema_name}_{instance.pk}",
+        "Tag": f"tag_{schema_name}_{instance.pk}",
+        # instances that are not tenant specific
         "User": f"user_{instance.pk}",
         "UserMeta": f"user_meta_{instance.pk}",
+        "Organization": f"organization_{instance.pk}",
     }.get(instance_class, None)
 
 

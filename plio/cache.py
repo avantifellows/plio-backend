@@ -2,7 +2,7 @@ from django.core.cache import cache
 
 
 def get_cache_key(instance):
-    """Calculates cache key for an instance"""
+    """Calculates the cache key for an instance"""
     instance_class = instance.__class__.__name__
     return {
         "Video": f"video_{instance.pk}",

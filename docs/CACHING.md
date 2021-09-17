@@ -18,6 +18,6 @@ For more details, check out the `get_cache_key` function in `plio/cache.py`.
 
 
 ### Cache refresh or invalidation
-When a particular instance is updated, it's cached value gets deleted along with any other related instances cache that depends on this cache. For example, if a session instance cache uses plio instance cache in it's response, if the plio is modified, both plio instance and session instance cache will be deleted.
+When a particular instance is updated, its cached value gets deleted along with the cache of any other related instances that depends on this cache. For example, consider a session instance cache that uses a plio instance cache. Now, if the plio is modified, the caches for both the plio instance and the session instance will be deleted.
 
-The new cache will be set during the first fresh response calculated from the database and will be used for subsequent requests.
+The new cache will be set when the first fresh response is calculated from the database and will be used for subsequent requests.

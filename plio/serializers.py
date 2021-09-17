@@ -56,9 +56,9 @@ class PlioSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         # check if a cached version exists and if it does, return it as the response
         cache_key = get_cache_key(instance)
-        cachedResponse = cache.get(cache_key)
-        if cachedResponse:
-            return cachedResponse
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            return cached_response
 
         response = super().to_representation(instance)
         response["video"] = VideoSerializer(instance.video).data

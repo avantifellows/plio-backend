@@ -168,5 +168,5 @@ class OneTimePassword(models.Model):
 
 @receiver(post_save, sender=User)
 @receiver(post_delete, sender=User)
-def user_update_cache(_, instance, _, _, **kwargs):
+def user_update_cache(sender, instance, created, raw, **kwargs):
     invalidate_cache_for_instance(instance)

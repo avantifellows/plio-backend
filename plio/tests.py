@@ -475,7 +475,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["items"][0]["id"], item_2.id)
         self.assertEqual(response.data["items"][1]["id"], item_1.id)
 
-    def test_retrieving_video_sets_instance_cache(self):
+    def test_retrieving_plio_sets_instance_cache(self):
         # verify cache data doesn't exist
         cache_key_name = get_cache_key(self.plio_1)
         self.assertEqual(len(cache.keys(cache_key_name)), 0)

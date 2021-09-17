@@ -17,7 +17,16 @@ The calculation of the cache keys are based on the model instances. For example,
 For more details, check out the `get_cache_key` function in `plio/cache.py`.
 
 
-### Cache refresh or invalidation
+### Cache invalidation
 When a particular instance is updated, its cached value gets deleted along with the cache of any other related instances that depends on this cache. For example, consider a session instance cache that uses a plio instance cache. Now, if the plio is modified, the caches for both the plio instance and the session instance will be deleted.
 
 The new cache will be set when the first fresh response is calculated from the database and will be used for subsequent requests.
+![Overview of caching](images/cache-invalidation-workflow.png)
+
+
+### Current cached data
+We only have implemented caching for data that has high GET requests. The following resources have been cached:
+1. Plios
+2. Users
+
+For more details on the caching implementation for above, refer to the corresponding `serializers.py` files.

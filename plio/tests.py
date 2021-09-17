@@ -48,8 +48,7 @@ class BaseTestCase(APITestCase):
         self.org_admin_role = Role.objects.filter(name="org-admin").first()
         self.super_admin_role = Role.objects.filter(name="super-admin").first()
 
-    @classmethod
-    def tearDownClass(self):
+    def tearDown(self):
         # flush the cache
         get_redis_connection("default").flushall()
 
@@ -64,8 +63,8 @@ class BaseTestCase(APITestCase):
 
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
 
-        # flush the cache
-        get_redis_connection("default").flushall()
+        # # flush the cache
+        # get_redis_connection("default").flushall()
 
 
 def get_new_access_token(user, application):

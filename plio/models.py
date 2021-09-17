@@ -158,3 +158,17 @@ def video_update_cache(sender, instance, **kwargs):
     plios = Plio.objects.filter(video_id=instance.id)
     # invalidate saved cache for the plios
     invalidate_cache_for_instances(plios)
+
+
+@receiver(post_save, sender=Item)
+@receiver(post_delete, sender=Item)
+def item_update_cache(sender, instance, **kwargs):
+    # invalidate saved cache for the plio
+    invalidate_cache_for_instance(instance.plio)
+
+
+@receiver(post_save, sender=Question)
+@receiver(post_delete, sender=Question)
+def question_update_cache(sender, instance, **kwargs):
+    # invalidate saved cache for the plio
+    invalidate_cache_for_instance(instance.item.plio)

@@ -7,7 +7,8 @@ def get_cache_key(instance):
     schema_name = connection.schema_name
     instance_class = instance.__class__.__name__
 
-    # the following list of key-value pairs returns the value if key matches instance_class, otherwise None
+    # the below list of key-value pairs returns the value if key matches instance_class,
+    # otherwise None
     return {
         # instances that are tenant specific
         "Video": f"video_{schema_name}_{instance.pk}",

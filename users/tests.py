@@ -1,12 +1,14 @@
 import json
 from rest_framework import status
 from django.urls import reverse
+from django.core.cache import cache
 
 from oauth2_provider.models import AccessToken, RefreshToken
 from users.models import User
 from users.models import OneTimePassword, OrganizationUser
 from plio.tests import BaseTestCase
 from organizations.models import Organization
+from plio.cache import get_cache_key
 
 
 class OtpAuthTestCase(BaseTestCase):
@@ -321,6 +323,28 @@ class UserTestCase(BaseTestCase):
         response = self.client.post(reverse("get-analytics-token"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access_token", response.json())
+
+    def test_updating_user_recreates_instance_cache(self):
+        # verify cache data doesn't exist
+        cache_key_name = get_cache_key(self.user)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # make a get request
+        self.client.get(reverse("users-detail", kwargs={"pk": self.user.id}))
+
+        # verify cache data exists
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+
+        # make an update
+        first_name = "John"
+        self.client.patch(
+            reverse("users-detail", kwargs={"pk": self.user.id}),
+            {"first_name": first_name},
+        )
+
+        # verify cache data exist with the updated value
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(cache.get(cache_key_name)["first_name"], first_name)
 
 
 class UserMetaTestCase(BaseTestCase):

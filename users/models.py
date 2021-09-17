@@ -176,3 +176,9 @@ def user_update_cache(sender, instance, created, raw, **kwargs):
 
     plios = Plio.objects.filter(created_by_id=instance.id)
     invalidate_cache_for_instances(plios)
+
+
+@receiver(post_save, sender=OrganizationUser)
+@receiver(post_delete, sender=OrganizationUser)
+def organization_user_update_cache(sender, instance, **kwargs):
+    invalidate_cache_for_instance(instance.user)

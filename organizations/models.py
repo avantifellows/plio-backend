@@ -4,6 +4,9 @@ import string
 import random
 import secrets
 from safedelete.models import SafeDeleteModel, SOFT_DELETE
+from django.dispatch import receiver
+from django.db.models.signals import post_save, post_delete
+from plio.cache import invalidate_cache_for_instances
 
 
 class Organization(TenantMixin, SafeDeleteModel):
@@ -61,3 +64,13 @@ class Organization(TenantMixin, SafeDeleteModel):
 
 class Domain(DomainMixin):
     pass
+
+
+@receiver(post_save, sender=Organization)
+@receiver(post_delete, sender=Organization)
+def organization_update_cache(sender, instance, created, raw, **kwargs):
+    # invalidate cache for users belonging to organization
+    from users.models import User
+
+    users = User.objects.filter(organizations__id=instance.id)
+    invalidate_cache_for_instances(users)

@@ -837,7 +837,7 @@ class ItemTestCase(BaseTestCase):
         # re-request plio again via API after item update
         self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
 
-        # check plio cache with the item new time
+        # check plio cache with the update item time
         self.assertEqual(cache.get(cache_key_name)["items"][0]["time"], item_new_time)
 
 
@@ -1006,10 +1006,9 @@ class QuestionTestCase(BaseTestCase):
         # create an item for the plio
         item = Item.objects.create(type="question", plio=plio, time=1)
 
+        # create a question for the item
         question_text = "Question for cache"
         question = Question.objects.create(type="mcq", item=item, text=question_text)
-
-        # create a question for the item
 
         # there shouldn't be any cache as we created plio without API
         cache_key_name = get_cache_key(plio)
@@ -1024,17 +1023,17 @@ class QuestionTestCase(BaseTestCase):
             cache.get(cache_key_name)["items"][0]["details"]["text"], question_text
         )
 
-        # update item time
+        # update question text
         question_new_text = "Updated Text for Question"
         self.client.patch(
             reverse("questions-detail", kwargs={"pk": question.id}),
             {"text": question_new_text},
         )
 
-        # re-request plio again via API after item update
+        # re-request plio again via API after question update
         self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
 
-        # check plio cache with the item new time
+        # check plio cache with the updated question text
         self.assertEqual(
             cache.get(cache_key_name)["items"][0]["details"]["text"], question_new_text
         )

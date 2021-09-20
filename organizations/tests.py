@@ -1,13 +1,13 @@
 from rest_framework import status
 from django.urls import reverse
 
-# from django.core.cache import cache
+from django.core.cache import cache
 
 from plio.tests import BaseTestCase
 from organizations.models import Organization
 
-# from plio.cache import get_cache_key
-# from users.models import OrganizationUser
+from plio.cache import get_cache_key
+from users.models import OrganizationUser
 
 
 class OrganizationTestCase(BaseTestCase):
@@ -50,39 +50,56 @@ class OrganizationTestCase(BaseTestCase):
         response = self.client.get(reverse("organizations-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    # def test_updating_organization_recreates_user_instance_cache(self):
-    #     # make a get request
-    #     user_details = self.client.get(
-    #         reverse("users-detail", kwargs={"pk": self.user.id})
-    #     )
-    #     self.assertEqual(len(user_details["organizations"]), 0)
+    def test_updating_organization_recreates_user_instance_cache(self):
+        from users.models import User
+        from rest_framework.test import APIClient
+        from plio.tests import get_new_access_token
 
-    #     # create a new organization
-    #     # print('creating organization')
-    #     # organization = Organization.objects.create(name="Org 3", shortcode="org-3")
-    #     # print('created organization', organization)
+        superadmin_client = APIClient()
+        superadmin_user = User.objects.create(mobile="+919988776655", is_superuser=True)
+        superadmin_access_token = get_new_access_token(
+            superadmin_user, self.application
+        )
+        superadmin_client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + superadmin_access_token.token
+        )
 
-    #     # associate the current user with the organization
-    #     OrganizationUser.objects.create(
-    #         organization=self.organization_2, user=self.user, role=self.org_admin_role
-    #     )
-    #     print("user association created organization")
+        # verify cache data doesn't exist by default
+        cache_key_name = get_cache_key(self.user)
 
-    #     # verify cache data doesn't exist
-    #     cache_key_name = get_cache_key(self.user)
+        # make a get request
+        self.client.get(reverse("users-detail", kwargs={"pk": self.user.id}))
+        # verify cache data exists as we made a GET request for user details
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(len(cache.get(cache_key_name)["organizations"]), 0)
 
-    #     # verify cache data exists
-    #     self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        # associate the current user with the organization
+        OrganizationUser.objects.create(
+            organization=self.organization_2, user=self.user, role=self.org_admin_role
+        )
 
-    #     # make an update
-    #     org_name = "Org New Name"
-    #     self.client.patch(
-    #         reverse("organizations-detail", kwargs={"pk": organization.id}),
-    #         {"name": org_name},
-    #     )
+        # check cache after updating organization user association
+        # this time the user should have an organization associated
+        self.assertEqual(len(cache.get(cache_key_name)["organizations"]), 1)
+        self.assertEqual(
+            cache.get(cache_key_name)["organizations"][0]["name"],
+            self.organization_2.name,
+        )
 
-    #     # verify cache data exist with the updated value
-    #     self.assertEqual(len(cache.keys(cache_key_name)), 1)
-    #     self.assertEqual(
-    #         cache.get(cache_key_name)["organizations"][0]["name"], org_name
-    #     )
+        # make an update to the organization name. Only plio superadmin can do it!
+        org_new_name = "Org New Name"
+        superadmin_client.patch(
+            reverse("organizations-detail", kwargs={"pk": self.organization_2.id}),
+            {"name": org_new_name},
+        )
+
+        # user cache should be deleted after organization update
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # request user again so that we can check if the cache is updated
+        self.client.get(reverse("users-detail", kwargs={"pk": self.user.id}))
+
+        # verify cache data has now the updated value
+        self.assertEqual(
+            cache.get(cache_key_name)["organizations"][0]["name"], org_new_name
+        )

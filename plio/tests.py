@@ -834,6 +834,9 @@ class ItemTestCase(BaseTestCase):
             {"time": item_new_time},
         )
 
+        # plio cache should be deleted after item time update
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
         # re-request plio again via API after item update
         self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
 
@@ -1029,6 +1032,9 @@ class QuestionTestCase(BaseTestCase):
             reverse("questions-detail", kwargs={"pk": question.id}),
             {"text": question_new_text},
         )
+
+        # plio cache should be deleted after question text update
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
 
         # re-request plio again via API after question update
         self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))

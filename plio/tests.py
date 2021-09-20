@@ -63,9 +63,6 @@ class BaseTestCase(APITestCase):
 
         self.client.credentials(HTTP_AUTHORIZATION="Bearer " + self.access_token.token)
 
-        # # flush the cache
-        # get_redis_connection("default").flushall()
-
 
 def get_new_access_token(user, application):
     """Creates a new access token for the given user and application"""
@@ -538,6 +535,43 @@ class VideoTestCase(BaseTestCase):
         response = self.client.get(reverse("videos-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
+
+    def test_updating_video_updates_linked_plio_instance_cache(self):
+        # create a video
+        video_title = "Video for cache"
+        video = Video.objects.create(
+            title=video_title, url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # create a plio with the video
+        plio = Plio.objects.create(
+            name="Plio for cache", video=video, created_by=self.user
+        )
+
+        # there shouldn't be any cache as we created plio without API
+        cache_key_name = get_cache_key(plio)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # request plio again via API to generate cache
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # plio cache should exist now
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(cache.get(cache_key_name)["video"]["title"], video_title)
+
+        # update video title
+        new_title_for_video = "New title for cache"
+        self.client.patch(
+            reverse("videos-detail", kwargs={"pk": video.id}),
+            {"title": new_title_for_video},
+        )
+
+        # re-request plio again via API after video update
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # check plio cache with the new video title
+        self.assertEqual(
+            cache.get(cache_key_name)["video"]["title"], new_title_for_video
+        )
 
 
 class ItemTestCase(BaseTestCase):

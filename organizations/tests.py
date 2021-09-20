@@ -15,12 +15,8 @@ class OrganizationTestCase(BaseTestCase):
     def setUpTestData(self):
         super().setUpTestData()
         # seed some organizations
-        self.organization_1 = Organization.objects.create(
-            name="Org 1", shortcode="org-1"
-        )
-        self.organization_2 = Organization.objects.create(
-            name="Org 2", shortcode="org-2"
-        )
+        Organization.objects.create(name="Org 1", shortcode="org-1")
+        Organization.objects.create(name="Org 2", shortcode="org-2")
 
     def test_guest_cannot_list_organization(self):
         # unset the access token so that API requests go as unauthenticated user

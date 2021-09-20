@@ -807,6 +807,39 @@ class ItemTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/items/{self.item.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_updating_item_updates_linked_plio_instance_cache(self):
+        # create a plio
+        plio = Plio.objects.create(
+            name="Plio for cache", video=self.video, created_by=self.user
+        )
+        item_time = 1
+        # create an item for the plio
+        item = Item.objects.create(type="question", plio=plio, time=item_time)
+
+        # there shouldn't be any cache as we created plio without API
+        cache_key_name = get_cache_key(plio)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # request plio again via API to generate cache
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # plio cache should exist now
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(cache.get(cache_key_name)["items"][0]["time"], item_time)
+
+        # update item time
+        item_new_time = 100
+        self.client.patch(
+            reverse("items-detail", kwargs={"pk": item.id}),
+            {"time": item_new_time},
+        )
+
+        # re-request plio again via API after item update
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # check plio cache with the item new time
+        self.assertEqual(cache.get(cache_key_name)["items"][0]["time"], item_new_time)
+
 
 class QuestionTestCase(BaseTestCase):
     def setUp(self):
@@ -964,6 +997,47 @@ class QuestionTestCase(BaseTestCase):
         # fetching the question should now give an error
         response = self.client.get(f"/api/v1/questions/{self.question.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_updating_question_updates_linked_plio_instance_cache(self):
+        # create a plio
+        plio = Plio.objects.create(
+            name="Plio for cache", video=self.video, created_by=self.user
+        )
+        # create an item for the plio
+        item = Item.objects.create(type="question", plio=plio, time=1)
+
+        question_text = "Question for cache"
+        question = Question.objects.create(type="mcq", item=item, text=question_text)
+
+        # create a question for the item
+
+        # there shouldn't be any cache as we created plio without API
+        cache_key_name = get_cache_key(plio)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # request plio again via API to generate cache
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # plio cache should exist now
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(
+            cache.get(cache_key_name)["items"][0]["details"]["text"], question_text
+        )
+
+        # update item time
+        question_new_text = "Updated Text for Question"
+        self.client.patch(
+            reverse("questions-detail", kwargs={"pk": question.id}),
+            {"text": question_new_text},
+        )
+
+        # re-request plio again via API after item update
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # check plio cache with the item new time
+        self.assertEqual(
+            cache.get(cache_key_name)["items"][0]["details"]["text"], question_new_text
+        )
 
 
 class ImageTestCase(BaseTestCase):

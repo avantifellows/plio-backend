@@ -4,9 +4,8 @@ from django.urls import reverse
 from django.core.cache import cache
 
 from plio.tests import BaseTestCase
-from organizations.models import Organization
-
 from plio.cache import get_cache_key
+from organizations.models import Organization
 from users.models import OrganizationUser
 
 

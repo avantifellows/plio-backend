@@ -6,8 +6,8 @@ from django.core.cache import cache
 from oauth2_provider.models import AccessToken, RefreshToken
 from users.models import User
 from users.models import OneTimePassword, OrganizationUser
-from plio.tests import BaseTestCase
 from organizations.models import Organization
+from plio.tests import BaseTestCase
 from plio.cache import get_cache_key
 
 

@@ -28,7 +28,7 @@ The new cache will be set when the first fresh response is calculated from the d
 
 
 ### Current cached data
-We only have implemented caching for data that has high GET requests. The following resources have been cached:
+We have only implemented caching for models with a high number of GET requests. The following resources have been cached:
 1. Plios
 2. Users
 

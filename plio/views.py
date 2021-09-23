@@ -170,7 +170,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["get"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
+        permission_classes=[PlioPermission],
     )
     def play(self, request, uuid):
         queryset = Plio.objects.filter(uuid=uuid)

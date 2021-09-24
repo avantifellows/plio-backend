@@ -65,6 +65,7 @@ class OrganizationTestCase(BaseTestCase):
 
         # verify cache data doesn't exist by default
         cache_key_name = get_cache_key(self.user)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
 
         # make a get request
         self.client.get(reverse("users-detail", kwargs={"pk": self.user.id}))

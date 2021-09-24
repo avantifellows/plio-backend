@@ -3,7 +3,7 @@ from django.db import connection
 
 
 def get_cache_key(instance):
-    """Calculates the cache key for an instance based on selected tenant schema"""
+    """Calculates the cache key for an instance based on the tenant schema of the request"""
     schema_name = connection.schema_name
     instance_class = instance.__class__.__name__
 

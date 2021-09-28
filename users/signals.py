@@ -14,6 +14,27 @@ from plio.settings import (
     DEFAULT_FROM_EMAIL,
 )
 
+# the cache invalidate receivers must be defined before any other receiver,
+# so that the instance data in other receivers is always up to date.
+
+
+@receiver(post_save, sender=User)
+@receiver(post_delete, sender=User)
+def user_update_cache(sender, instance, created, raw, **kwargs):
+    invalidate_cache_for_instance(instance)
+
+    # invalidate cache for plios created by user
+    from plio.models import Plio
+
+    plios = Plio.objects.filter(created_by_id=instance.id)
+    invalidate_cache_for_instances(plios)
+
+
+@receiver(post_save, sender=OrganizationUser)
+@receiver(post_delete, sender=OrganizationUser)
+def organization_user_update_cache(sender, instance, **kwargs):
+    invalidate_cache_for_instance(instance.user)
+
 
 @receiver(pre_save, sender=User)
 def update_user(sender, instance: User, **kwargs):
@@ -66,21 +87,3 @@ def update_organization_user(sender, instance: OrganizationUser, **kwargs):
     async_to_sync(channel_layer.group_send)(
         user_group_name, {"type": "send_user", "data": user_data}
     )
-
-
-@receiver(post_save, sender=User)
-@receiver(post_delete, sender=User)
-def user_update_cache(sender, instance, created, raw, **kwargs):
-    invalidate_cache_for_instance(instance)
-
-    # invalidate cache for plios created by user
-    from plio.models import Plio
-
-    plios = Plio.objects.filter(created_by_id=instance.id)
-    invalidate_cache_for_instances(plios)
-
-
-@receiver(post_save, sender=OrganizationUser)
-@receiver(post_delete, sender=OrganizationUser)
-def organization_user_update_cache(sender, instance, **kwargs):
-    invalidate_cache_for_instance(instance.user)

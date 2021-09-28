@@ -1,1 +1,1 @@
-default_app_config = "organizations.apps.OrganizationConfig"
+default_app_config = "organizations.apps.OrganizationsConfig"

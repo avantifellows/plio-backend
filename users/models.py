@@ -4,9 +4,6 @@ from django.contrib.auth.models import AbstractUser
 from organizations.models import Organization
 from safedelete.models import SafeDeleteModel, SafeDeleteManager, SOFT_DELETE
 from .config import user_status_choices
-from django.dispatch import receiver
-from django.db.models.signals import post_save, post_delete
-from plio.cache import invalidate_cache_for_instance, invalidate_cache_for_instances
 
 
 class UserManager(SafeDeleteManager):
@@ -164,21 +161,3 @@ class OneTimePassword(models.Model):
 
     class Meta:
         db_table = "one_time_password"
-
-
-@receiver(post_save, sender=User)
-@receiver(post_delete, sender=User)
-def user_update_cache(sender, instance, created, raw, **kwargs):
-    invalidate_cache_for_instance(instance)
-
-    # invalidate cache for plios created by user
-    from plio.models import Plio
-
-    plios = Plio.objects.filter(created_by_id=instance.id)
-    invalidate_cache_for_instances(plios)
-
-
-@receiver(post_save, sender=OrganizationUser)
-@receiver(post_delete, sender=OrganizationUser)
-def organization_user_update_cache(sender, instance, **kwargs):
-    invalidate_cache_for_instance(instance.user)

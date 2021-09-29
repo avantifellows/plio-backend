@@ -1,7 +1,5 @@
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_save, post_delete
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
@@ -9,10 +7,6 @@ from users.views import send_welcome_sms
 from users.models import User, OrganizationUser
 from users.serializers import UserSerializer
 from plio.cache import invalidate_cache_for_instance, invalidate_cache_for_instances
-
-from plio.settings import (
-    DEFAULT_FROM_EMAIL,
-)
 
 # the cache invalidate receivers must be defined before any other receiver,
 # so that the instance data in other receivers is always up to date.
@@ -36,43 +30,13 @@ def organization_user_update_cache(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=User)
 def update_user(sender, instance: User, **kwargs):
+    """Sends an SMS to new users who sign up using mobile."""
     if not instance.id:
         # new user is created
         if instance.status == "approved" and instance.mobile:
             # the new user has logged in through phone number
             send_welcome_sms(instance.mobile)
         return
-
-    # existing user is updated
-    old_instance = sender.objects.get(id=instance.id)
-    if old_instance.status != instance.status:
-        # execute this only if the user status has changed
-        user_data = UserSerializer(instance).data
-        channel_layer = get_channel_layer()
-        user_group_name = f"user_{user_data['id']}"
-        async_to_sync(channel_layer.group_send)(
-            user_group_name, {"type": "send_user", "data": user_data}
-        )
-
-        if instance.status == "approved":
-            # send an email or an sms if the user has been approved
-            if instance.email:
-                # user signed up with email
-                subject = "Congrats - You're off the Plio waitlist! 🎉"
-                recipient_list = [
-                    instance.email,
-                ]
-                html_message = render_to_string("waitlist-approve-email.html")
-                send_mail(
-                    subject=subject,
-                    message=None,
-                    from_email=DEFAULT_FROM_EMAIL,
-                    recipient_list=recipient_list,
-                    html_message=html_message,
-                )
-            elif instance.mobile:
-                # user signed up with mobile
-                send_welcome_sms(instance.mobile)
 
 
 @receiver([post_save, post_delete], sender=OrganizationUser)

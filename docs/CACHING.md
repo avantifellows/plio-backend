@@ -30,9 +30,9 @@ The new cache will be set when the first fresh response is calculated from the d
 ### Current cached data
 We have only implemented caching for models with a high number of GET requests. The following resources have been cached:
 1. #### Plio
-    - Plio cache is created (if not exists) when there is a GET for a plio instance.
-    - Plio cache is created or updated when there is a PUT/PATCH/DELETE request for a plio instance.
-    - Plio cache is deleted when there is a PUT/PATCH/DELETE request for any of the following related instances for a plio instance:
+    - Plio cache is created when there is a retrieve request for a plio instance.
+    - Plio cache is re-created when there is a create, update or delete request for a plio instance.
+    - Plio cache is deleted when there is a create, update or delete request for any of the following related instances for a plio instance:
         - Video
         - Item
         - Question
@@ -40,10 +40,11 @@ We have only implemented caching for models with a high number of GET requests. 
 
 
 2. #### User
-    - User cache is created (if not exists) when there is a GET request for a user instance.
-    - User cache is created or updated when there is a PUT/PATCH/DELETE request for a user instance.
-    - User cache is deleted when there is a PUT/PATCH/DELETE request for any of the following related instances for a user instance:
-        - OrganizationUser
+    - User cache is created when there is a retrieve request for a user instance.
+    - User cache is re-created when there is a create, update or delete request for any of the following related instances:
+      - User
+      - OrganizationUser (as the UserSerializer is called when modifying OrganizationUser)
+    - User cache is deleted when there is a create, update or delete request for any of the following related instances for a user instance:
         - Organization
 
 For more details on the caching implementation for above, refer to the corresponding `serializers.py` files.

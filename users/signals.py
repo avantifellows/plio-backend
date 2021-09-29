@@ -18,8 +18,7 @@ from plio.settings import (
 # so that the instance data in other receivers is always up to date.
 
 
-@receiver(post_save, sender=User)
-@receiver(post_delete, sender=User)
+@receiver([post_save, post_delete], sender=User)
 def user_update_cache(sender, instance, created, raw, **kwargs):
     invalidate_cache_for_instance(instance)
 
@@ -30,8 +29,7 @@ def user_update_cache(sender, instance, created, raw, **kwargs):
     invalidate_cache_for_instances(plios)
 
 
-@receiver(post_save, sender=OrganizationUser)
-@receiver(post_delete, sender=OrganizationUser)
+@receiver([post_save, post_delete], sender=OrganizationUser)
 def organization_user_update_cache(sender, instance, **kwargs):
     invalidate_cache_for_instance(instance.user)
 
@@ -77,8 +75,7 @@ def update_user(sender, instance: User, **kwargs):
                 send_welcome_sms(instance.mobile)
 
 
-@receiver(post_save, sender=OrganizationUser)
-@receiver(post_delete, sender=OrganizationUser)
+@receiver([post_save, post_delete], sender=OrganizationUser)
 def update_organization_user(sender, instance: OrganizationUser, **kwargs):
     # execute this if a user is added to/removed from an organization
     user_data = UserSerializer(instance.user).data

@@ -4,8 +4,7 @@ from plio.cache import invalidate_cache_for_instances
 from organizations.models import Organization
 
 
-@receiver(post_save, sender=Organization)
-@receiver(post_delete, sender=Organization)
+@receiver([post_save, post_delete], sender=Organization)
 def organization_update_cache(sender, instance, created, raw, **kwargs):
     # invalidate cache for users belonging to organization
     from users.models import User

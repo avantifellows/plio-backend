@@ -43,7 +43,7 @@ We have only implemented caching for models with a high number of GET requests. 
     - User cache is created when there is a retrieve request for a user instance.
     - User cache is re-created when there is a create, update or delete request for any of the following related instances:
       - User
-      - OrganizationUser (as the UserSerializer is called when modifying OrganizationUser)
+      - OrganizationUser (as the `UserSerializer` is called when `OrganizationUser` is modified)
     - User cache is deleted when there is a create, update or delete request for any of the following related instances for a user instance:
         - Organization
 

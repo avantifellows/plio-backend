@@ -239,12 +239,12 @@ class PlioTestCase(BaseTestCase):
             },
         )
 
-    def test_guest_cannot_play_plio(self):
+    def test_guest_can_play_plio(self):
         # unset the credentials
         self.client.credentials()
         # play plio
         response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_can_play_own_plio(self):
         # play plio

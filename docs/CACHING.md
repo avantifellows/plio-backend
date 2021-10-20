@@ -1,7 +1,7 @@
 ## Caching
 Plio uses the Redis cache backend powered by the [Django Redis](https://github.com/jazzband/django-redis) package.
 
-This guide aims to provide details on how Plio is using caching and pre-requisites for someone contributing to the code.
+This guide aims to provide details on how Plio is using caches and serves as a pre-requisite for someone contributing to the code.
 
 ### Caching workflow
 Plio's caching mechanism can be explained in three simple steps:

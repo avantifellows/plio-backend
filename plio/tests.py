@@ -565,6 +565,9 @@ class VideoTestCase(BaseTestCase):
             {"title": new_title_for_video},
         )
 
+        # plio cache should be deleted after video update
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
         # re-request plio again via API after video update
         self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
 

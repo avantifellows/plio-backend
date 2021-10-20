@@ -7,7 +7,8 @@ This guide aims to provide details on how Plio is using caches and serves as a p
 Plio's caching mechanism can be explained in three simple steps:
 1. Receives an API request
 2. Searches for the requested data in the cache
-3. If not present, query the database and save the response in cache for future requests
+3. If data is present in cache, return the cached data
+4. If not present, query the database and save the response in cache for future requests
 
 ##### Caching workflow explained via flow diagram
 ![Overview of caching](images/caching-workflow.png)
@@ -19,7 +20,7 @@ For more details, check out the `get_cache_key` function in `plio/cache.py`.
 
 
 ### Cache invalidation
-When a particular instance is updated, its cached value gets deleted along with the cache of any other related instances that depends on this cache. For example, consider a session instance cache that uses a plio instance cache. Now, if the plio is modified, the caches for both the plio instance and the session instance will be deleted.
+When a particular instance is updated, its cached value gets deleted along with the cache of any other related instances that depends on this cache. For example, consider a user instance cache that uses an organization instance cache (as user organizations include in the user response). Now, if the organization is modified, the caches for both the user instance and the organization instance will be deleted.
 
 The new cache will be set when the first fresh response is calculated from the database and will be used for subsequent requests.
 

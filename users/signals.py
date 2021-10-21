@@ -1,9 +1,8 @@
 from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save, post_delete
+from django.db.models.signals import post_save, post_delete
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from users.views import send_welcome_sms
 from users.models import User, OrganizationUser
 from users.serializers import UserSerializer
 from plio.cache import invalidate_cache_for_instance, invalidate_cache_for_instances
@@ -26,17 +25,6 @@ def user_update_cache(sender, instance, created, raw, **kwargs):
 @receiver([post_save, post_delete], sender=OrganizationUser)
 def organization_user_update_cache(sender, instance, **kwargs):
     invalidate_cache_for_instance(instance.user)
-
-
-@receiver(pre_save, sender=User)
-def update_user(sender, instance: User, **kwargs):
-    """Sends an SMS to new users who sign up using mobile."""
-    if not instance.id:
-        # new user is created
-        if instance.status == "approved" and instance.mobile:
-            # the new user has logged in through phone number
-            send_welcome_sms(instance.mobile)
-        return
 
 
 @receiver([post_save, post_delete], sender=OrganizationUser)

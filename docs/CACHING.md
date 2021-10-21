@@ -20,7 +20,7 @@ For more details, check out the `get_cache_key` function in `plio/cache.py`.
 
 
 ### Cache invalidation
-When a particular instance is updated, its cached value gets deleted along with the cache of any other related instances that depends on this cache. For example, consider a user instance cache that uses an organization instance cache (as user organizations include in the user response). Now, if the organization is modified, the caches for both the user instance and the organization instance will be deleted.
+When a particular instance is updated, its cached value gets deleted along with the cache of any other related instances that depends on this cache. For example, consider a user instance cache that uses an organization instance cache (as the organisations that the user is a part of is included in the user response). Now, if the organization is modified, the caches for both the user instance and the organization instance will be deleted.
 
 The new cache will be set when the first fresh response is calculated from the database and will be used for subsequent requests.
 

@@ -261,16 +261,6 @@ def generate_external_auth_access_token(request):
     return Response(token, status=status.HTTP_200_OK)
 
 
-def send_welcome_sms(mobile):
-    """Send a welcome SMS to a new or newly approved user through AWS SNS"""
-    if SMS_DRIVER == "sns":
-        sms = SnsService()
-        sms.publish(
-            mobile,
-            "We are so excited to welcome you to Plio! :) \n \n With Plio, you can unlock the true potential of videos by making them interactive and understanding how your viewers engage with them. Watch this demo video to understand how you can easily make your videos interactive using Plio: https://www.youtube.com/watch?v=7twYCdb32PE \n \n Start using Plio now: https://app.plio.in \n Talk to us by joining our discord: https://discord.gg/TZHEgnpvJE",
-        )
-
-
 @api_view(["POST"])
 def retrieve_analytics_app_access_token(request):
     """Requests the configured identity provider to retrieve an access token."""

@@ -2,6 +2,8 @@ from rest_framework import serializers
 from plio.models import Video, Plio, Item, Question, Image
 from users.models import User
 from users.serializers import UserSerializer
+from django.core.cache import cache
+from plio.cache import get_cache_key
 
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -52,12 +54,19 @@ class PlioSerializer(serializers.ModelSerializer):
         read_only_fields = ["uuid"]
 
     def to_representation(self, instance):
+        # check if a cached version exists and if it does, return it as the response
+        cache_key = get_cache_key(instance)
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            return cached_response
+
         response = super().to_representation(instance)
         response["video"] = VideoSerializer(instance.video).data
         response["created_by"] = UserSerializer(instance.created_by).data
         response["items"] = ItemSerializer(
             instance.item_set.order_by("time"), many=True
         ).data
+        cache.set(cache_key, response)  # set a cached version
         return response
 
 

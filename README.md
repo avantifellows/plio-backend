@@ -24,6 +24,7 @@ Visit the [REST API guide](docs/REST-API.md) to connect your Plio's frontend set
 - [Pre-commit](docs/PRE-COMMIT.md)
 - [GitHub Workflows](docs/GITHUB-WORKFLOWS.md)
 - [Multitenancy](docs/MULTITENANCY.md)
+- [Caching](docs/CACHING.md)
 - [Zappa Settings](docs/ZAPPA-SETTINGS.md)
 - [Soft Delete](docs/SOFT-DELETE.md)
 - [Google OAuth2](docs/oauth/GOOGLE-OAUTH2.md)

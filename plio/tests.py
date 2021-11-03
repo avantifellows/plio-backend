@@ -101,12 +101,12 @@ class PlioTestCase(BaseTestCase):
         # unset the credentials
         self.client.credentials()
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_can_list_plios(self):
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 2)
 
@@ -116,7 +116,7 @@ class PlioTestCase(BaseTestCase):
         Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user_2)
 
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with user 2
         self.assertEqual(response.data["count"], 2)
@@ -148,11 +148,11 @@ class PlioTestCase(BaseTestCase):
         )
 
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
 
         # the plio created above should be listed
         self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+        self.assertEqual(response.data["results"][0], plio_org.uuid)
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
@@ -188,11 +188,11 @@ class PlioTestCase(BaseTestCase):
         )
 
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
 
         # the plio created above should be listed
         self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+        self.assertEqual(response.data["results"][0], plio_org.uuid)
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()

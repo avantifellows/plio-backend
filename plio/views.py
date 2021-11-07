@@ -96,6 +96,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     play: Retrieve a plio in order to play
     """
 
+    queryset = Plio.objects.all()
     permission_classes = [IsAuthenticated, PlioPermission]
     serializer_class = PlioSerializer
     lookup_field = "uuid"
@@ -118,28 +119,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         "uuid",
     ]
 
-    def get_queryset(self):
-        organization_shortcode = (
-            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
-        )
-
-        # personal workspace
-        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
-            return Plio.objects.filter(created_by=self.request.user)
-
-        # organizational workspace
-        if OrganizationUser.objects.filter(
-            organization__shortcode=organization_shortcode,
-            user=self.request.user.id,
-        ).exists():
-            # user should be authenticated and a part of the org
-            return Plio.objects.filter(
-                Q(is_public=True)
-                | (Q(is_public=False) & Q(created_by=self.request.user))
-            )
-
-        return Plio.objects.none()
-
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
@@ -150,6 +129,26 @@ class PlioViewSet(viewsets.ModelViewSet):
     def list_uuid(self, request):
         """Retrieves a list of UUIDs for all the plios"""
         queryset = self.filter_queryset(self.get_queryset())
+
+        organization_shortcode = (
+            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
+        )
+
+        # personal workspace
+        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
+            queryset = queryset.filter(created_by=self.request.user)
+
+        # organizational workspace
+        if OrganizationUser.objects.filter(
+            organization__shortcode=organization_shortcode,
+            user=self.request.user.id,
+        ).exists():
+            # user should be authenticated and a part of the org
+            queryset = queryset.filter(
+                Q(is_public=True)
+                | (Q(is_public=False) & Q(created_by=self.request.user))
+            )
+
         uuid_list = queryset.values_list("uuid", flat=True)
         page = self.paginate_queryset(uuid_list)
 
@@ -193,6 +192,8 @@ class PlioViewSet(viewsets.ModelViewSet):
     )
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
+        # return 404 if user cannot access the object
+        # else fetch the object
         plio = self.get_object()
         # django will auto-generate the key when the key is set to None
         plio.pk = None

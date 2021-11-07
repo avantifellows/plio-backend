@@ -16,6 +16,8 @@ class PlioPermission(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         """Object-level permissions for plio/item/question. This determines whether the request can access a plio/item/question instance or not."""
+        if request.user.is_superuser:
+            return True
 
         # if the requested object is an Item or Question, filter the Plio record that it belongs to
         # and use the permission logic on that Plio instance
@@ -23,9 +25,6 @@ class PlioPermission(permissions.BasePermission):
             obj = Plio.objects.filter(id=obj.item.plio.id).first()
         elif isinstance(obj, Item):
             obj = Plio.objects.filter(id=obj.plio.id).first()
-
-        if request.user.is_superuser:
-            return True
 
         organization_shortcode = (
             OrganizationTenantMiddleware.get_organization_shortcode(request)

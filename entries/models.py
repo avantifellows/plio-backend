@@ -82,4 +82,4 @@ class Event(SafeDeleteModel):
 
     class Meta:
         db_table = "event"
-        ordering = ["-id"]
+        ordering = ["-updated_at"]

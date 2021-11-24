@@ -6,12 +6,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('entries', '0026_auto_20210830_0620'),
+        ("entries", "0026_auto_20210830_0620"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='event',
-            options={'ordering': ['-updated_at']},
+            name="event",
+            options={"ordering": ["-updated_at"]},
         ),
     ]

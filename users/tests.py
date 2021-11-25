@@ -1,12 +1,14 @@
 import json
 from rest_framework import status
 from django.urls import reverse
+from django.core.cache import cache
 
 from oauth2_provider.models import AccessToken, RefreshToken
 from users.models import User
 from users.models import OneTimePassword, OrganizationUser
-from plio.tests import BaseTestCase
 from organizations.models import Organization
+from plio.tests import BaseTestCase
+from plio.cache import get_cache_key
 
 
 class OtpAuthTestCase(BaseTestCase):
@@ -321,6 +323,28 @@ class UserTestCase(BaseTestCase):
         response = self.client.post(reverse("get-analytics-token"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access_token", response.json())
+
+    def test_updating_user_recreates_instance_cache(self):
+        # verify cache data doesn't exist
+        cache_key_name = get_cache_key(self.user)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # make a get request
+        self.client.get(reverse("users-detail", kwargs={"pk": self.user.id}))
+
+        # verify cache data exists
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+
+        # make an update
+        first_name = "John"
+        self.client.patch(
+            reverse("users-detail", kwargs={"pk": self.user.id}),
+            {"first_name": first_name},
+        )
+
+        # verify cache data exist with the updated value
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(cache.get(cache_key_name)["first_name"], first_name)
 
 
 class UserMetaTestCase(BaseTestCase):
@@ -752,3 +776,43 @@ class OrganizationUserTestCase(BaseTestCase):
             },
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_updating_organization_user_recreates_user_instance_cache(self):
+        from users.models import User
+        from rest_framework.test import APIClient
+        from plio.tests import get_new_access_token
+
+        superadmin_client = APIClient()
+        superadmin_user = User.objects.create(mobile="+919988776655", is_superuser=True)
+        superadmin_access_token = get_new_access_token(
+            superadmin_user, self.application
+        )
+        superadmin_client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + superadmin_access_token.token
+        )
+
+        # create a new user
+        user = User.objects.create(mobile="+919977553311")
+
+        # verify cache data doesn't exist by default
+        cache_key_name = get_cache_key(user)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # make a get request
+        superadmin_client.get(reverse("users-detail", kwargs={"pk": user.id}))
+        # verify cache data exists as we made a GET request for user details
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(len(cache.get(cache_key_name)["organizations"]), 0)
+
+        # associate the current user with the organization
+        OrganizationUser.objects.create(
+            organization=self.organization_2, user=user, role=self.org_admin_role
+        )
+
+        # check cache after updating organization user association
+        # this time the user should have an organization associated
+        self.assertEqual(len(cache.get(cache_key_name)["organizations"]), 1)
+        self.assertEqual(
+            cache.get(cache_key_name)["organizations"][0]["name"],
+            self.organization_2.name,
+        )

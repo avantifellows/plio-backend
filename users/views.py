@@ -5,24 +5,18 @@ import requests
 
 from django.utils import timezone
 from django.contrib.auth import login
-from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_save, post_delete
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
+
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from oauth2_provider.models import AccessToken, Application, RefreshToken
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 
 from plio.settings import (
     API_APPLICATION_NAME,
     OAUTH2_PROVIDER,
     OTP_EXPIRE_SECONDS,
-    DEFAULT_FROM_EMAIL,
     ANALYTICS_IDP,
     SMS_DRIVER,
 )
@@ -265,69 +259,6 @@ def generate_external_auth_access_token(request):
     # login the user, get the new access token and return
     token = login_user_and_get_access_token(user, request)
     return Response(token, status=status.HTTP_200_OK)
-
-
-def send_welcome_sms(mobile):
-    """Send a welcome SMS to a new or newly approved user through AWS SNS"""
-    if SMS_DRIVER == "sns":
-        sms = SnsService()
-        sms.publish(
-            mobile,
-            "We are so excited to welcome you to Plio! :) \n \n With Plio, you can unlock the true potential of videos by making them interactive and understanding how your viewers engage with them. Watch this demo video to understand how you can easily make your videos interactive using Plio: https://www.youtube.com/watch?v=7twYCdb32PE \n \n Start using Plio now: https://app.plio.in \n Talk to us by joining our discord: https://discord.gg/TZHEgnpvJE",
-        )
-
-
-@receiver(pre_save, sender=User)
-def update_user(sender, instance: User, **kwargs):
-    if not instance.id:
-        # new user is created
-        if instance.status == "approved" and instance.mobile:
-            # the new user has logged in through phone number
-            send_welcome_sms(instance.mobile)
-        return
-
-    # existing user is updated
-    old_instance = sender.objects.get(id=instance.id)
-    if old_instance.status != instance.status:
-        # execute this only if the user status has changed
-        user_data = UserSerializer(instance).data
-        channel_layer = get_channel_layer()
-        user_group_name = f"user_{user_data['id']}"
-        async_to_sync(channel_layer.group_send)(
-            user_group_name, {"type": "send_user", "data": user_data}
-        )
-
-        if instance.status == "approved":
-            # send an email or an sms if the user has been approved
-            if instance.email:
-                # user signed up with email
-                subject = "Congrats - You're off the Plio waitlist! 🎉"
-                recipient_list = [
-                    instance.email,
-                ]
-                html_message = render_to_string("waitlist-approve-email.html")
-                send_mail(
-                    subject=subject,
-                    message=None,
-                    from_email=DEFAULT_FROM_EMAIL,
-                    recipient_list=recipient_list,
-                    html_message=html_message,
-                )
-            elif instance.mobile:
-                # user signed up with mobile
-                send_welcome_sms(instance.mobile)
-
-
-@receiver(post_save, sender=OrganizationUser)
-@receiver(post_delete, sender=OrganizationUser)
-def update_organization_user(sender, instance: OrganizationUser, **kwargs):
-    # execute this if a user is added to/removed from an organization
-    user_data = UserSerializer(instance.user).data
-    channel_layer = get_channel_layer()
-    user_group_name = f"user_{user_data['id']}"
-    async_to_sync(channel_layer.group_send)(
-        user_group_name, {"type": "send_user", "data": user_data}
-    )
 
 
 @api_view(["POST"])

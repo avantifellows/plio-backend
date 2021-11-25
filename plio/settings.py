@@ -50,6 +50,7 @@ SHARED_APPS = (
     "oauth2_provider",
     "social_django",
     "rest_framework_social_oauth2",
+    "silk",
 )
 
 TENANT_APPS = (
@@ -84,6 +85,7 @@ INSTALLED_APPS = [
     "social_django",
     "rest_framework_social_oauth2",
     "storages",
+    "silk",
 ]
 
 TENANT_MODEL = "organizations.Organization"
@@ -112,6 +114,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
 ]
 
 MIDDLEWARE = [
+    "silk.middleware.SilkyMiddleware",
     "organizations.middleware.OrganizationTenantMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -353,3 +356,18 @@ if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:
         send_default_pii=True,
         environment=APP_ENV,
     )
+
+# settings for django-silk query profiling
+SILKY_AUTHENTICATION = True  # User must login
+SILKY_AUTHORISATION = True  # User must have permissions
+SILKY_INTERCEPT_PERCENT = 100 if APP_ENV in ["local", "staging"] else 0
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOSTNAME}:{REDIS_PORT}",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}

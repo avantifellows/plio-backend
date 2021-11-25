@@ -96,6 +96,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     play: Retrieve a plio in order to play
     """
 
+    queryset = Plio.objects.all()
     permission_classes = [IsAuthenticated, PlioPermission]
     serializer_class = PlioSerializer
     lookup_field = "uuid"
@@ -118,28 +119,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         "uuid",
     ]
 
-    def get_queryset(self):
-        organization_shortcode = (
-            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
-        )
-
-        # personal workspace
-        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
-            return Plio.objects.filter(created_by=self.request.user)
-
-        # organizational workspace
-        if OrganizationUser.objects.filter(
-            organization__shortcode=organization_shortcode,
-            user=self.request.user.id,
-        ).exists():
-            # user should be authenticated and a part of the org
-            return Plio.objects.filter(
-                Q(is_public=True)
-                | (Q(is_public=False) & Q(created_by=self.request.user))
-            )
-
-        return Plio.objects.none()
-
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
@@ -150,6 +129,26 @@ class PlioViewSet(viewsets.ModelViewSet):
     def list_uuid(self, request):
         """Retrieves a list of UUIDs for all the plios"""
         queryset = self.filter_queryset(self.get_queryset())
+
+        organization_shortcode = (
+            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
+        )
+
+        # personal workspace
+        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
+            queryset = queryset.filter(created_by=self.request.user)
+
+        # organizational workspace
+        if OrganizationUser.objects.filter(
+            organization__shortcode=organization_shortcode,
+            user=self.request.user.id,
+        ).exists():
+            # user should be authenticated and a part of the org
+            queryset = queryset.filter(
+                Q(is_public=True)
+                | (Q(is_public=False) & Q(created_by=self.request.user))
+            )
+
         uuid_list = queryset.values_list("uuid", flat=True)
         page = self.paginate_queryset(uuid_list)
 
@@ -170,7 +169,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["get"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
+        permission_classes=[PlioPermission],
     )
     def play(self, request, uuid):
         queryset = Plio.objects.filter(uuid=uuid)
@@ -193,6 +192,8 @@ class PlioViewSet(viewsets.ModelViewSet):
     )
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
+        # return 404 if user cannot access the object
+        # else fetch the object
         plio = self.get_object()
         # django will auto-generate the key when the key is set to None
         plio.pk = None
@@ -274,7 +275,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                 location=BIGQUERY["location"],
             )
 
-        def save_query_results(cursor, query_method, filename):
+        def run_query(cursor, query_method):
             if BIGQUERY["enabled"]:
                 # execute the sql query using BigQuery client and create a dataframe
                 df = client.query(
@@ -290,17 +291,37 @@ class PlioViewSet(viewsets.ModelViewSet):
                 # create a dataframe from the rows and the columns
                 df = pd.DataFrame(cursor.fetchall(), columns=columns)
 
+            return df
+
+        def save_query_results(df, filename):
             # save to csv
             df.to_csv(os.path.join(data_dump_dir, filename), index=False)
 
+        def run_and_save_query_results(cursor, query_method, filename):
+            df = run_query(cursor, query_method)
+            save_query_results(df, filename)
+
         # create the individual dump files
         with connection.cursor() as cursor:
-            save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
-            save_query_results(cursor, get_responses_dump_query, "responses.csv")
-            save_query_results(
-                cursor, get_plio_details_query, "plio-interaction-details.csv"
+            run_and_save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
+            run_and_save_query_results(
+                cursor, get_responses_dump_query, "responses.csv"
             )
-            save_query_results(cursor, get_events_query, "events.csv")
+            # handle plio interaction details differently
+            # for MCQ questions, make it 1-indexed
+            df = run_query(cursor, get_plio_details_query)
+
+            # convert correct_answer values from string to int
+            df["question_correct_answer"] = df["question_correct_answer"].apply(
+                lambda answer: answer if not answer else int(answer)
+            )
+            # find the rows where the question type is MCQ
+            # and update the correct answer there
+            df[df["question_type"] == "mcq"]["question_correct_answer"] += 1
+
+            save_query_results(df, "plio-interaction-details.csv")
+
+            run_and_save_query_results(cursor, get_events_query, "events.csv")
 
             df = pd.DataFrame(
                 [[plio.uuid, plio.name, plio.video.url]],
@@ -310,8 +331,8 @@ class PlioViewSet(viewsets.ModelViewSet):
 
             # move the README for the data dump to the directory
             shutil.copyfile(
-                "./plio/static/plio/docs/download_csv_README.md",
-                os.path.join(data_dump_dir, "README.md"),
+                "./plio/static/plio/docs/download_csv_README.pdf",
+                os.path.join(data_dump_dir, "READ-ME-FIRST.pdf"),
             )
 
         # create the zip

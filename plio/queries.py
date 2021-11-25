@@ -70,7 +70,6 @@ def get_responses_dump_query(plio_uuid: str, schema: str, extra_data: dict):
             ELSE
                 {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,
-            sessionAnswer.id AS session_answer_id,
             sessionAnswer.answer,
             sessionAnswer.item_id
         FROM {schema}.session AS session

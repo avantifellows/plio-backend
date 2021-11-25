@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from users.models import User, OneTimePassword, Role, OrganizationUser
 from organizations.serializers import OrganizationSerializer
+from django.core.cache import cache
+from plio.cache import get_cache_key
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -31,10 +33,18 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["is_superuser", "is_staff"]
 
     def to_representation(self, instance):
+        # check if a cached version exists and if it does, return it as the response
+        cache_key = get_cache_key(instance)
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            return cached_response
+
         response = super().to_representation(instance)
         response["organizations"] = OrganizationSerializer(
             instance.organizations, many=True
         ).data
+
+        cache.set(cache_key, response)  # set a cached version
         return response
 
     def validate_config(self, config):

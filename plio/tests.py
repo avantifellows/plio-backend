@@ -12,6 +12,8 @@ from oauth2_provider.models import Application
 from oauth2_provider.models import AccessToken
 from django.urls import reverse
 from django.db import connection
+from django.core.cache import cache
+from django_redis import get_redis_connection
 
 from users.models import User, Role, OrganizationUser
 from organizations.models import Organization
@@ -19,6 +21,7 @@ from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
 from entries.models import Session
 from plio.views import StandardResultsSetPagination
+from plio.cache import get_cache_key
 
 
 class BaseTestCase(APITestCase):
@@ -44,6 +47,10 @@ class BaseTestCase(APITestCase):
         self.org_view_role = Role.objects.filter(name="org-view").first()
         self.org_admin_role = Role.objects.filter(name="org-admin").first()
         self.super_admin_role = Role.objects.filter(name="super-admin").first()
+
+    def tearDown(self):
+        # flush the cache
+        get_redis_connection("default").flushall()
 
     def setUp(self):
         # create 2 users
@@ -94,12 +101,12 @@ class PlioTestCase(BaseTestCase):
         # unset the credentials
         self.client.credentials()
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_can_list_plios(self):
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 2)
 
@@ -109,7 +116,7 @@ class PlioTestCase(BaseTestCase):
         Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user_2)
 
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with user 2
         self.assertEqual(response.data["count"], 2)
@@ -141,11 +148,11 @@ class PlioTestCase(BaseTestCase):
         )
 
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
 
         # the plio created above should be listed
         self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+        self.assertEqual(response.data["results"][0], plio_org.uuid)
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
@@ -181,11 +188,11 @@ class PlioTestCase(BaseTestCase):
         )
 
         # get plios
-        response = self.client.get(reverse("plios-list"))
+        response = self.client.get("/api/v1/plios/list_uuid/")
 
         # the plio created above should be listed
         self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
+        self.assertEqual(response.data["results"][0], plio_org.uuid)
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
@@ -232,12 +239,12 @@ class PlioTestCase(BaseTestCase):
             },
         )
 
-    def test_guest_cannot_play_plio(self):
+    def test_guest_can_play_plio(self):
         # unset the credentials
         self.client.credentials()
         # play plio
         response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/play/")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_can_play_own_plio(self):
         # play plio
@@ -450,6 +457,134 @@ class PlioTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_items_sorted_with_time(self):
+        """Tests that the items returned while getting a plio are sorted by time"""
+        # seed an item
+        item_1 = Item.objects.create(type="question", plio=self.plio_1, time=10)
+
+        # seed another item with timestamp less than the first item
+        item_2 = Item.objects.create(type="question", plio=self.plio_1, time=1)
+
+        # while fetching the plio for the items above, the second item should
+        # come before the first item
+        response = self.client.get(f"/api/v1/plios/{self.plio_1.uuid}/")
+        self.assertEqual(response.data["items"][0]["id"], item_2.id)
+        self.assertEqual(response.data["items"][1]["id"], item_1.id)
+
+    def test_retrieving_plio_sets_instance_cache(self):
+        # verify cache data doesn't exist
+        cache_key_name = get_cache_key(self.plio_1)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # make a get request
+        response = self.client.get(
+            reverse("plios-detail", kwargs={"uuid": self.plio_1.uuid})
+        )
+
+        # verify cache data exists
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(response.data, cache.get(cache_key_name))
+
+    def test_updating_plio_recreates_instance_cache(self):
+        # create a third plio
+        plio_3 = Plio.objects.create(
+            name="Plio 3", video=self.video, created_by=self.user
+        )
+
+        # verify cache data doesn't exist
+        cache_key_name = get_cache_key(plio_3)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # make a get request
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio_3.uuid}))
+
+        # verify cache data exists
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+
+        # make an update
+        new_name = "Plio name update"
+        self.client.patch(
+            reverse("plios-detail", kwargs={"uuid": plio_3.uuid}), {"name": new_name}
+        )
+
+        # verify cache data exist with the updated value
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(cache.get(cache_key_name)["name"], new_name)
+
+
+class PlioDownloadTestCase(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        # seed a video
+        self.video = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # seed a plio
+        self.plio = Plio.objects.create(
+            name="Plio 1", video=self.video, created_by=self.user, status="published"
+        )
+        # seed some sessions for the plio
+        Session.objects.create(plio=self.plio, user=self.user)
+        Session.objects.create(plio=self.plio, user=self.user)
+
+    def test_draft_plio_data_cannot_be_downloaded(self):
+        # change plio status to draft
+        self.plio.status = "draft"
+        self.plio.save()
+        # download plio data
+        response = self.client.get(f"/api/v1/plios/{self.plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_published_plio_data_can_be_downloaded(self):
+        # download plio data
+        response = self.client.get(f"/api/v1/plios/{self.plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response, FileResponse))
+
+    def test_non_plio_owner_cannot_download_data(self):
+        # make a plio with new user
+        new_user_plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user_2, status="published"
+        )
+        # download new user plio data
+        response = self.client.get(f"/api/v1/plios/{new_user_plio.uuid}/download_data/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_user_can_download_data_for_other_user_plio_in_organization(self):
+
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_admin_role
+        )
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create a video within the organization schema
+        new_user_video = Video.objects.create(
+            title="Video 2", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # create a plio with new user inside the organization schema
+        new_user_plio = Plio.objects.create(
+            name="Plio 2",
+            video=new_user_video,
+            created_by=self.user_2,
+            status="published",
+        )
+
+        # add the organization shortcode in the request header and download new user plio data
+        response = self.client.get(
+            f"/api/v1/plios/{new_user_plio.uuid}/download_data/",
+            HTTP_ORGANIZATION=self.organization.shortcode,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(isinstance(response, FileResponse))
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
 
 class VideoTestCase(BaseTestCase):
     def setUp(self):
@@ -474,6 +609,46 @@ class VideoTestCase(BaseTestCase):
         response = self.client.get(reverse("videos-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
+
+    def test_updating_video_updates_linked_plio_instance_cache(self):
+        # create a video
+        video_title = "Video for cache"
+        video = Video.objects.create(
+            title=video_title, url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+        # create a plio with the video
+        plio = Plio.objects.create(
+            name="Plio for cache", video=video, created_by=self.user
+        )
+
+        # there shouldn't be any cache as we created plio without API
+        cache_key_name = get_cache_key(plio)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # request plio again via API to generate cache
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # plio cache should exist now
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(cache.get(cache_key_name)["video"]["title"], video_title)
+
+        # update video title
+        new_title_for_video = "New title for cache"
+        self.client.patch(
+            reverse("videos-detail", kwargs={"pk": video.id}),
+            {"title": new_title_for_video},
+        )
+
+        # plio cache should be deleted after video update
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # re-request plio again via API after video update
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # check plio cache with the new video title
+        self.assertEqual(
+            cache.get(cache_key_name)["video"]["title"], new_title_for_video
+        )
 
 
 class ItemTestCase(BaseTestCase):
@@ -709,6 +884,42 @@ class ItemTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/items/{self.item.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_updating_item_updates_linked_plio_instance_cache(self):
+        # create a plio
+        plio = Plio.objects.create(
+            name="Plio for cache", video=self.video, created_by=self.user
+        )
+        item_time = 1
+        # create an item for the plio
+        item = Item.objects.create(type="question", plio=plio, time=item_time)
+
+        # there shouldn't be any cache as we created plio without API
+        cache_key_name = get_cache_key(plio)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # request plio again via API to generate cache
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # plio cache should exist now
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(cache.get(cache_key_name)["items"][0]["time"], item_time)
+
+        # update item time
+        item_new_time = 100
+        self.client.patch(
+            reverse("items-detail", kwargs={"pk": item.id}),
+            {"time": item_new_time},
+        )
+
+        # plio cache should be deleted after item time update
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # re-request plio again via API after item update
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # check plio cache with the update item time
+        self.assertEqual(cache.get(cache_key_name)["items"][0]["time"], item_new_time)
+
 
 class QuestionTestCase(BaseTestCase):
     def setUp(self):
@@ -867,6 +1078,49 @@ class QuestionTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/questions/{self.question.id}/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_updating_question_updates_linked_plio_instance_cache(self):
+        # create a plio
+        plio = Plio.objects.create(
+            name="Plio for cache", video=self.video, created_by=self.user
+        )
+        # create an item for the plio
+        item = Item.objects.create(type="question", plio=plio, time=1)
+
+        # create a question for the item
+        question_text = "Question for cache"
+        question = Question.objects.create(type="mcq", item=item, text=question_text)
+
+        # there shouldn't be any cache as we created plio without API
+        cache_key_name = get_cache_key(plio)
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # request plio again via API to generate cache
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # plio cache should exist now
+        self.assertEqual(len(cache.keys(cache_key_name)), 1)
+        self.assertEqual(
+            cache.get(cache_key_name)["items"][0]["details"]["text"], question_text
+        )
+
+        # update question text
+        question_new_text = "Updated Text for Question"
+        self.client.patch(
+            reverse("questions-detail", kwargs={"pk": question.id}),
+            {"text": question_new_text},
+        )
+
+        # plio cache should be deleted after question text update
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # re-request plio again via API after question update
+        self.client.get(reverse("plios-detail", kwargs={"uuid": plio.uuid}))
+
+        # check plio cache with the updated question text
+        self.assertEqual(
+            cache.get(cache_key_name)["items"][0]["details"]["text"], question_new_text
+        )
+
 
 class ImageTestCase(BaseTestCase):
     """Tests the Image CRUD functionality."""
@@ -983,77 +1237,3 @@ class ImageTestCase(BaseTestCase):
         self.assertNotEqual(self.image, response.data["id"])
         self.assertEqual(image.alt_text, response.data["alt_text"])
         self.assertEqual(image.url.file.size, new_image.url.file.size)
-
-
-class PlioDownloadTestCase(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        # seed a video
-        self.video = Video.objects.create(
-            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
-        )
-        # seed a plio
-        self.plio = Plio.objects.create(
-            name="Plio 1", video=self.video, created_by=self.user, status="published"
-        )
-        # seed some sessions for the plio
-        Session.objects.create(plio=self.plio, user=self.user)
-        Session.objects.create(plio=self.plio, user=self.user)
-
-    def test_draft_plio_data_cannot_be_downloaded(self):
-        # change plio status to draft
-        self.plio.status = "draft"
-        self.plio.save()
-        # download plio data
-        response = self.client.get(f"/api/v1/plios/{self.plio.uuid}/download_data/")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_published_plio_data_can_be_downloaded(self):
-        # download plio data
-        response = self.client.get(f"/api/v1/plios/{self.plio.uuid}/download_data/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(isinstance(response, FileResponse))
-
-    def test_non_plio_owner_cannot_download_data(self):
-        # make a plio with new user
-        new_user_plio = Plio.objects.create(
-            name="Plio 2", video=self.video, created_by=self.user_2, status="published"
-        )
-        # download new user plio data
-        response = self.client.get(f"/api/v1/plios/{new_user_plio.uuid}/download_data/")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_user_can_download_data_for_other_user_plio_in_organization(self):
-
-        OrganizationUser.objects.create(
-            organization=self.organization, user=self.user, role=self.org_admin_role
-        )
-        OrganizationUser.objects.create(
-            organization=self.organization, user=self.user_2, role=self.org_view_role
-        )
-
-        # set db connection to organization schema
-        connection.set_schema(self.organization.schema_name)
-
-        # create a video within the organization schema
-        new_user_video = Video.objects.create(
-            title="Video 2", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
-        )
-        # create a plio with new user inside the organization schema
-        new_user_plio = Plio.objects.create(
-            name="Plio 2",
-            video=new_user_video,
-            created_by=self.user_2,
-            status="published",
-        )
-
-        # add the organization shortcode in the request header and download new user plio data
-        response = self.client.get(
-            f"/api/v1/plios/{new_user_plio.uuid}/download_data/",
-            HTTP_ORGANIZATION=self.organization.shortcode,
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(isinstance(response, FileResponse))
-
-        # set db connection back to public (default) schema
-        connection.set_schema_to_public()

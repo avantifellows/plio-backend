@@ -39,3 +39,5 @@ coverage==5.5
 google-cloud-bigquery==2.20.0
 pyarrow==4.0.1
 sentry-sdk==1.1.0
+django-silk==4.1.0
+django-redis==5.0.0

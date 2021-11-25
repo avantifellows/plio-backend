@@ -1,7 +1,12 @@
-from plio.tests import BaseTestCase
-from organizations.models import Organization
 from rest_framework import status
 from django.urls import reverse
+
+from django.core.cache import cache
+
+from plio.tests import BaseTestCase
+from plio.cache import get_cache_key
+from organizations.models import Organization
+from users.models import OrganizationUser
 
 
 class OrganizationTestCase(BaseTestCase):
@@ -9,8 +14,12 @@ class OrganizationTestCase(BaseTestCase):
     def setUpTestData(self):
         super().setUpTestData()
         # seed some organizations
-        Organization.objects.create(name="Org 1", shortcode="org-1")
-        Organization.objects.create(name="Org 2", shortcode="org-2")
+        self.organization_1 = Organization.objects.create(
+            name="Org 1", shortcode="org-1"
+        )
+        self.organization_2 = Organization.objects.create(
+            name="Org 2", shortcode="org-2"
+        )
 
     def test_guest_cannot_list_organization(self):
         # unset the access token so that API requests go as unauthenticated user
@@ -39,3 +48,46 @@ class OrganizationTestCase(BaseTestCase):
         self.user.save()
         response = self.client.get(reverse("organizations-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_updating_organization_recreates_user_instance_cache(self):
+        from users.models import User
+        from rest_framework.test import APIClient
+        from plio.tests import get_new_access_token
+
+        superadmin_client = APIClient()
+        superadmin_user = User.objects.create(mobile="+919988776655", is_superuser=True)
+        superadmin_access_token = get_new_access_token(
+            superadmin_user, self.application
+        )
+        superadmin_client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + superadmin_access_token.token
+        )
+
+        # verify cache data doesn't exist by default
+        cache_key_name = get_cache_key(self.user)
+
+        # make a get request
+        self.client.get(reverse("users-detail", kwargs={"pk": self.user.id}))
+
+        # associate the current user with the organization
+        OrganizationUser.objects.create(
+            organization=self.organization_2, user=self.user, role=self.org_admin_role
+        )
+
+        # make an update to the organization name. Only plio superadmin can do it!
+        org_new_name = "Org New Name"
+        superadmin_client.patch(
+            reverse("organizations-detail", kwargs={"pk": self.organization_2.id}),
+            {"name": org_new_name},
+        )
+
+        # user cache should be deleted after organization update
+        self.assertEqual(len(cache.keys(cache_key_name)), 0)
+
+        # request user again so that we can check if the cache is updated
+        self.client.get(reverse("users-detail", kwargs={"pk": self.user.id}))
+
+        # verify cache data has now the updated value
+        self.assertEqual(
+            cache.get(cache_key_name)["organizations"][0]["name"], org_new_name
+        )

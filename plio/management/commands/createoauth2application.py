@@ -4,7 +4,7 @@ from oauth2_provider.models import Application
 
 
 class Command(BaseCommand):
-    help = "Creates OAuth2 client credentials"
+    help = "Creates OAuth2 client credentials from the default oauth2 environment variables"
 
     def handle(self, *args, **options):
         default_oauth2_client_setup = os.environ.get(

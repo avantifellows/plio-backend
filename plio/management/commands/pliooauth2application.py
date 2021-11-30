@@ -17,9 +17,8 @@ class Command(BaseCommand):
                 print(
                     "Default OAuth2 client id and secret provided. Creating default application."
                 )
-                # user = User.objects.filter(email=superuser_email).first()
                 Application.objects.create(
-                    name="test",
+                    name="default",
                     client_id=default_oauth2_client_id,
                     client_secret=default_oauth2_client_secret,
                     redirect_uris="",

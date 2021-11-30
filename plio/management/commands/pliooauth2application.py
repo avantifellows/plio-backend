@@ -17,14 +17,20 @@ class Command(BaseCommand):
                 print(
                     "Default OAuth2 client id and secret provided. Creating default application."
                 )
-                Application.objects.create(
-                    name="default",
-                    client_id=default_oauth2_client_id,
-                    client_secret=default_oauth2_client_secret,
-                    redirect_uris="",
-                    client_type=Application.CLIENT_CONFIDENTIAL,
-                    authorization_grant_type=Application.GRANT_PASSWORD,
-                )
+                application = Application.objects.filter(
+                    client_id=default_oauth2_client_id
+                ).first()
+                if application:
+                    print("Default OAuth2 client id already exists. Skipping.")
+                else:
+                    Application.objects.create(
+                        name="default",
+                        client_id=default_oauth2_client_id,
+                        client_secret=default_oauth2_client_secret,
+                        redirect_uris="",
+                        client_type=Application.CLIENT_CONFIDENTIAL,
+                        authorization_grant_type=Application.GRANT_PASSWORD,
+                    )
                 print("Created default OAuth2 client id and secret!")
             else:
                 print("No default OAuth2 client id and secret provided. Skipping.")

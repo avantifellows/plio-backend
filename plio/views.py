@@ -2,6 +2,7 @@ import os
 import shutil
 from copy import deepcopy
 import base64
+import json
 
 from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
@@ -303,24 +304,67 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         # create the individual dump files
         with connection.cursor() as cursor:
+            # --- sessions --- #
             run_and_save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
-            run_and_save_query_results(
-                cursor, get_responses_dump_query, "responses.csv"
+
+            # --- responses --- #
+            # change the submitted answers to make them 1-indexed
+            df = run_query(cursor, get_responses_dump_query)
+
+            # deserialise the submitted answer values
+            answers = pd.Series(df["answer"])
+            df.drop(columns="answer", inplace=True)
+
+            valid_answer_indices = answers[~answers.isnull()].index
+            answers.loc[valid_answer_indices] = answers[valid_answer_indices].apply(
+                json.loads
             )
-            # handle plio interaction details differently
-            # for MCQ questions, make it 1-indexed
+            df["answer"] = answers
+
+            # find the rows where the question type is MCQ
+            # and update the submitted answer there
+            df_mcq = df[df["question_type"] == "mcq"]
+            df.loc[df_mcq.index, "answer"] = df_mcq["answer"].apply(
+                lambda x: x + 1 if x is not None else x
+            )
+
+            # find the rows where the question type is checkbox
+            # and update the submitted answer there
+            df_checkbox = df[df["question_type"] == "checkbox"]
+            df.loc[df_checkbox.index, "answer"] = df_checkbox["answer"].apply(
+                lambda row: list(map(lambda x: x + 1, row)) if row is not None else row
+            )
+
+            save_query_results(df, "responses.csv")
+
+            # --- interaction details --- #
+            # change the correct answers to make them 1-indexed
             df = run_query(cursor, get_plio_details_query)
 
-            # convert correct_answer values from string to int
-            df["question_correct_answer"] = df["question_correct_answer"].apply(
-                lambda answer: answer if not answer else int(answer)
-            )
+            # deserialise the correct_answer values
+            question_correct_answer = df["question_correct_answer"]
+            df.drop(columns="question_correct_answer", inplace=True)
+
+            question_correct_answer = question_correct_answer.apply(json.loads)
+            df["question_correct_answer"] = question_correct_answer
+
             # find the rows where the question type is MCQ
             # and update the correct answer there
-            df[df["question_type"] == "mcq"]["question_correct_answer"] += 1
+            df_mcq = df[df["question_type"] == "mcq"]
+            df.loc[df_mcq.index, "question_correct_answer"] = df_mcq[
+                "question_correct_answer"
+            ].apply(lambda x: x + 1)
+
+            # find the rows where the question type is checkbox
+            # and update the correct answer there
+            df_checkbox = df[df["question_type"] == "checkbox"]
+            df.loc[df_checkbox.index, "question_correct_answer"] = df_checkbox[
+                "question_correct_answer"
+            ].apply(lambda row: list(map(lambda x: x + 1, row)))
 
             save_query_results(df, "plio-interaction-details.csv")
 
+            # --- events --- #
             run_and_save_query_results(cursor, get_events_query, "events.csv")
 
             df = pd.DataFrame(

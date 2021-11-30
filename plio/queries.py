@@ -71,11 +71,14 @@ def get_responses_dump_query(plio_uuid: str, schema: str, extra_data: dict):
                 {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,
             sessionAnswer.answer,
-            sessionAnswer.item_id
+            sessionAnswer.item_id,
+            question.type as question_type
         FROM {schema}.session AS session
         INNER JOIN {schema}.session_answer sessionAnswer ON session.id = sessionAnswer.session_id
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
         INNER JOIN {schema if BIGQUERY['enabled'] else 'public'}.user AS users ON session.user_id = users.id
+        INNER JOIN {schema}.item item ON item.id = sessionAnswer.item_id
+        INNER JOIN {schema}.question question ON question.item_id = item.id
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 

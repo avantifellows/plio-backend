@@ -44,7 +44,9 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `question_type`: the type of question (e.g. `mcq`)
   - `question_text`: the text of the question itself
   - `question_options`: the options for the question
-  - `question_correct_answer`: the correct answer for the given question. For `question_type = mcq`, this represents the index of the correct answer among the `question_options`. For `question_type = checkbox`, it contains a list of indices corresponding to the options which are correct.
+  - `question_correct_answer`: the correct answer for the given question. For `question_type = mcq`, this represents the index of the correct answer among the `question_options`. Here, `answer = 1` indicates that the first option has been marked as the correct answer.
+
+    For `question_type = checkbox`, it contains a list of indices corresponding to the options which are correct. Here, `answer = [2,3]` indicates that the second and third options have been marked as the correct answers.
 
   Example:
   | item_id | item_type | item_time | question_type | question_text                                   | question_options                                             | question_correct_answer |
@@ -55,8 +57,13 @@ This section will clarify what each of the `.csv` files in the folder contains:
 - `responses.csv`: contains the responses to each interaction by every user in every session. The columns represent the following:
 
   - `session_id`: the unique identifier for the session
+
   - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy.
-  - `answer`: the user's actual answer to the interaction. For `question_type = mcq`, it represents the index of the option selected by the user. For `question_type = checkbox`, it contains a list of indices corresponding to the options selected by the user. Here, `answer = 1` represents the first option.
+
+  - `answer`: the user's actual answer to the interaction. For `question_type = mcq`, it represents the index of the option selected by the user. Here, `answer = 1` indicates that the first option has been submitted as the answer.
+
+    For `question_type = checkbox`, it contains a list of indices corresponding to the options selected by the user. Here, `answer = [2, 3]` indicates that the second and third options have been submitted as the answers.
+
   - `item_id`: the unique identifier of the interaction that this answer belongs to. You can compare this value with the `id` column in `plio-interaction-details.csv` to identify which item did this answer belong to.
 
   Example:

@@ -14,7 +14,7 @@ python manage.py migrate
 python manage.py createtenant
 
 # create default superuser
-python manage.py createsuperuser
+python manage.py createdefaultsuperuser
 
 # create default OAuth2 API client credentials
 python manage.py createoauth2application

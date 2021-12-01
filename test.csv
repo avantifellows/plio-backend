@@ -1,3 +1,0 @@
-item_id,item_type,item_time,question_type,question_text,question_options,question_correct_answer
-138,question,39.4,checkbox,ASDASD,"[""ASDA"", ""ASDA"", ""ASDASD""]","[0, 2]"
-139,question,8.1,mcq,okk,"[""pp"", """"]",0

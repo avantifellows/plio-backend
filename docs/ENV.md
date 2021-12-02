@@ -165,7 +165,7 @@ The Sentry Data Source Name. This is a unique link that identifies your Sentry p
 Using the `python manage.py createoauth2application` command, you can create an OAuth2 client application for your app. For that, the following environment variables are needed.
 
 #### `DEFAULT_OAUTH2_CLIENT_SETUP`
-Boolean value. Defaults to `False` if not set. The command `createoauth2application` will work only if this is set to True.
+Boolean value. Defaults to `False` if not set. The command `createoauth2application` will work only if this is set to `True`.
 
 #### `DEFAULT_OAUTH2_CLIENT_ID`
 The value for the OAuth2 client id. Recommended to use a 40 character or longer randomized alphanumeric string.

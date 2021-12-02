@@ -29,7 +29,9 @@ class Command(BaseCommand):
         ).first()
 
         if application:
-            print("An application with the default OAuth2 client id already exists. Skipping.")
+            print(
+                "An application with the default OAuth2 client id already exists. Skipping."
+            )
             return
 
         Application.objects.create(

@@ -18,7 +18,7 @@ class Command(BaseCommand):
         default_oauth2_client_secret = os.environ.get("DEFAULT_OAUTH2_CLIENT_SECRET")
 
         if not default_oauth2_client_id or not default_oauth2_client_secret:
-            print("No default OAuth2 client id and secret provided. Skipping.")
+            print("No default OAuth2 client id or secret provided. Skipping.")
             return
 
         print(
@@ -29,7 +29,7 @@ class Command(BaseCommand):
         ).first()
 
         if application:
-            print("Default OAuth2 client id already exists. Skipping.")
+            print("An application with the default OAuth2 client id already exists. Skipping.")
             return
 
         Application.objects.create(

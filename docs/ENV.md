@@ -159,3 +159,16 @@ Plio supports error monitoring on your app with [Sentry](https://sentry.io/). Vi
 
 #### `SENTRY_DSN`
 The Sentry Data Source Name. This is a unique link that identifies your Sentry project and sends error reports to Sentry dashboard. You can get the value of DSN for your projects from `Sentry dashboard > Settings > Project > {PROJECT_NAME} > SDK Setup > Client Keys (DSN)`.
+
+
+### OAuth2 Client Credentials
+Using the `python manage.py createoauth2application` command, you can create an OAuth2 client application for your app. For that, the following environment variables are needed.
+
+#### `DEFAULT_OAUTH2_CLIENT_SETUP`
+Boolean value. Defaults to `False` if not set. The command `createoauth2application` will work only if this is set to `True`.
+
+#### `DEFAULT_OAUTH2_CLIENT_ID`
+The value for the OAuth2 client id. Recommended to use a 40 character or longer randomized alphanumeric string.
+
+#### `DEFAULT_OAUTH2_CLIENT_SECRET`
+The value for the OAuth2 client secret. Recommended to use a 128 character or longer randomized alphanumeric string.

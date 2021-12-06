@@ -79,10 +79,6 @@ jobs:
     name: Integration tests
     runs-on: ubuntu-latest
 
-    # uses GitHub environment
-    environment:
-      name: Integration Testing
-
     steps:
       - uses: actions/checkout@v2
 

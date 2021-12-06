@@ -82,11 +82,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract_branch
-
       - name: Set up Plio Frontend
         run: |
           # clone the project
@@ -98,11 +93,11 @@ jobs:
           git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
           git fetch --all
           git pull --all
-          if [ `git branch --list ${{ steps.extract_branch.outputs.branch }}` ]
+          if [ `git branch --list ${{ github.head_ref }}` ]
           then
-            echo "Switching to branch ${{ steps.extract_branch.outputs.branch }}"
-            git checkout ${{ steps.extract_branch.outputs.branch }}
-            git pull origin ${{ steps.extract_branch.outputs.branch }}
+            echo "Switching to branch ${{ github.head_ref }}"
+            git checkout ${{ github.head_ref }}
+            git pull origin ${{ github.head_ref }}
           fi
 
           # create the env file
@@ -127,11 +122,11 @@ jobs:
           git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
           git fetch --all
           git pull --all
-          if [ `git branch --list ${{ steps.extract_branch.outputs.branch }}` ]
+          if [ `git branch --list ${{ github.head_ref }}` ]
           then
-            echo "Switching to branch ${{ steps.extract_branch.outputs.branch }}"
-            git checkout ${{ steps.extract_branch.outputs.branch }}
-            git pull origin ${{ steps.extract_branch.outputs.branch }}
+            echo "Switching to branch ${{ github.head_ref }}"
+            git checkout ${{ github.head_ref }}
+            git pull origin ${{ github.head_ref }}
           fi
 
           # create the env file
@@ -159,11 +154,11 @@ jobs:
           git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
           git fetch --all
           git pull --all
-          if [ `git branch --list ${{ steps.extract_branch.outputs.branch }}` ]
+          if [ `git branch --list ${{ github.head_ref }}` ]
           then
-            echo "Switching to branch ${{ steps.extract_branch.outputs.branch }}"
-            git checkout ${{ steps.extract_branch.outputs.branch }}
-            git pull origin ${{ steps.extract_branch.outputs.branch }}
+            echo "Switching to branch ${{ github.head_ref }}"
+            git checkout ${{ github.head_ref }}
+            git pull origin ${{ github.head_ref }}
           fi
 
           # create the env file

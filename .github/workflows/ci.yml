@@ -89,11 +89,8 @@ jobs:
           git clone https://github.com/avantifellows/plio-frontend/
           cd plio-frontend/
 
-          # switch to branch
-          git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
-          git fetch --all
-          git pull --all
-          if [ `git branch --list ${{ github.head_ref }}` ]
+          # check branch and switch to branch if exists
+          if [ `git branch --list --remote ${{ github.head_ref }}` ]
           then
             echo "Switching to branch ${{ github.head_ref }}"
             git checkout ${{ github.head_ref }}
@@ -118,11 +115,8 @@ jobs:
           git clone https://github.com/avantifellows/plio-backend
           cd plio-backend/
 
-          # switch to branch
-          git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
-          git fetch --all
-          git pull --all
-          if [ `git branch --list ${{ github.head_ref }}` ]
+          # check branch and switch to branch if exists
+          if [ `git branch --list --remote ${{ github.head_ref }}` ]
           then
             echo "Switching to branch ${{ github.head_ref }}"
             git checkout ${{ github.head_ref }}
@@ -150,11 +144,8 @@ jobs:
           git clone https://github.com/avantifellows/plio-analytics
           cd plio-analytics/
 
-          # switch to branch
-          git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done
-          git fetch --all
-          git pull --all
-          if [ `git branch --list ${{ github.head_ref }}` ]
+          # check branch and switch to branch if exists
+          if [ `git branch --list --remote ${{ github.head_ref }}` ]
           then
             echo "Switching to branch ${{ github.head_ref }}"
             git checkout ${{ github.head_ref }}

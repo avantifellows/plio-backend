@@ -90,11 +90,14 @@ jobs:
           cd plio-frontend/
 
           # check branch and switch to branch if exists
+          echo "Switching branch."
           if [ `git branch --list --remote ${{ github.head_ref }}` ]
           then
             echo "Switching to branch ${{ github.head_ref }}"
             git checkout ${{ github.head_ref }}
             git pull origin ${{ github.head_ref }}
+          else
+            echo "Branch not found. Going with default."
           fi
 
           # create the env file
@@ -116,11 +119,14 @@ jobs:
           cd plio-backend/
 
           # check branch and switch to branch if exists
+          echo "Switching branch."
           if [ `git branch --list --remote ${{ github.head_ref }}` ]
           then
             echo "Switching to branch ${{ github.head_ref }}"
             git checkout ${{ github.head_ref }}
             git pull origin ${{ github.head_ref }}
+          else
+            echo "Branch not found. Going with default."
           fi
 
           # create the env file
@@ -145,11 +151,14 @@ jobs:
           cd plio-analytics/
 
           # check branch and switch to branch if exists
+          echo "Switching branch."
           if [ `git branch --list --remote ${{ github.head_ref }}` ]
           then
             echo "Switching to branch ${{ github.head_ref }}"
             git checkout ${{ github.head_ref }}
             git pull origin ${{ github.head_ref }}
+          else
+            echo "Branch not found. Going with default."
           fi
 
           # create the env file

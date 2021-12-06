@@ -93,9 +93,9 @@ jobs:
           cp .env.example .env
 
           # add env secrets
-          echo 'VUE_APP_GOOGLE_CLIENT_ID=${{ secrets.VUE_APP_GOOGLE_CLIENT_ID }}' >> .env
-          echo 'VUE_APP_BACKEND_API_CLIENT_ID=${{ secrets.VUE_APP_BACKEND_API_CLIENT_ID }}' >> .env
-          echo 'VUE_APP_BACKEND_API_CLIENT_SECRET=${{ secrets.VUE_APP_BACKEND_API_CLIENT_SECRET }}' >> .env
+          echo 'VUE_APP_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}' >> .env
+          echo 'VUE_APP_BACKEND_API_CLIENT_ID=${{ secrets.DJANGO_DEFAULT_OAUTH2_CLIENT_ID }}' >> .env
+          echo 'VUE_APP_BACKEND_API_CLIENT_SECRET=${{ secrets.DJANGO_DEFAULT_OAUTH2_CLIENT_SECRET }}' >> .env
 
           # setup docker containers
           docker-compose up -d --build
@@ -115,8 +115,8 @@ jobs:
           echo 'DEFAULT_OAUTH2_CLIENT_SETUP=${{ secrets.DJANGO_DEFAULT_OAUTH2_CLIENT_SETUP }}' >> .env
           echo 'DEFAULT_OAUTH2_CLIENT_ID=${{ secrets.DJANGO_DEFAULT_OAUTH2_CLIENT_ID }}' >> .env
           echo 'DEFAULT_OAUTH2_CLIENT_SECRET=${{ secrets.DJANGO_DEFAULT_OAUTH2_CLIENT_SECRET }}' >> .env
-          echo 'GOOGLE_OAUTH2_CLIENT_ID=${{ secrets.DJANGO_GOOGLE_OAUTH2_CLIENT_ID }}' >> .env
-          echo 'GOOGLE_OAUTH2_CLIENT_SECRET=${{ secrets.DJANGO_GOOGLE_OAUTH2_CLIENT_SECRET }}' >> .env
+          echo 'GOOGLE_OAUTH2_CLIENT_ID=${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}' >> .env
+          echo 'GOOGLE_OAUTH2_CLIENT_SECRET=${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}' >> .env
 
           # setup docker containers
           docker-compose up -d --build
@@ -146,8 +146,8 @@ jobs:
           export cypress_backend_client_id=${{ secrets.DJANGO_DEFAULT_OAUTH2_CLIENT_ID }}
           export cypress_backend_client_secret=${{ secrets.DJANGO_DEFAULT_OAUTH2_CLIENT_SECRET }}
           export cypress_auth_google_refresh_token=${{ secrets.CYPRESS_AUTH_GOOGLE_REFRESH_TOKEN }}
-          export cypress_auth_google_client_id=${{ secrets.CYPRESS_AUTH_GOOGLE_CLIENT_ID }}
-          export cypress_auth_google_client_secret=${{ secrets.CYPRESS_AUTH_GOOGLE_CLIENT_SECRET }}
+          export cypress_auth_google_client_id=${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}
+          export cypress_auth_google_client_secret=${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}
 
           # run cypress test cases
           npx cypress run --record --key ${{ secrets.CYPRESS_RECORD_KEY }}

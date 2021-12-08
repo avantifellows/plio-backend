@@ -130,8 +130,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     def list_uuid(self, request):
         """Retrieves a list of UUIDs for all the plios"""
         queryset = self.get_queryset()
-        num_plios = queryset.count()
-        queryset = self.filter_queryset(queryset)
 
         organization_shortcode = (
             OrganizationTenantMiddleware.get_organization_shortcode(self.request)
@@ -151,6 +149,9 @@ class PlioViewSet(viewsets.ModelViewSet):
                 Q(is_public=True)
                 | (Q(is_public=False) & Q(created_by=self.request.user))
             )
+
+        num_plios = queryset.count()
+        queryset = self.filter_queryset(queryset)
 
         uuid_list = queryset.values_list("uuid", flat=True)
         page = self.paginate_queryset(uuid_list)

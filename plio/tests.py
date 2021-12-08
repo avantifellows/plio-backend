@@ -220,6 +220,7 @@ class PlioTestCase(BaseTestCase):
                 "next": None,
                 "previous": None,
                 "results": [],
+                "raw_count": 0,
             },
         )
 
@@ -236,6 +237,7 @@ class PlioTestCase(BaseTestCase):
                 "next": None,
                 "previous": None,
                 "results": [self.plio_2.uuid, self.plio_1.uuid],
+                "raw_count": 2,
             },
         )
 

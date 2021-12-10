@@ -55,7 +55,7 @@ class StandardResultsSetPagination(PageNumberPagination):
     # number of results in a page
     page_size = 5
 
-    def get_paginated_response(self, data):
+    def get_paginated_response(self, params):
         # a paginated response will follow this structure
         return Response(
             {
@@ -63,7 +63,8 @@ class StandardResultsSetPagination(PageNumberPagination):
                 "page_size": self.get_page_size(self.request),
                 "next": self.get_next_link(),
                 "previous": self.get_previous_link(),
-                "results": data,
+                "results": params["data"],
+                "raw_count": params["raw_count"],
             }
         )
 
@@ -129,7 +130,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(detail=False, permission_classes=[IsAuthenticated])
     def list_uuid(self, request):
         """Retrieves a list of UUIDs for all the plios"""
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.get_queryset()
 
         organization_shortcode = (
             OrganizationTenantMiddleware.get_organization_shortcode(self.request)
@@ -150,11 +151,14 @@ class PlioViewSet(viewsets.ModelViewSet):
                 | (Q(is_public=False) & Q(created_by=self.request.user))
             )
 
+        num_plios = queryset.count()
+        queryset = self.filter_queryset(queryset)
+
         uuid_list = queryset.values_list("uuid", flat=True)
         page = self.paginate_queryset(uuid_list)
 
         if page is not None:
-            return self.get_paginated_response(page)
+            return self.get_paginated_response({"data": page, "raw_count": num_plios})
 
         # return an empty response in the paginated format if pagination fails
         return Response(

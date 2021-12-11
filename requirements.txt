@@ -5,7 +5,7 @@ channels==3.0.3
 channels_redis==3.2
 chardet==3.0.4
 device-detector==0.10
-Django==3.1.1
+Django==2.2.25
 django-cors-headers==3.7.0
 django-request-logging==0.7.2
 django-s3-storage==0.13.4

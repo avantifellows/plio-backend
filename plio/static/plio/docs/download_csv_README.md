@@ -69,11 +69,11 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `item_id`: the unique identifier of the interaction that this answer belongs to. You can compare this value with the `id` column in `plio-interaction-details.csv` to identify which item did this answer belong to.
 
   Example:
-  | session_id | user_identifier                  | answer | item_id |
-  | ---------- | -------------------------------- | ------ | ------- |
-  | 902        | a532400ed62e772b9dc0b86f46e583ff | 1      | 2781    |
-  | 902        | a532400ed62e772b9dc0b86f46e583ff | 2      | 2782    |
-  | 1131       | fae0b27c451c728867a567e8c1bb4e53 | 1      | 2781    |
+  | session_id | user_identifier                  | answer | item_id | question_type |
+  | ---------- | -------------------------------- | ------ | ------- | ------------- |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | 1      | 2781    | mcq           |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | abcd   | 2782    | subjective    |
+  | 1131       | fae0b27c451c728867a567e8c1bb4e53 | [2, 3] | 2781    | Checkbox      |
 
 
 - `sessions.csv`: contains the details of each session of every user. The columns represent the following:

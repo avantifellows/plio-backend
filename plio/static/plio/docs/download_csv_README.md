@@ -51,8 +51,9 @@ This section will clarify what each of the `.csv` files in the folder contains:
   Example:
   | item_id | item_type | item_time | question_type | question_text                                   | question_options                                             | question_correct_answer |
   | ------- | --------- | --------- | ------------- | ----------------------------------------------- | ------------------------------------------------------------ | ----------------------- |
-  | 2783    | question  | 10        | Subjective    | What is the difference between hips and glutes? |                                                              |                         |
-  | 2788    | question  | 20        | Mcc           | NaOH + HCl → ?                                  | [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ] | 3                       |
+  | 2783    | question  | 10        | subjective    | What is the difference between hips and glutes? |                                                              |                         |
+  | 2788    | question  | 20        | mcq           | NaOH + HCl → ?                                  | [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ] | 3                       |
+  | 2789    | question  | 30        | checkbox      | Which of the following are inert gases?         | [   "Nitrogen",    "Argon" ",    "Helium",    "Oxygen" ]     | [2, 3]                  |
 
 - `responses.csv`: contains the responses to each interaction by every user in every session. The columns represent the following:
 

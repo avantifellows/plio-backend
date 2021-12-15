@@ -3,4 +3,5 @@ item_type_choices = [("question", "Question")]
 question_type_choices = [
     ("mcq", "Multiple Choice Question"),
     ("subjective", "Subjective Question"),
+    ("checkbox", "Checkbox Question"),
 ]

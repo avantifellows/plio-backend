@@ -44,35 +44,50 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `question_type`: the type of question (e.g. `mcq`)
   - `question_text`: the text of the question itself
   - `question_options`: the options for the question
-  - `question_correct_answer`: the correct answer for the given question. For `question_type = mcq`, this represents the index of the correct answer among the `question_options`.
+  - `question_correct_answer`: the correct answer for the given question. For `question_type = mcq`, this represents the index of the correct answer among the `question_options`. In this case, `question_correct_answer = 1` indicates that the first option has been marked as the correct answer.
+
+    For `question_type = checkbox`, it contains a list of indices corresponding to the options which are correct. In this case, `question_correct_answer = [2,3]` indicates that the second and third options have been marked as the correct answers.
 
   Example:
   | item_id | item_type | item_time | question_type | question_text                                   | question_options                                             | question_correct_answer |
   | ------- | --------- | --------- | ------------- | ----------------------------------------------- | ------------------------------------------------------------ | ----------------------- |
-  | 2783    | question  | 10        | Subjective    | What is the difference between hips and glutes? |                                                              |                         |
-  | 2788    | question  | 20        | Mcc           | NaOH + HCl → ?                                  | [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ] | 3                       |
+  | 2783    | question  | 10        | subjective    | What is the difference between hips and glutes? |                                                              |                         |
+  | 2788    | question  | 20        | mcq           | NaOH + HCl → ?                                  | [   "A) NaOHHCl ",    "B) Na + OH + H + Cl ",    "C) NaCl + H20 ",    "D) NaOH2Cl" ] | 3                       |
+  | 2789    | question  | 30        | checkbox      | Which of the following are inert gases?         | [   "Nitrogen",    "Argon" ",    "Helium",    "Oxygen" ]     | [2, 3]                  |
 
 - `responses.csv`: contains the responses to each interaction by every user in every session. The columns represent the following:
 
   - `session_id`: the unique identifier for the session
+
   - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy.
-  - `answer`: the user's actual answer to the interaction
+
+  - `answer`: the user's actual answer to the interaction. For `question_type = mcq`, it represents the index of the option selected by the user. In this case, `answer = 1` indicates that the first option has been submitted as the answer.
+
+    For `question_type = checkbox`, it contains a list of indices corresponding to the options selected by the user. In this case, `answer = [2, 3]` indicates that the second and third options have been submitted as the answers.
+
+  - `question_type`: the type of question (e.g. `mcq`)
+
   - `item_id`: the unique identifier of the interaction that this answer belongs to. You can compare this value with the `id` column in `plio-interaction-details.csv` to identify which item did this answer belong to.
 
   Example:
-  | session_id | user_identifier                  | answer | item_id |
-  | ---------- | -------------------------------- | ------ | ------- |
-  | 902        | a532400ed62e772b9dc0b86f46e583ff | 0      | 2781    |
-  | 902        | a532400ed62e772b9dc0b86f46e583ff | 1      | 2782    |
-  | 1131       | fae0b27c451c728867a567e8c1bb4e53 | 0      | 2781    |
+  | session_id | user_identifier                  | answer | item_id | question_type |
+  | ---------- | -------------------------------- | ------ | ------- | ------------- |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | 1      | 2781    | mcq           |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | abcd   | 2782    | subjective    |
+  | 1131       | fae0b27c451c728867a567e8c1bb4e53 | [2, 3] | 2781    | Checkbox      |
 
 
 - `sessions.csv`: contains the details of each session of every user. The columns represent the following:
 
   - `session_id`: the unique identifier for the session
+
   - `user_identifier`: the unique identifier for the user associated with this session
+
   - `watch_time`: the amount of time the user has watched the video (in seconds) - the most recent session of any user includes the total time across all previous sessions by that user.
-  - `retention`: the retention array over the video for the given user. The length of the array is the number of seconds of the video and each value represents how many times the user has visited that particular second of the video while watching the plio. For example, if your video is 4 minutes long, each row of this column will have 240 values (one for each second). If a user did not reach the end of the video, the values towards the end would be 0. If a user has rewatched the first 10 seconds 5 times, the first 10 values would be 5. Ignore this field if it contains something like `NaN, NaN, ...`.
+
+  - `retention`: the retention array over the video for the given user. The length of the array is the number of seconds of the video and each value represents how many times the user has visited that particular second of the video while watching the plio.
+
+    For example, if your video is 4 minutes long, each row of this column will have 240 values (one for each second). If a user did not reach the end of the video, the values towards the end would be 0. If a user has rewatched the first 10 seconds 5 times, the first 10 values would be 5. Ignore this field if it contains something like `NaN, NaN, ...`.
 
   Example:
   | session_id | retention                                  | watch_time | user_identifier                  |

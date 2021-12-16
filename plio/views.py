@@ -276,13 +276,11 @@ class PlioViewSet(viewsets.ModelViewSet):
         def run_query(cursor, query_method):
             if BIGQUERY["enabled"]:
                 # execute the sql query using BigQuery client and create a dataframe
-                values = client.query(
+                df = client.query(
                     query_method(
                         uuid, schema=schema_name, mask_user_id=is_user_org_admin
                     )
-                )
-                print(values.result())
-                df = values.to_dataframe()
+                ).to_dataframe()
             else:
                 # execute the sql query using postgres DB connection cursor
                 cursor.execute(

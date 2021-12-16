@@ -34,7 +34,7 @@ def get_sessions_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = Tr
     return f"""
         SELECT
             session.id as session_id,
-            ROUND(CAST(session.watch_time as numeric), 2) as watch_time,
+            session.watch_time,
             CASE
                 WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE

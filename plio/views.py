@@ -281,7 +281,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                         uuid, schema=schema_name, mask_user_id=is_user_org_admin
                     )
                 )
-                print(values)
+                print(values.result())
                 df = values.to_dataframe()
             else:
                 # execute the sql query using postgres DB connection cursor

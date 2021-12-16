@@ -59,7 +59,7 @@ This section will clarify what each of the `.csv` files in the folder contains:
 
   - `session_id`: the unique identifier for the session
 
-  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/#mapping-data-to-users).
+  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/).
 
   - `answer`: the user's actual answer to the interaction. For `question_type = mcq`, it represents the index of the option selected by the user. In this case, `answer = 1` indicates that the first option has been submitted as the answer.
 
@@ -81,7 +81,7 @@ This section will clarify what each of the `.csv` files in the folder contains:
 
   - `session_id`: the unique identifier for the session
 
-  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/#mapping-data-to-users).
+  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/).
 
   - `watch_time`: the amount of time the user has watched the video (in seconds) - the most recent session of any user includes the total time across all previous sessions by that user.
 
@@ -94,7 +94,7 @@ This section will clarify what each of the `.csv` files in the folder contains:
 - `events.csv`: contains the details of each event in each session of every user. The columns represent the following:
 
   - `session_id`: the unique identifier for the session
-  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/#mapping-data-to-users).
+  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/).
   - `event_type`: the type of the event (e.g. `played`, `paused`, etc.). The full list of event types and their meanings can be found in the [Events](#events) section.
   - `event_player_time`: the current time in the video when the event was triggered (in seconds)
   - `event_details`: further details for the event based on the event type (e.g. question number for events related to questions, etc.)

@@ -55,7 +55,10 @@ class SessionSerializer(serializers.ModelSerializer):
         elif self.context["view"].action == "update":
             # while updating a session, check if the session being updated
             # is the very first session
-            if f"{last_session.id}" == self.context["view"].kwargs["pk"]:
+            if (
+                f"{last_session.id}" == self.context["view"].kwargs["pk"]
+                and last_session.is_first
+            ):
                 data["is_first"] = True
             else:
                 data["is_first"] = False

@@ -253,7 +253,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         organization = Organization.objects.filter(
             shortcode=self.organization_shortcode,
         ).first()
-        is_user_org_admin = organization is not None and request.user.is_user_org_admin(
+        is_user_org_admin = organization is not None and request.user.is_org_admin(
             organization.id
         )
 

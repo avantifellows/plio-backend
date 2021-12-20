@@ -36,7 +36,7 @@ class OrganizationUserPermission(permissions.BasePermission):
         if view.action in ["list", "retrieve", "destroy"]:
             return True
 
-        has_org_admin_access, user_organization_role = request.user.is_user_org_admin(
+        has_org_admin_access, user_organization_role = request.user.is_org_admin(
             organization_id=request.data["organization"], return_role=True
         )
 

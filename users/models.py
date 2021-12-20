@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from organizations.models import Organization
 from safedelete.models import SafeDeleteModel, SafeDeleteManager, SOFT_DELETE
-from .config import user_status_choices
+from .config import user_status_choices, org_admin_roles
 
 
 class UserManager(SafeDeleteManager):
@@ -112,16 +112,12 @@ class User(SafeDeleteModel, AbstractUser):
 
         return organization_user.role
 
-    def is_user_org_admin(self, organization_id: int, return_role: bool = False):
+    def is_org_admin(self, organization_id: int, return_role: bool = False):
         """Whether the user has the privileges of an organisation's admin"""
         user_organization_role = self.get_role_for_organization(organization_id)
         has_org_admin_access = (
             user_organization_role is not None
-            and user_organization_role.name
-            in [
-                "org-admin",
-                "super-admin",
-            ]
+            and user_organization_role.name in org_admin_roles
         )
         if not return_role:
             return has_org_admin_access

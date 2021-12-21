@@ -36,13 +36,11 @@ class OrganizationUserPermission(permissions.BasePermission):
         if view.action in ["list", "retrieve", "destroy"]:
             return True
 
-        user_organization_role = request.user.get_role_for_organization(
-            request.data["organization"]
+        has_org_admin_access, user_organization_role = request.user.is_org_admin(
+            organization_id=request.data["organization"], return_role=True
         )
-        if not user_organization_role or user_organization_role.name not in [
-            "org-admin",
-            "super-admin",
-        ]:
+
+        if not has_org_admin_access:
             # user doesn't belong to the queried organization
             # or doesn't have sufficient role within organization
             return False

@@ -171,6 +171,15 @@ jobs:
         run: |
           cd projects/plio-frontend/
 
+          # delete the node_modules created by the docker
+          echo 'deleting node modules'
+          rm -rf node_modules/
+
+          # install dependencies from the current shell user
+          echo 'running npm'
+          npm install
+          echo 'finished npm install'
+
           # setup env secrets
           export cypress_backend_convert_social_auth_token_url=${{ secrets.CYPRESS_PLIO_BACKEND_CONVERT_SOCIAL_AUTH_TOKEN_URL }}
           export cypress_backend_client_id=${{ secrets.DJANGO_DEFAULT_OAUTH2_CLIENT_ID }}
@@ -181,6 +190,12 @@ jobs:
 
           # run cypress test cases
           npx cypress run --record --key ${{ secrets.CYPRESS_RECORD_KEY }}
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./projects/plio-frontend/coverage/lcov.info
 
       - name: Stop the containers
         if: always()

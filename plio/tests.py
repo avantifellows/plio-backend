@@ -197,6 +197,34 @@ class PlioTestCase(BaseTestCase):
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
 
+    def test_non_org_user_cannot_list_plios_in_org(self):
+        """A user who is not in an org should not be able to list plios in org workspace"""
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace by user 1
+        Plio.objects.create(name="Plio 1", video=video_org, created_by=self.user)
+
+        # set organization in request and access token for user 2
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token,
+        )
+
+        # get plios
+        response = self.client.get("/api/v1/plios/list_uuid/")
+
+        # no plios should be listed
+        self.assertEqual(len(response.data["results"]), 0)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
     def test_guest_cannot_list_plio_uuids(self):
         # unset the credentials
         self.client.credentials()

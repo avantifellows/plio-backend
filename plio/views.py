@@ -19,7 +19,8 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 
 from organizations.middleware import OrganizationTenantMiddleware
-from users.models import OrganizationUser, Role
+from organizations.models import Organization
+from users.models import OrganizationUser
 from plio.models import Video, Plio, Item, Question, Image
 from plio.serializers import (
     VideoSerializer,
@@ -127,29 +128,36 @@ class PlioViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(created_by=self.get_object().created_by)
 
+    @property
+    def organization_shortcode(self):
+        return OrganizationTenantMiddleware.get_organization_shortcode(self.request)
+
+    @property
+    def is_organizational_workspace(self):
+        return self.organization_shortcode != DEFAULT_TENANT_SHORTCODE
+
     @action(detail=False, permission_classes=[IsAuthenticated])
     def list_uuid(self, request):
         """Retrieves a list of UUIDs for all the plios"""
         queryset = self.get_queryset()
 
-        organization_shortcode = (
-            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
-        )
-
         # personal workspace
-        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
+        if not self.is_organizational_workspace:
             queryset = queryset.filter(created_by=self.request.user)
-
-        # organizational workspace
-        if OrganizationUser.objects.filter(
-            organization__shortcode=organization_shortcode,
-            user=self.request.user.id,
-        ).exists():
-            # user should be authenticated and a part of the org
-            queryset = queryset.filter(
-                Q(is_public=True)
-                | (Q(is_public=False) & Q(created_by=self.request.user))
-            )
+        else:
+            # organizational workspace
+            if OrganizationUser.objects.filter(
+                organization__shortcode=self.organization_shortcode,
+                user=self.request.user.id,
+            ).exists():
+                # user should be a part of the org
+                queryset = queryset.filter(
+                    Q(is_public=True)
+                    | (Q(is_public=False) & Q(created_by=self.request.user))
+                )
+            else:
+                # otherwise, they don't have access to any plio
+                queryset = Plio.objects.none()
 
         num_plios = queryset.count()
         queryset = self.filter_queryset(queryset)
@@ -242,27 +250,12 @@ class PlioViewSet(viewsets.ModelViewSet):
         # schema name to query in
         schema_name = OrganizationTenantMiddleware().get_schema(self.request)
 
-        # if the plio belongs to an org schema
-        is_org_plio = False if (schema_name == "public") else True
-
-        # if the plio belongs to an org, is the user requesting the data
-        # an org admin or not
-        is_user_org_admin = False
-        if is_org_plio:
-            organization_shortcode = (
-                OrganizationTenantMiddleware.get_organization_shortcode(self.request)
-            )
-            is_user_org_admin = OrganizationUser.objects.filter(
-                organization__shortcode=organization_shortcode,
-                user=self.request.user.id,
-                role=Role.objects.filter(name="org-admin").first().id,
-            ).exists()
-
-        # extra data to be passed to the queries
-        extra_data = {
-            "is_org_plio": is_org_plio,
-            "is_user_org_admin": is_user_org_admin,
-        }
+        organization = Organization.objects.filter(
+            shortcode=self.organization_shortcode,
+        ).first()
+        is_user_org_admin = organization is not None and request.user.is_org_admin(
+            organization.id
+        )
 
         if BIGQUERY["enabled"]:
             gcp_service_account_file = "/tmp/gcp-service-account.json"
@@ -284,12 +277,16 @@ class PlioViewSet(viewsets.ModelViewSet):
             if BIGQUERY["enabled"]:
                 # execute the sql query using BigQuery client and create a dataframe
                 df = client.query(
-                    query_method(uuid, schema=schema_name, extra_data=extra_data)
+                    query_method(
+                        uuid, schema=schema_name, mask_user_id=is_user_org_admin
+                    )
                 ).to_dataframe()
             else:
                 # execute the sql query using postgres DB connection cursor
                 cursor.execute(
-                    query_method(uuid, schema=schema_name, extra_data=extra_data)
+                    query_method(
+                        uuid, schema=schema_name, mask_user_id=is_user_org_admin
+                    )
                 )
                 # extract column names as cursor.description returns a tuple
                 columns = [col[0] for col in cursor.description]

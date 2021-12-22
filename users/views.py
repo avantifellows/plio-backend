@@ -46,6 +46,23 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
 
     @action(
+        detail=True, 
+        permission_classes=[IsAuthenticated], 
+        methods=["put"],
+    )
+    def setting(self, request, pk):
+        """Updates a user's setting key inside it's config"""
+        user = self.get_object()
+        if 'settings' not in user.config:
+            user.config['settings'] = {}
+        
+        user.config['settings'] = self.request.data
+        user.save()
+        return Response(
+            self.get_serializer(user).data['config'], status=status.HTTP_200_OK
+        )
+
+    @action(
         detail=True,
         methods=["patch", "get"],
         permission_classes=[IsAuthenticated, UserPermission],

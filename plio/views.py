@@ -126,6 +126,23 @@ class PlioViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(created_by=self.get_object().created_by)
 
+    @action(
+        detail=True, 
+        permission_classes=[IsAuthenticated], 
+        methods=["put"],
+    )
+    def setting(self, request, uuid):
+        """Updates a plio's setting key inside it's config"""
+        plio = self.get_object()
+        config = plio.config or {"settings": {}}
+        config['settings'] = self.request.data
+        plio.config = config
+        plio.save()
+        return Response(
+            self.get_serializer(plio).data['config'], status=status.HTTP_200_OK
+        )
+
+
     @action(detail=False, permission_classes=[IsAuthenticated])
     def list_uuid(self, request):
         """Retrieves a list of UUIDs for all the plios"""

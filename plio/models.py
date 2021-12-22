@@ -132,7 +132,7 @@ class Question(SafeDeleteModel):
     )
     text = models.TextField(blank=True, default="")
     options = models.JSONField(null=True)
-    correct_answer = models.TextField(null=True)
+    correct_answer = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     has_char_limit = models.BooleanField(default=False)

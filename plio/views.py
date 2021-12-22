@@ -2,6 +2,7 @@ import os
 import shutil
 from copy import deepcopy
 import base64
+import json
 
 from rest_framework import viewsets, status, filters
 from rest_framework.response import Response
@@ -18,7 +19,8 @@ from google.cloud import bigquery
 from google.oauth2 import service_account
 
 from organizations.middleware import OrganizationTenantMiddleware
-from users.models import OrganizationUser, Role
+from organizations.models import Organization
+from users.models import OrganizationUser
 from plio.models import Video, Plio, Item, Question, Image
 from plio.serializers import (
     VideoSerializer,
@@ -142,30 +144,36 @@ class PlioViewSet(viewsets.ModelViewSet):
             self.get_serializer(plio).data['config'], status=status.HTTP_200_OK
         )
 
+    @property
+    def organization_shortcode(self):
+        return OrganizationTenantMiddleware.get_organization_shortcode(self.request)
+
+    @property
+    def is_organizational_workspace(self):
+        return self.organization_shortcode != DEFAULT_TENANT_SHORTCODE
 
     @action(detail=False, permission_classes=[IsAuthenticated])
     def list_uuid(self, request):
         """Retrieves a list of UUIDs for all the plios"""
         queryset = self.get_queryset()
 
-        organization_shortcode = (
-            OrganizationTenantMiddleware.get_organization_shortcode(self.request)
-        )
-
         # personal workspace
-        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
+        if not self.is_organizational_workspace:
             queryset = queryset.filter(created_by=self.request.user)
-
-        # organizational workspace
-        if OrganizationUser.objects.filter(
-            organization__shortcode=organization_shortcode,
-            user=self.request.user.id,
-        ).exists():
-            # user should be authenticated and a part of the org
-            queryset = queryset.filter(
-                Q(is_public=True)
-                | (Q(is_public=False) & Q(created_by=self.request.user))
-            )
+        else:
+            # organizational workspace
+            if OrganizationUser.objects.filter(
+                organization__shortcode=self.organization_shortcode,
+                user=self.request.user.id,
+            ).exists():
+                # user should be a part of the org
+                queryset = queryset.filter(
+                    Q(is_public=True)
+                    | (Q(is_public=False) & Q(created_by=self.request.user))
+                )
+            else:
+                # otherwise, they don't have access to any plio
+                queryset = Plio.objects.none()
 
         num_plios = queryset.count()
         queryset = self.filter_queryset(queryset)
@@ -258,27 +266,12 @@ class PlioViewSet(viewsets.ModelViewSet):
         # schema name to query in
         schema_name = OrganizationTenantMiddleware().get_schema(self.request)
 
-        # if the plio belongs to an org schema
-        is_org_plio = False if (schema_name == "public") else True
-
-        # if the plio belongs to an org, is the user requesting the data
-        # an org admin or not
-        is_user_org_admin = False
-        if is_org_plio:
-            organization_shortcode = (
-                OrganizationTenantMiddleware.get_organization_shortcode(self.request)
-            )
-            is_user_org_admin = OrganizationUser.objects.filter(
-                organization__shortcode=organization_shortcode,
-                user=self.request.user.id,
-                role=Role.objects.filter(name="org-admin").first().id,
-            ).exists()
-
-        # extra data to be passed to the queries
-        extra_data = {
-            "is_org_plio": is_org_plio,
-            "is_user_org_admin": is_user_org_admin,
-        }
+        organization = Organization.objects.filter(
+            shortcode=self.organization_shortcode,
+        ).first()
+        is_user_org_admin = organization is not None and request.user.is_org_admin(
+            organization.id
+        )
 
         if BIGQUERY["enabled"]:
             gcp_service_account_file = "/tmp/gcp-service-account.json"
@@ -300,12 +293,16 @@ class PlioViewSet(viewsets.ModelViewSet):
             if BIGQUERY["enabled"]:
                 # execute the sql query using BigQuery client and create a dataframe
                 df = client.query(
-                    query_method(uuid, schema=schema_name, extra_data=extra_data)
+                    query_method(
+                        uuid, schema=schema_name, mask_user_id=is_user_org_admin
+                    )
                 ).to_dataframe()
             else:
                 # execute the sql query using postgres DB connection cursor
                 cursor.execute(
-                    query_method(uuid, schema=schema_name, extra_data=extra_data)
+                    query_method(
+                        uuid, schema=schema_name, mask_user_id=is_user_org_admin
+                    )
                 )
                 # extract column names as cursor.description returns a tuple
                 columns = [col[0] for col in cursor.description]
@@ -324,24 +321,67 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         # create the individual dump files
         with connection.cursor() as cursor:
+            # --- sessions --- #
             run_and_save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
-            run_and_save_query_results(
-                cursor, get_responses_dump_query, "responses.csv"
+
+            # --- responses --- #
+            # change the submitted answers to make them 1-indexed
+            df = run_query(cursor, get_responses_dump_query)
+
+            # deserialise the submitted answer values
+            answers = pd.Series(df["answer"])
+            df.drop(columns="answer", inplace=True)
+
+            valid_answer_indices = answers[~answers.isnull()].index
+            answers.loc[valid_answer_indices] = answers[valid_answer_indices].apply(
+                json.loads
             )
-            # handle plio interaction details differently
-            # for MCQ questions, make it 1-indexed
+            df["answer"] = answers
+
+            # find the rows where the question type is MCQ
+            # and update the submitted answer there
+            df_mcq = df[df["question_type"] == "mcq"]
+            df.loc[df_mcq.index, "answer"] = df_mcq["answer"].apply(
+                lambda x: x + 1 if x is not None else x
+            )
+
+            # find the rows where the question type is checkbox
+            # and update the submitted answer there
+            df_checkbox = df[df["question_type"] == "checkbox"]
+            df.loc[df_checkbox.index, "answer"] = df_checkbox["answer"].apply(
+                lambda row: list(map(lambda x: x + 1, row)) if row is not None else row
+            )
+
+            save_query_results(df, "responses.csv")
+
+            # --- interaction details --- #
+            # change the correct answers to make them 1-indexed
             df = run_query(cursor, get_plio_details_query)
 
-            # convert correct_answer values from string to int
-            df["question_correct_answer"] = df["question_correct_answer"].apply(
-                lambda answer: answer if not answer else int(answer)
-            )
+            # deserialise the correct_answer values
+            question_correct_answer = df["question_correct_answer"]
+            df.drop(columns="question_correct_answer", inplace=True)
+
+            question_correct_answer = question_correct_answer.apply(json.loads)
+            df["question_correct_answer"] = question_correct_answer
+
             # find the rows where the question type is MCQ
             # and update the correct answer there
-            df[df["question_type"] == "mcq"]["question_correct_answer"] += 1
+            df_mcq = df[df["question_type"] == "mcq"]
+            df.loc[df_mcq.index, "question_correct_answer"] = df_mcq[
+                "question_correct_answer"
+            ].apply(lambda x: x + 1)
+
+            # find the rows where the question type is checkbox
+            # and update the correct answer there
+            df_checkbox = df[df["question_type"] == "checkbox"]
+            df.loc[df_checkbox.index, "question_correct_answer"] = df_checkbox[
+                "question_correct_answer"
+            ].apply(lambda row: list(map(lambda x: x + 1, row)))
 
             save_query_results(df, "plio-interaction-details.csv")
 
+            # --- events --- #
             run_and_save_query_results(cursor, get_events_query, "events.csv")
 
             df = pd.DataFrame(

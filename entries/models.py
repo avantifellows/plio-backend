@@ -61,7 +61,7 @@ class SessionAnswer(SafeDeleteModel):
 
     session = models.ForeignKey(Session, on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    answer = models.TextField(null=True)
+    answer = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

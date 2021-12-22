@@ -1,13 +1,12 @@
 from plio.settings import BIGQUERY
 
 
-def get_plio_details_query(plio_uuid: str, schema: str, extra_data: dict):
+def get_plio_details_query(plio_uuid: str, schema: str, **kwargs):
     """
     Returns the details for the given plio
 
     plio_uuid: The plio to fetch the details for.
     schema: The schema from which the tables are to be accessed.
-    extra_data: Any extra data that's needed to complete the query. (not required here)
     """
     return f"""
         SELECT
@@ -24,24 +23,20 @@ def get_plio_details_query(plio_uuid: str, schema: str, extra_data: dict):
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 
-def get_sessions_dump_query(plio_uuid: str, schema: str, extra_data: dict):
+def get_sessions_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
     """
     Returns the dump of all the sessions for the given plio
 
     plio_uuid: The plio to fetch the details for.
     schema: The schema from which the tables are to be accessed.
-    extra_data: Any extra data that's needed to complete the query.
-            `is_org_plio`: If the `plio_uuid` belongs to an org workspace
-            `is_user_org_admin`: If the user making this query is that
-                                 org's admin
+    mask_user_id: whether the user id should be masked
     """
     return f"""
         SELECT
             session.id as session_id,
-            session.retention,
             session.watch_time,
             CASE
-                WHEN {str(extra_data["is_user_org_admin"]).lower()} THEN COALESCE(users.email, users.mobile, users.unique_id)
+                WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
                 {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'}
             END AS user_identifier
@@ -51,50 +46,47 @@ def get_sessions_dump_query(plio_uuid: str, schema: str, extra_data: dict):
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 
-def get_responses_dump_query(plio_uuid: str, schema: str, extra_data: dict):
+def get_responses_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
     """
     Returns the dump of all the session responses for the given plio
 
     plio_uuid: The plio to fetch the details for.
     schema: The schema from which the tables are to be accessed.
-    extra_data: Any extra data that's needed to complete the query.
-            `is_org_plio`: If the `plio_uuid` belongs to an org workspace
-            `is_user_org_admin`: If the user making this query is that
-                                 org's admin
+    mask_user_id: whether the user id should be masked
     """
     return f"""
         SELECT
             session.id as session_id,
             CASE
-                WHEN {str(extra_data["is_user_org_admin"]).lower()} THEN COALESCE(users.email, users.mobile, users.unique_id)
+                WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
                 {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,
             sessionAnswer.answer,
-            sessionAnswer.item_id
+            sessionAnswer.item_id,
+            question.type as question_type
         FROM {schema}.session AS session
         INNER JOIN {schema}.session_answer sessionAnswer ON session.id = sessionAnswer.session_id
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
         INNER JOIN {schema if BIGQUERY['enabled'] else 'public'}.user AS users ON session.user_id = users.id
+        INNER JOIN {schema}.item item ON item.id = sessionAnswer.item_id
+        INNER JOIN {schema}.question question ON question.item_id = item.id
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 
-def get_events_query(plio_uuid: str, schema: str, extra_data: dict):
+def get_events_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
     """
     Returns the dump of all events across all sessions for the given plio
 
     plio_uuid: The plio to fetch the details for.
     schema: The schema from which the tables are to be accessed.
-    extra_data: Any extra data that's needed to complete the query.
-            `is_org_plio`: If the `plio_uuid` belongs to an org workspace
-            `is_user_org_admin`: If the user making this query is that
-                                 org's admin
+    mask_user_id: whether the user id should be masked
     """
     return f"""
         SELECT
             session.id as session_id,
             CASE
-                WHEN {str(extra_data["is_user_org_admin"]).lower()} THEN COALESCE(users.email, users.mobile, users.unique_id)
+                WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
                 {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,

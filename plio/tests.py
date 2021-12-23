@@ -636,6 +636,9 @@ class PlioTestCase(BaseTestCase):
             json.loads(test_settings)["player"],
         )
 
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
 
 class PlioDownloadTestCase(BaseTestCase):
     def setUp(self):

@@ -541,6 +541,27 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(len(cache.keys(cache_key_name)), 1)
         self.assertEqual(cache.get(cache_key_name)["name"], new_name)
 
+    def test_user_can_update_own_plio_settings(self):
+        test_settings = json.dumps(
+            {"player": {"configuration": {"skipEnabled": False}}}
+        )
+        # update settings for plio_1
+        response = self.client.put(
+            f"/api/v1/plios/{self.plio_1.uuid}/setting/",
+            json.loads(test_settings),
+            format="json",
+        )
+
+        # 200 OK returned as status
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # The plio should contain the new updated settings object
+        self.assertEqual(
+            Plio.objects.filter(uuid=self.plio_1.uuid)
+            .first()
+            .config["settings"]["player"],
+            json.loads(test_settings)["player"],
+        )
+
 
 class PlioDownloadTestCase(BaseTestCase):
     def setUp(self):

@@ -353,9 +353,9 @@ class UserTestCase(BaseTestCase):
                 "app": {"appearance": {"darkMode": True}},
             }
         )
-        # update settings for user_1
+        # update settings for user 1
         response = self.client.put(
-            f"/api/v1/users/{self.user_1.id}/setting/",
+            f"/api/v1/users/{self.user.id}/setting/",
             json.loads(test_settings),
             format="json",
         )
@@ -364,7 +364,7 @@ class UserTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # The plio should contain the new updated settings object
         self.assertEqual(
-            User.objects.filter(id=self.user_1.id).first().config["settings"],
+            User.objects.filter(id=self.user.id).first().config["settings"],
             json.loads(test_settings),
         )
 

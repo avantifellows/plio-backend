@@ -130,7 +130,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        permission_classes=[IsAuthenticated],
+        permission_classes=[IsAuthenticated, PlioPermission],
         methods=["put"],
     )
     def setting(self, request, uuid):

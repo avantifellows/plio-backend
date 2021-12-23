@@ -346,6 +346,63 @@ class UserTestCase(BaseTestCase):
         self.assertEqual(len(cache.keys(cache_key_name)), 1)
         self.assertEqual(cache.get(cache_key_name)["first_name"], first_name)
 
+    def test_user_can_update_its_own_settings(self):
+        test_settings = json.dumps(
+            {
+                "player": {"configuration": {"skipEnabled": False}},
+                "app": {"appearance": {"darkMode": True}},
+            }
+        )
+        # update settings for user_1
+        response = self.client.put(
+            f"/api/v1/users/{self.user_1.id}/setting/",
+            json.loads(test_settings),
+            format="json",
+        )
+
+        # 200 OK returned as status
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # The plio should contain the new updated settings object
+        self.assertEqual(
+            User.objects.filter(id=self.user_1.id).first().config["settings"],
+            json.loads(test_settings),
+        )
+
+    def test_only_superuser_can_update_other_user_settings(self):
+        test_settings = json.dumps(
+            {
+                "player": {"configuration": {"skipEnabled": False}},
+                "app": {"appearance": {"darkMode": True}},
+            }
+        )
+        # try to update settings for user_2
+        response = self.client.put(
+            f"/api/v1/users/{self.user_2.id}/setting/",
+            json.loads(test_settings),
+            format="json",
+        )
+
+        # Forbidden action
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # make user 1 the superuser
+        self.user.is_superuser = True
+        self.user.save()
+
+        # try the request again
+        response = self.client.put(
+            f"/api/v1/users/{self.user_2.id}/setting/",
+            json.loads(test_settings),
+            format="json",
+        )
+
+        # 200 OK returned as status
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            User.objects.filter(id=self.user_2.id).first().config["settings"],
+            json.loads(test_settings),
+        )
+
 
 class UserMetaTestCase(BaseTestCase):
     def setUp(self):

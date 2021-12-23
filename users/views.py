@@ -47,7 +47,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        permission_classes=[IsAuthenticated],
+        permission_classes=[IsAuthenticated, UserPermission],
         methods=["put"],
     )
     def setting(self, request, pk):

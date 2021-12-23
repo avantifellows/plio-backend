@@ -562,6 +562,75 @@ class PlioTestCase(BaseTestCase):
             json.loads(test_settings)["player"],
         )
 
+    def test_user_cannot_update_other_user_plio_settings(self):
+        test_settings = json.dumps(
+            {"player": {"configuration": {"skipEnabled": False}}}
+        )
+        # user_2 creates a plio
+        plio = Plio.objects.create(
+            name="Plio_by_user_2", video=self.video, created_by=self.user_2
+        )
+
+        # user_1 tries updating the settings for the above created plio
+        response = self.client.put(
+            f"/api/v1/plios/{plio.uuid}/setting/",
+            json.loads(test_settings),
+            format="json",
+        )
+
+        # Updating other user's plio's settings should be forbidden
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_org_members_can_update_org_plio_settings(self):
+        test_settings = json.dumps(
+            {"player": {"configuration": {"skipEnabled": False}}}
+        )
+
+        # add users to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace by user 2
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user_2
+        )
+
+        # set organization in request and access token for user 1
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # user_1 tries to update the org plio's settings which was created
+        # by user_2
+        response = self.client.put(
+            f"/api/v1/plios/{plio_org.uuid}/setting/",
+            json.loads(test_settings),
+            format="json",
+        )
+
+        # updating an org plio's settings should be possible by any org member
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Plio.objects.filter(uuid=plio_org.uuid)
+            .first()
+            .config["settings"]["player"],
+            json.loads(test_settings)["player"],
+        )
+
 
 class PlioDownloadTestCase(BaseTestCase):
     def setUp(self):

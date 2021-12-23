@@ -502,13 +502,18 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["items"][1]["id"], item_1.id)
 
     def test_retrieving_plio_sets_instance_cache(self):
+        # create a third plio
+        plio_3 = Plio.objects.create(
+            name="Plio 3", video=self.video, created_by=self.user
+        )
+
         # verify cache data doesn't exist
-        cache_key_name = get_cache_key(self.plio_1)
+        cache_key_name = get_cache_key(plio_3)
         self.assertEqual(len(cache.keys(cache_key_name)), 0)
 
         # make a get request
         response = self.client.get(
-            reverse("plios-detail", kwargs={"uuid": self.plio_1.uuid})
+            reverse("plios-detail", kwargs={"uuid": plio_3.uuid})
         )
 
         # verify cache data exists

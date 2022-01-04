@@ -1,5 +1,5 @@
 # base image
-FROM python:3.8
+FROM python:3.10.0b4
 
 # where your code lives
 WORKDIR /app

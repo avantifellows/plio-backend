@@ -33,6 +33,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Set current timestamp for image tag
+        id: timestamp
+        run: echo "::set-output name=timestamp::$(date +'%Y-%m-%d-%H-%M-%S')"
+
       # build the docker image and push to Elastic Container Registry.
       # Sets the name of the image as output to be used in further steps.
       - name: Build, tag, and push image to Amazon ECR
@@ -40,7 +44,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: plio-backend-production
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ github.sha }}-${{ steps.timestamp.outputs.timestamp }}
         run: |
           # Build a docker container and push it to ECR
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG  .

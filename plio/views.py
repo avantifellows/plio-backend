@@ -12,6 +12,9 @@ from rest_framework.pagination import PageNumberPagination
 from django.db import connection
 from django.db.models import Q
 from django.http import FileResponse
+
+from django_tenants.utils import get_tenant_model
+
 import pandas as pd
 from storages.backends.s3boto3 import S3Boto3Storage
 
@@ -70,6 +73,17 @@ class StandardResultsSetPagination(PageNumberPagination):
         )
 
 
+def set_tenant(workspace):
+    tenant_model = get_tenant_model()
+    tenant = tenant_model.objects.filter(shortcode=workspace).first()
+
+    if not tenant:
+        return False
+
+    connection.set_tenant(tenant)
+    return True
+
+
 class VideoViewSet(viewsets.ModelViewSet):
     """
     Video ViewSet description
@@ -84,6 +98,39 @@ class VideoViewSet(viewsets.ModelViewSet):
 
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
+    permission_classes = [IsAuthenticated, PlioPermission]
+
+    @action(
+        methods=["post"],
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+    )
+    def copy(self, request, pk):
+        """copies the given video to another workspace"""
+        if "workspace" not in request.data:
+            return Response(
+                {"detail": "workspace is not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # return 404 if user cannot access the object
+        # else fetch the object
+        video = self.get_object()
+        # django will auto-generate the key when the key is set to None
+        video.pk = None
+
+        # change workspace
+        workspace = request.data.get("workspace")
+        success = set_tenant(workspace)
+
+        if not success:
+            return Response(
+                {"detail": "workspace does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        video.save()
+        return Response(self.get_serializer(video).data)
 
 
 class PlioViewSet(viewsets.ModelViewSet):
@@ -212,6 +259,52 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio.pk = None
         plio.uuid = None
         plio.status = "draft"  # a duplicated plio will always be in "draft" mode
+        plio.save()
+        return Response(self.get_serializer(plio).data)
+
+    @action(
+        methods=["post"],
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+    )
+    def copy(self, request, uuid):
+        """copies the given plio to another workspace"""
+        for key in ["workspace", "video"]:
+            if key not in request.data:
+                return Response(
+                    {"detail": f"{key} is not provided"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # return 404 if user cannot access the object
+        # else fetch the object
+        plio = self.get_object()
+        # django will auto-generate the key when the key is set to None
+        plio.pk = None
+        plio.uuid = None
+
+        video_id = request.data.get("video")
+
+        video = Video.objects.filter(id=video_id).first()
+        if not video:
+            return Response(
+                {"detail": "video does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # update the video id
+        plio.video = video
+
+        # change workspace
+        workspace = request.data.get("workspace")
+        success = set_tenant(workspace)
+
+        if not success:
+            return Response(
+                {"detail": "workspace does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         plio.save()
         return Response(self.get_serializer(plio).data)
 

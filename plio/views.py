@@ -632,6 +632,83 @@ class QuestionViewSet(viewsets.ModelViewSet):
         question.save()
         return Response(self.get_serializer(question).data)
 
+    @action(methods=["post"], detail=False)
+    def copy(self, request):
+        """copies the questions for one plio to another workspace"""
+        for key in ["workspace", "source_plio_id", "destination_plio_id"]:
+            if key not in request.data:
+                return Response(
+                    {"detail": f"{key} is not provided"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        source_plio = Plio.objects.filter(id=request.data.get("source_plio_id")).first()
+
+        if not source_plio:
+            return Response(
+                {"detail": "source plio does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        questions = list(Question.objects.filter(item__plio__id=source_plio.id))
+
+        if not questions:
+            # if the plio has no questions, return an empty list
+            return Response([])
+
+        # change workspace
+        workspace = request.data.get("workspace")
+        success = set_tenant(workspace)
+
+        if not success:
+            return Response(
+                {"detail": "workspace does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        destination_plio = Plio.objects.filter(
+            id=request.data.get("destination_plio_id")
+        ).first()
+
+        if not destination_plio:
+            return Response(
+                {"detail": "destination plio does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # find all the items of type "question" linked to the plio
+        items = Item.objects.filter(plio__id=destination_plio.id, type="question")
+
+        if not items:
+            return Response(
+                {"detail": "items of type question not found in the given workspace"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if len(items) != len(questions):
+            return Response(
+                {
+                    "detail": "number of items in the destination workspace ({}) is different from the number of questions ({})".format(
+                        len(items), len(questions)
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # before creating the questions in the given workspace, update the
+        # item ids that they are linked to and reset the key
+        # django will auto-generate the keys when they are set to None
+        # since we are ordering both items and questions by the item time,
+        # questions and items at the same index should be linked
+        for index, _ in enumerate(questions):
+            questions[index].item = items[index]
+            questions[index].pk = None
+            # temporary - will deal with image later
+            questions[index].image = None
+
+        questions = Question.objects.bulk_create(questions)
+        return Response([question.id for question in questions])
+
 
 class ImageViewSet(viewsets.ModelViewSet):
     """

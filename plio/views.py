@@ -282,6 +282,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         # django will auto-generate the key when the key is set to None
         plio.pk = None
         plio.uuid = None
+        plio.status = "draft"
 
         video_id = request.data.get("video")
 

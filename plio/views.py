@@ -284,18 +284,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio.uuid = None
         plio.status = "draft"
 
-        video_id = request.data.get("video")
-
-        video = Video.objects.filter(id=video_id).first()
-        if not video:
-            return Response(
-                {"detail": "video does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # update the video id
-        plio.video = video
-
         # change workspace
         workspace = request.data.get("workspace")
         success = set_tenant(workspace)
@@ -305,6 +293,16 @@ class PlioViewSet(viewsets.ModelViewSet):
                 {"detail": "workspace does not exist"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        video = Video.objects.filter(id=request.data.get("video")).first()
+        if not video:
+            return Response(
+                {"detail": "video does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # update the video id
+        plio.video = video
 
         plio.save()
         return Response(self.get_serializer(plio).data)
@@ -531,6 +529,60 @@ class ItemViewSet(viewsets.ModelViewSet):
         item.plio = plio
         item.save()
         return Response(self.get_serializer(item).data)
+
+    @action(methods=["post"], detail=False)
+    def copy(self, request):
+        """copies the items for one plio to another workspace"""
+        for key in ["workspace", "source_plio_id", "destination_plio_id"]:
+            if key not in request.data:
+                return Response(
+                    {"detail": f"{key} is not provided"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        source_plio = Plio.objects.filter(id=request.data.get("source_plio_id")).first()
+
+        if not source_plio:
+            return Response(
+                {"detail": "source plio does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        items = list(Item.objects.filter(plio__id=source_plio.id))
+
+        if not items:
+            # if the plio has no items, return an empty list
+            return Response([])
+
+        # change workspace
+        workspace = request.data.get("workspace")
+        success = set_tenant(workspace)
+
+        if not success:
+            return Response(
+                {"detail": "workspace does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        destination_plio = Plio.objects.filter(
+            id=request.data.get("destination_plio_id")
+        ).first()
+
+        if not destination_plio:
+            return Response(
+                {"detail": "destination plio does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # before creating the items in the given workspace, update the
+        # plio ids that they are linked to and reset the key
+        # django will auto-generate the keys when they are set to None
+        for index, _ in enumerate(items):
+            items[index].plio = destination_plio
+            items[index].pk = None
+
+        items = Item.objects.bulk_create(items)
+        return Response([item.id for item in items])
 
 
 class QuestionViewSet(viewsets.ModelViewSet):

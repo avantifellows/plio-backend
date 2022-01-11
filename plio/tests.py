@@ -620,7 +620,7 @@ class VideoTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         # seed some videos
-        Video.objects.create(
+        self.video_1 = Video.objects.create(
             title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         Video.objects.create(
@@ -679,6 +679,38 @@ class VideoTestCase(BaseTestCase):
         self.assertEqual(
             cache.get(cache_key_name)["video"]["title"], new_title_for_video
         )
+
+    def test_copying_video_without_workspace_fails(self):
+        response = self.client.post(f"/api/v1/videos/{self.video_1.id}/copy/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_copying_video_to_non_existing_workspace_fails(self):
+        response = self.client.post(
+            f"/api/v1/videos/{self.video_1.id}/copy/", {"workspace": "abcd"}
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_copying_video_to_workspace(self):
+        response = self.client.post(
+            f"/api/v1/videos/{self.video_1.id}/copy/",
+            {"workspace": self.organization.shortcode},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_video_id = response.data["id"]
+
+        # the video in the personal workspace should keep existing
+        response = self.client.get(f"/api/v1/videos/{self.video_1.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # check that the video instance is actually creating in the given workspace
+        connection.set_schema(self.organization.schema_name)
+
+        response = self.client.get(f"/api/v1/videos/{new_video_id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
 
 
 class ItemTestCase(BaseTestCase):

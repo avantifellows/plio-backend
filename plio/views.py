@@ -45,6 +45,7 @@ from plio.queries import (
 )
 from plio.permissions import PlioPermission
 from plio.ordering import CustomOrderingFilter
+from plio.cache import invalidate_cache_for_instance
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -582,6 +583,10 @@ class ItemViewSet(viewsets.ModelViewSet):
             items[index].pk = None
 
         items = Item.objects.bulk_create(items)
+
+        # clear the cache for the destination plio or else the items wouldn't show up
+        # when the plio is fetched
+        invalidate_cache_for_instance(destination_plio)
         return Response([item.id for item in items])
 
 

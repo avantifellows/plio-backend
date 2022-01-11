@@ -557,6 +557,13 @@ class PlioTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_copying_to_workspace_with_wrong_video_fails(self):
+        response = self.client.post(
+            f"/api/v1/plios/{self.plio_1.id}/copy/",
+            {"workspace": self.organization.shortcode, "video": 1},
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_copying_to_workspace(self):
         # create a video instance assuming that video has been copied
         connection.set_schema(self.organization.schema_name)

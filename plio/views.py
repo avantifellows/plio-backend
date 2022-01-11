@@ -662,6 +662,15 @@ class QuestionViewSet(viewsets.ModelViewSet):
             # if the plio has no questions, return an empty list
             return Response([])
 
+        # will be needed to handle questions with images
+        question_indices_with_image = []
+        images = []
+
+        for index, question in enumerate(questions):
+            if question.image is not None:
+                question_indices_with_image.append(index)
+                images.append(question.image)
+
         # change workspace
         workspace = request.data.get("workspace")
         success = set_tenant(workspace)
@@ -702,15 +711,23 @@ class QuestionViewSet(viewsets.ModelViewSet):
             )
 
         # before creating the questions in the given workspace, update the
-        # item ids that they are linked to and reset the key
-        # django will auto-generate the keys when they are set to None
+        # item ids that they are linked to and
         # since we are ordering both items and questions by the item time,
         # questions and items at the same index should be linked
         for index, _ in enumerate(questions):
             questions[index].item = items[index]
             questions[index].pk = None
-            # temporary - will deal with image later
-            questions[index].image = None
+
+        # if there are any questions with images, create instances of those images in the
+        # new workspace and link them to the question instances that need to be created
+        if images:
+            for index, _ in enumerate(images):
+                # reset the key - django will auto-generate the keys when they are set to None
+                images[index].pk = None
+
+            images = Image.objects.bulk_create(images)
+            for index, question_index in enumerate(question_indices_with_image):
+                questions[question_index].image = images[index]
 
         questions = Question.objects.bulk_create(questions)
         return Response([question.id for question in questions])

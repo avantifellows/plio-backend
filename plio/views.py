@@ -99,12 +99,11 @@ class VideoViewSet(viewsets.ModelViewSet):
 
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
-    permission_classes = [IsAuthenticated, PlioPermission]
+    permission_classes = [IsAuthenticated]
 
     @action(
         methods=["post"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def copy(self, request, pk):
         """copies the given video to another workspace"""
@@ -703,8 +702,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if len(items) != len(questions):
             return Response(
                 {
-                    "detail": "number of items in the destination workspace ({}) is different from the number of questions ({})".format(
-                        len(items), len(questions)
+                    "detail": (
+                        f"number of items in the destination workspace ({len(items)})"
+                        f" is different from the number of questions ({len(questions)})"
                     )
                 },
                 status=status.HTTP_400_BAD_REQUEST,

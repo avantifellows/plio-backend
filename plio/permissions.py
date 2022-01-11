@@ -13,7 +13,10 @@ class PlioPermission(permissions.BasePermission):
         return True
 
     def has_object_permission(self, request, view, obj):
-        """Object-level permissions for plio/item/question/video. This determines whether the request can access a plio/item/question/video instance or not."""
+        """
+        Object-level permissions for plio/item/question.
+        This determines whether the request can access a plio/item/question instance or not.
+        """
         if request.user.is_superuser:
             return True
 

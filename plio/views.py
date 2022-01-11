@@ -585,7 +585,8 @@ class ItemViewSet(viewsets.ModelViewSet):
         items = Item.objects.bulk_create(items)
 
         # clear the cache for the destination plio or else the items wouldn't show up
-        # when the plio is fetched
+        # when the plio is fetched; we need to trigger this manually as bulk_create
+        # does not call the post_save signal
         invalidate_cache_for_instance(destination_plio)
         return Response([item.id for item in items])
 

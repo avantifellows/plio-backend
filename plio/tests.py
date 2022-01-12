@@ -22,6 +22,7 @@ from plio.models import Plio, Video, Item, Question, Image
 from entries.models import Session
 from plio.views import StandardResultsSetPagination
 from plio.cache import get_cache_key
+from plio.serializers import ImageSerializer
 
 
 class BaseTestCase(APITestCase):
@@ -1405,7 +1406,18 @@ class QuestionTestCase(BaseTestCase):
         item_2 = Item.objects.create(type="question", plio=self.plio, time=10)
         item_3 = Item.objects.create(type="question", plio=self.plio, time=20)
 
-        question_2 = Question.objects.create(type="subjective", item=item_2)
+        # attach an image to one question
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(
+                reverse("images-list"), {"url": img, "alt_text": "test image"}
+            )
+        image_id = response.json()["id"]
+        question_2 = Question.objects.create(
+            type="subjective",
+            item=item_2,
+            image=Image.objects.filter(id=image_id).first(),
+        )
         question_3 = Question.objects.create(type="checkbox", item=item_3)
 
         # create video, plio and item instances assuming that they have been copied
@@ -1464,6 +1476,12 @@ class QuestionTestCase(BaseTestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["item"], destination_item.id)
             self.assertEqual(response.data["type"], source_question.type)
+
+            if source_question.image is not None:
+                self.assertEqual(
+                    ImageSerializer(source_question.image).data["url"],
+                    response.data["image"]["url"],
+                )
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()

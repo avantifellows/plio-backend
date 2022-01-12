@@ -1064,13 +1064,6 @@ class ItemTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_copying_to_non_existing_workspace_fails(self):
-        response = self.client.post(
-            "/api/v1/items/copy/",
-            {"workspace": "abcd", "source_plio_id": 1, "destination_plio_id": 1},
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
     def test_copying_to_workspace_with_non_existing_source_plio_fails(self):
         response = self.client.post(
             "/api/v1/items/copy/",
@@ -1081,17 +1074,31 @@ class ItemTestCase(BaseTestCase):
             },
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "source plio does not exist")
+
+    def test_copying_to_non_existing_workspace_fails(self):
+        response = self.client.post(
+            "/api/v1/items/copy/",
+            {
+                "workspace": "abcd",
+                "source_plio_id": self.plio.id,
+                "destination_plio_id": 1,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "workspace does not exist")
 
     def test_copying_to_workspace_with_non_existing_destination_plio_fails(self):
         response = self.client.post(
             "/api/v1/items/copy/",
             {
                 "workspace": self.organization.shortcode,
-                "source_plio_id": 1,
+                "source_plio_id": self.plio.id,
                 "destination_plio_id": 1,
             },
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "destination plio does not exist")
 
     def test_copying_to_workspace(self):
         # create some more items

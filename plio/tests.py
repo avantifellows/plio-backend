@@ -1445,6 +1445,7 @@ class QuestionTestCase(BaseTestCase):
             response.data["detail"],
             "items of type question not found in the given workspace",
         )
+        connection.set_schema_to_public()
 
     def test_copying_to_workspace_with_different_num_items_fails(self):
         # create video, plio and item instances assuming that they have been copied
@@ -1481,6 +1482,7 @@ class QuestionTestCase(BaseTestCase):
                 " is different from the number of questions (1)"
             ),
         )
+        connection.set_schema_to_public()
 
     def test_copying_to_workspace(self):
         # create some more items and questions

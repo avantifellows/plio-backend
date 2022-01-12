@@ -1145,26 +1145,12 @@ class ItemTestCase(BaseTestCase):
             name="Plio With No Items", video=self.video, created_by=self.user
         )
 
-        # create a video and plio instance assuming that they have been copied
-        connection.set_schema(self.organization.schema_name)
-
-        video = Video.objects.create(
-            title="Video Copied", url="https://www.youtube.com/watch?v=vnISjBbrNUN"
-        )
-
-        plio = Plio.objects.create(
-            name="Plio Copied", video=video, created_by=self.user
-        )
-
-        # set db connection back to public (default) schema
-        connection.set_schema_to_public()
-
         response = self.client.post(
             "/api/v1/items/copy/",
             {
                 "workspace": self.organization.shortcode,
                 "source_plio_id": plio_no_items.id,
-                "destination_plio_id": plio.id,
+                "destination_plio_id": 1,
             },
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1370,6 +1356,134 @@ class QuestionTestCase(BaseTestCase):
         self.assertEqual(
             cache.get(cache_key_name)["items"][0]["details"]["text"], question_new_text
         )
+
+    def test_copying_without_workspace_fails(self):
+        response = self.client.post("/api/v1/questions/copy/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_copying_without_source_plio_id_fails(self):
+        response = self.client.post("/api/v1/questions/copy/", {"workspace": "abcd"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_copying_without_destination_plio_id_fails(self):
+        response = self.client.post(
+            "/api/v1/questions/copy/", {"workspace": "abcd", "source_plio_id": 1}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_copying_to_non_existing_workspace_fails(self):
+        response = self.client.post(
+            "/api/v1/questions/copy/",
+            {"workspace": "abcd", "source_plio_id": 1, "destination_plio_id": 1},
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_copying_to_workspace_with_non_existing_source_plio_fails(self):
+        response = self.client.post(
+            "/api/v1/questions/copy/",
+            {
+                "workspace": self.organization.shortcode,
+                "source_plio_id": 100,
+                "destination_plio_id": 1,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_copying_to_workspace_with_non_existing_destination_plio_fails(self):
+        response = self.client.post(
+            "/api/v1/questions/copy/",
+            {
+                "workspace": self.organization.shortcode,
+                "source_plio_id": 1,
+                "destination_plio_id": 1,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_copying_to_workspace(self):
+        # create some more items and questions
+        item_2 = Item.objects.create(type="question", plio=self.plio, time=10)
+        item_3 = Item.objects.create(type="question", plio=self.plio, time=20)
+
+        question_2 = Question.objects.create(type="subjective", item=item_2)
+        question_3 = Question.objects.create(type="checkbox", item=item_3)
+
+        # create video, plio and item instances assuming that they have been copied
+        connection.set_schema(self.organization.schema_name)
+
+        video = Video.objects.create(
+            title="Video Copied", url="https://www.youtube.com/watch?v=vnISjBbrNUN"
+        )
+
+        plio = Plio.objects.create(
+            name="Plio Copied", video=video, created_by=self.user
+        )
+
+        item_copied_1 = Item.objects.create(
+            type="question", plio=plio, time=self.item.time
+        )
+        item_copied_2 = Item.objects.create(
+            type="question", plio=plio, time=item_2.time
+        )
+        item_copied_3 = Item.objects.create(
+            type="question", plio=plio, time=item_3.time
+        )
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+        response = self.client.post(
+            "/api/v1/questions/copy/",
+            {
+                "workspace": self.organization.shortcode,
+                "source_plio_id": self.plio.id,
+                "destination_plio_id": plio.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_question_ids = response.data
+
+        # the questions in the personal workspace should keep existing
+        source_questions = [self.question, question_2, question_3]
+        for question in source_questions:
+            response = self.client.get(f"/api/v1/questions/{question.id}/")
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # check that the question instances are actually created in the given workspace
+        connection.set_schema(self.organization.schema_name)
+
+        for source_question, destination_question_id, destination_item in zip(
+            source_questions,
+            new_question_ids,
+            [item_copied_1, item_copied_2, item_copied_3],
+        ):
+            response = self.client.get(
+                f"/api/v1/questions/{destination_question_id}/",
+                HTTP_ORGANIZATION=self.organization.shortcode,
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["item"], destination_item.id)
+            self.assertEqual(response.data["type"], source_question.type)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+    def test_copying_to_workspace_when_no_questions(self):
+        # create a plio that does not have any questions linked
+        plio_no_items = Plio.objects.create(
+            name="Plio With No Questions", video=self.video, created_by=self.user
+        )
+
+        response = self.client.post(
+            "/api/v1/questions/copy/",
+            {
+                "workspace": self.organization.shortcode,
+                "source_plio_id": plio_no_items.id,
+                "destination_plio_id": 1,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
 
 
 class ImageTestCase(BaseTestCase):

@@ -1381,13 +1381,6 @@ class QuestionTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_copying_to_non_existing_workspace_fails(self):
-        response = self.client.post(
-            "/api/v1/questions/copy/",
-            {"workspace": "abcd", "source_plio_id": 1, "destination_plio_id": 1},
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
     def test_copying_to_workspace_with_non_existing_source_plio_fails(self):
         response = self.client.post(
             "/api/v1/questions/copy/",
@@ -1398,17 +1391,96 @@ class QuestionTestCase(BaseTestCase):
             },
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "source plio does not exist")
+
+    def test_copying_to_non_existing_workspace_fails(self):
+        response = self.client.post(
+            "/api/v1/questions/copy/",
+            {
+                "workspace": "abcd",
+                "source_plio_id": self.plio.id,
+                "destination_plio_id": 1,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "workspace does not exist")
 
     def test_copying_to_workspace_with_non_existing_destination_plio_fails(self):
         response = self.client.post(
             "/api/v1/questions/copy/",
             {
                 "workspace": self.organization.shortcode,
-                "source_plio_id": 1,
+                "source_plio_id": self.plio.id,
                 "destination_plio_id": 1,
             },
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "destination plio does not exist")
+
+    def test_copying_to_workspace_with_no_question_items_fails(self):
+        # create video, plio and item instances assuming that they have been copied
+        connection.set_schema(self.organization.schema_name)
+
+        video = Video.objects.create(
+            title="Video Copied", url="https://www.youtube.com/watch?v=vnISjBbrNUN"
+        )
+
+        plio = Plio.objects.create(
+            name="Plio Copied", video=video, created_by=self.user
+        )
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+        response = self.client.post(
+            "/api/v1/questions/copy/",
+            {
+                "workspace": self.organization.shortcode,
+                "source_plio_id": self.plio.id,
+                "destination_plio_id": plio.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"],
+            "items of type question not found in the given workspace",
+        )
+
+    def test_copying_to_workspace_with_different_num_items_fails(self):
+        # create video, plio and item instances assuming that they have been copied
+        connection.set_schema(self.organization.schema_name)
+
+        video = Video.objects.create(
+            title="Video Copied", url="https://www.youtube.com/watch?v=vnISjBbrNUN"
+        )
+
+        plio = Plio.objects.create(
+            name="Plio Copied", video=video, created_by=self.user
+        )
+
+        # creating 2 items of type question when there is only one question to be copied
+        Item.objects.create(type="question", plio=plio, time=self.item.time)
+        Item.objects.create(type="question", plio=plio, time=20)
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+        response = self.client.post(
+            "/api/v1/questions/copy/",
+            {
+                "workspace": self.organization.shortcode,
+                "source_plio_id": self.plio.id,
+                "destination_plio_id": plio.id,
+            },
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            (
+                "number of items in the destination workspace (2)"
+                " is different from the number of questions (1)"
+            ),
+        )
 
     def test_copying_to_workspace(self):
         # create some more items and questions

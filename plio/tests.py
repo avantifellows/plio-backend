@@ -543,27 +543,29 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(cache.get(cache_key_name)["name"], new_name)
 
     def test_copying_without_workspace_fails(self):
-        response = self.client.post(f"/api/v1/plios/{self.plio_1.id}/copy/")
+        response = self.client.post(f"/api/v1/plios/{self.plio_1.uuid}/copy/")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_copying_without_video_fails(self):
         response = self.client.post(
-            f"/api/v1/plios/{self.plio_1.id}/copy/", {"workspace": "abcd"}
+            f"/api/v1/plios/{self.plio_1.uuid}/copy/", {"workspace": "abcd"}
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_copying_to_non_existing_workspace_fails(self):
         response = self.client.post(
-            f"/api/v1/plios/{self.plio_1.id}/copy/", {"workspace": "abcd", "video": 1}
+            f"/api/v1/plios/{self.plio_1.uuid}/copy/", {"workspace": "abcd", "video": 1}
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "workspace does not exist")
 
     def test_copying_to_workspace_with_wrong_video_fails(self):
         response = self.client.post(
-            f"/api/v1/plios/{self.plio_1.id}/copy/",
+            f"/api/v1/plios/{self.plio_1.uuid}/copy/",
             {"workspace": self.organization.shortcode, "video": 1},
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "video does not exist")
 
     def test_copying_to_workspace(self):
         # create a video instance assuming that video has been copied

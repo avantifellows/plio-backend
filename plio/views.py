@@ -590,6 +590,34 @@ class ItemViewSet(viewsets.ModelViewSet):
         invalidate_cache_for_instance(destination_plio)
         return Response([item.id for item in items])
 
+    @action(methods=["delete"], detail=False)
+    def bulk_delete(self, request):
+        """deletes items whose ids have been provided"""
+        if "id" not in request.data:
+            return Response(
+                {"detail": "id not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ids_to_delete = request.data["id"]
+
+        # ensure that a list of ids has been provided
+        if not isinstance(ids_to_delete, list):
+            return Response(
+                {"detail": "id should contain a list of item ids to be deleted"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        items_to_delete = Item.objects.filter(pk__in=ids_to_delete)
+        if len(items_to_delete) != len(ids_to_delete):
+            return Response(
+                {"detail": "one or more of the ids provided do not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        items_to_delete.delete()
+        return Response("deletion successful")
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
     """

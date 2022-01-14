@@ -636,6 +636,30 @@ class PlioTestCase(BaseTestCase):
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
 
+    def test_copying_to_workspace_with_no_video(self):
+        plio = Plio.objects.create(
+            name="Plio 1", created_by=self.user, status="published"
+        )
+        response = self.client.post(
+            f"/api/v1/plios/{plio.uuid}/copy/",
+            {"workspace": self.organization.shortcode},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_plio_uuid = response.data["uuid"]
+
+        # check that the instance is actually created in the given workspace
+        connection.set_schema(self.organization.schema_name)
+
+        response = self.client.get(
+            f"/api/v1/plios/{new_plio_uuid}/",
+            HTTP_ORGANIZATION=self.organization.shortcode,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["video"]["url"], "")
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
 
 class PlioDownloadTestCase(BaseTestCase):
     def setUp(self):
@@ -715,7 +739,7 @@ class VideoTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         # seed some videos
-        self.video_1 = Video.objects.create(
+        Video.objects.create(
             title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
         )
         Video.objects.create(

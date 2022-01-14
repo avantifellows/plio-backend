@@ -102,37 +102,6 @@ class VideoViewSet(viewsets.ModelViewSet):
     serializer_class = VideoSerializer
     permission_classes = [IsAuthenticated]
 
-    @action(
-        methods=["post"],
-        detail=True,
-    )
-    def copy(self, request, pk):
-        """copies the given video to another workspace"""
-        if "workspace" not in request.data:
-            return Response(
-                {"detail": "workspace is not provided"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # return 404 if user cannot access the object
-        # else fetch the object
-        video = self.get_object()
-        # django will auto-generate the key when the key is set to None
-        video.pk = None
-
-        # change workspace
-        workspace = request.data.get("workspace")
-        success = set_tenant(workspace)
-
-        if not success:
-            return Response(
-                {"detail": "workspace does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        video.save()
-        return Response(self.get_serializer(video).data)
-
 
 class PlioViewSet(viewsets.ModelViewSet):
     """
@@ -270,7 +239,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     )
     def copy(self, request, uuid):
         """copies the given plio to another workspace"""
-        for key in ["workspace", "video"]:
+        for key in ["workspace"]:
             if key not in request.data:
                 return Response(
                     {"detail": f"{key} is not provided"},
@@ -280,6 +249,27 @@ class PlioViewSet(viewsets.ModelViewSet):
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
+
+        if plio.video is not None:
+            video = Video.objects.filter(id=plio.video.id).first()
+            video.pk = None
+
+            items = list(Item.objects.filter(plio__id=plio.id))
+            questions = list(Question.objects.filter(item__plio__id=plio.id))
+
+            # will be needed to handle questions with images
+            question_indices_with_image = []
+            images = []
+
+            for index, question in enumerate(questions):
+                if question.image is not None:
+                    question_indices_with_image.append(index)
+                    images.append(question.image)
+        else:
+            video = None
+            items = []
+            questions = []
+
         # django will auto-generate the key when the key is set to None
         plio.pk = None
         plio.uuid = None
@@ -295,17 +285,50 @@ class PlioViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        video = Video.objects.filter(id=request.data.get("video")).first()
-        if not video:
-            return Response(
-                {"detail": "video does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # update the video id
-        plio.video = video
+        if video is not None:
+            video.save()
+            plio.video = video
 
         plio.save()
+
+        if items:
+            # before creating the items in the given workspace, update the
+            # plio ids that they are linked to and reset the key
+            # django will auto-generate the keys when they are set to None
+            for index, _ in enumerate(items):
+                items[index].plio = plio
+                items[index].pk = None
+
+            # create the items
+            items = Item.objects.bulk_create(items)
+
+            # before creating the questions in the given workspace, update the
+            # item ids that they are linked to and
+            # since we are ordering both items and questions by the item time,
+            # questions and items at the same index should be linked
+            for index, _ in enumerate(questions):
+                questions[index].item = items[index]
+                questions[index].pk = None
+
+            # if there are any questions with images, create instances of those images in the
+            # new workspace and link them to the question instances that need to be created
+            if images:
+                for index, _ in enumerate(images):
+                    # reset the key - django will auto-generate the keys when they are set to None
+                    images[index].pk = None
+
+                images = Image.objects.bulk_create(images)
+                for index, question_index in enumerate(question_indices_with_image):
+                    questions[question_index].image = images[index]
+
+            # create the questions
+            questions = Question.objects.bulk_create(questions)
+
+            # clear the cache for the destination plio or else the items wouldn't show up
+            # when the plio is fetched; we need to trigger this manually as bulk_create
+            # does not call the post_save signal
+            invalidate_cache_for_instance(plio)
+
         return Response(self.get_serializer(plio).data)
 
     @action(
@@ -531,65 +554,6 @@ class ItemViewSet(viewsets.ModelViewSet):
         item.save()
         return Response(self.get_serializer(item).data)
 
-    @action(methods=["post"], detail=False)
-    def copy(self, request):
-        """copies the items for one plio to another workspace"""
-        for key in ["workspace", "source_plio_id", "destination_plio_id"]:
-            if key not in request.data:
-                return Response(
-                    {"detail": f"{key} is not provided"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-        source_plio = Plio.objects.filter(id=request.data.get("source_plio_id")).first()
-
-        if not source_plio:
-            return Response(
-                {"detail": "source plio does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        items = list(Item.objects.filter(plio__id=source_plio.id))
-
-        if not items:
-            # if the plio has no items, return an empty list
-            return Response([])
-
-        # change workspace
-        workspace = request.data.get("workspace")
-        success = set_tenant(workspace)
-
-        if not success:
-            return Response(
-                {"detail": "workspace does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        destination_plio = Plio.objects.filter(
-            id=request.data.get("destination_plio_id")
-        ).first()
-
-        if not destination_plio:
-            return Response(
-                {"detail": "destination plio does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # before creating the items in the given workspace, update the
-        # plio ids that they are linked to and reset the key
-        # django will auto-generate the keys when they are set to None
-        for index, _ in enumerate(items):
-            items[index].plio = destination_plio
-            items[index].pk = None
-
-        items = Item.objects.bulk_create(items)
-
-        # clear the cache for the destination plio or else the items wouldn't show up
-        # when the plio is fetched; we need to trigger this manually as bulk_create
-        # does not call the post_save signal
-        invalidate_cache_for_instance(destination_plio)
-        return Response([item.id for item in items])
-
 
 class QuestionViewSet(viewsets.ModelViewSet):
     """
@@ -637,101 +601,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
         question.item = item
         question.save()
         return Response(self.get_serializer(question).data)
-
-    @action(methods=["post"], detail=False)
-    def copy(self, request):
-        """copies the questions for one plio to another workspace"""
-        for key in ["workspace", "source_plio_id", "destination_plio_id"]:
-            if key not in request.data:
-                return Response(
-                    {"detail": f"{key} is not provided"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-        source_plio = Plio.objects.filter(id=request.data.get("source_plio_id")).first()
-
-        if not source_plio:
-            return Response(
-                {"detail": "source plio does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        questions = list(Question.objects.filter(item__plio__id=source_plio.id))
-
-        if not questions:
-            # if the plio has no questions, return an empty list
-            return Response([])
-
-        # will be needed to handle questions with images
-        question_indices_with_image = []
-        images = []
-
-        for index, question in enumerate(questions):
-            if question.image is not None:
-                question_indices_with_image.append(index)
-                images.append(question.image)
-
-        # change workspace
-        workspace = request.data.get("workspace")
-        success = set_tenant(workspace)
-
-        if not success:
-            return Response(
-                {"detail": "workspace does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        destination_plio = Plio.objects.filter(
-            id=request.data.get("destination_plio_id")
-        ).first()
-
-        if not destination_plio:
-            return Response(
-                {"detail": "destination plio does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        # find all the items of type "question" linked to the plio
-        items = Item.objects.filter(plio__id=destination_plio.id, type="question")
-
-        if not items:
-            return Response(
-                {"detail": "items of type question not found in the given workspace"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        if len(items) != len(questions):
-            return Response(
-                {
-                    "detail": (
-                        f"number of items in the destination workspace ({len(items)})"
-                        f" is different from the number of questions ({len(questions)})"
-                    )
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # before creating the questions in the given workspace, update the
-        # item ids that they are linked to and
-        # since we are ordering both items and questions by the item time,
-        # questions and items at the same index should be linked
-        for index, _ in enumerate(questions):
-            questions[index].item = items[index]
-            questions[index].pk = None
-
-        # if there are any questions with images, create instances of those images in the
-        # new workspace and link them to the question instances that need to be created
-        if images:
-            for index, _ in enumerate(images):
-                # reset the key - django will auto-generate the keys when they are set to None
-                images[index].pk = None
-
-            images = Image.objects.bulk_create(images)
-            for index, question_index in enumerate(question_indices_with_image):
-                questions[question_index].image = images[index]
-
-        questions = Question.objects.bulk_create(questions)
-        return Response([question.id for question in questions])
 
 
 class ImageViewSet(viewsets.ModelViewSet):

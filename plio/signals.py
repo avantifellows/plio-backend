@@ -28,3 +28,11 @@ def item_update_cache(sender, instance, **kwargs):
 def question_update_cache(sender, instance, **kwargs):
     # invalidate saved cache for the plio
     invalidate_cache_for_instance(instance.item.plio)
+
+
+@receiver([post_save], sender=Question)
+def question_delete_image_on_deletion(sender, instance, **kwargs):
+    # check if any image is linked to the instance
+    if instance.deleted is not None and instance.image is not None:
+        # delete that image as well
+        instance.image.delete()

@@ -74,8 +74,13 @@ class StandardResultsSetPagination(PageNumberPagination):
         )
 
 
-def set_tenant(workspace):
-    """Sets the current tenant to the given workspace if it exists"""
+def set_tenant(workspace: str):
+    """
+    Sets the current tenant to the given workspace if it exists
+
+    :param workspace: workspace to use as the current tenant
+    :type workspace: str
+    """
     tenant_model = get_tenant_model()
     tenant = tenant_model.objects.filter(shortcode=workspace).first()
 

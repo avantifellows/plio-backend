@@ -40,9 +40,21 @@ class UserSerializer(serializers.ModelSerializer):
             return cached_response
 
         response = super().to_representation(instance)
+        # add organizations the user is a part of to the response
         response["organizations"] = OrganizationSerializer(
             instance.organizations, many=True
         ).data
+        # for each organization the user is part of, add the user's role in
+        # that organization
+        for org in response["organizations"]:
+            org_user_instance = OrganizationUser.objects.filter(
+                user=instance, organization_id=org["id"]
+            ).first()
+            role_id = OrganizationUserSerializer(org_user_instance).data["role"]
+            role_name = RoleSerializer(Role.objects.filter(id=role_id).first()).data[
+                "name"
+            ]
+            org.update({"role": role_name})
 
         cache.set(cache_key, response)  # set a cached version
         return response

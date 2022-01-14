@@ -1,7 +1,9 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from organizations.models import Organization
 from organizations.serializers import OrganizationSerializer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.decorators import action
 from organizations.permissions import OrganizationPermission
 
 
@@ -20,3 +22,19 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, OrganizationPermission]
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
+
+    @action(
+        detail=True,
+        permission_classes=[IsAuthenticated, OrganizationPermission],
+        methods=["put"],
+    )
+    def setting(self, request, pk):
+        """Updates an org's setting key inside it's config"""
+        org = self.get_object()
+        config = org.config or {"settings": {}}
+        config["settings"] = self.request.data
+        org.config = config
+        org.save()
+        return Response(
+            self.get_serializer(org).data["config"], status=status.HTTP_200_OK
+        )

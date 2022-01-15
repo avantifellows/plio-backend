@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('organizations', '0003_organization_api_key'),
+        ("organizations", "0003_organization_api_key"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='organization',
-            name='config',
+            model_name="organization",
+            name="config",
             field=models.JSONField(null=True),
         ),
     ]

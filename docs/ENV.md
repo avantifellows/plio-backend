@@ -83,9 +83,7 @@ Hostname of your Redis instance
 #### `REDIS_PORT`
 Port of your Redis instance
 
-### Plio CMS
-#### `CMS_TOKEN`
-Secret token for Avanti's [Content Management System](http://cms.peerlearning.com) - if you plan to use it, you'll need to ask for access from the admins.
+
 
 ### Superuser
 #### `SUPERUSER_EMAIL`

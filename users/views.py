@@ -187,7 +187,7 @@ def verify_otp(request):
         )
     if "otp" not in request.data:
         return Response(
-            {"detail": "otp not provided"},
+            {"detail": "OTP Not Provided"},
             status=status.HTTP_400_BAD_REQUEST,
         )
     mobile = request.data["mobile"]

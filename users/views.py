@@ -190,7 +190,7 @@ def verify_otp(request):
             {"detail": "OTP Not Provided"},
             status=status.HTTP_400_BAD_REQUEST,
         )
-    mobile = request.data["mobile"]
+    mobile = request.data["mobile"]  
     otp = request.data["otp"]
     try:
         otp = OneTimePassword.objects.filter(

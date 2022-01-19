@@ -78,7 +78,7 @@ def set_tenant(workspace: str):
     """
     Sets the current tenant to the given workspace if it exists
 
-    :param workspace: workspace to use as the current tenant
+    :param workspace: workspace shortcode to use as the current tenant
     :type workspace: str
     """
     tenant_model = get_tenant_model()
@@ -243,13 +243,12 @@ class PlioViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated, PlioPermission],
     )
     def copy(self, request, uuid):
-        """copies the given plio to another workspace"""
-        for key in ["workspace"]:
-            if key not in request.data:
-                return Response(
-                    {"detail": f"{key} is not provided"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        """Copies the given plio to another workspace"""
+        if "workspace" not in request.data:
+            return Response(
+                {"detail": "workspace is not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # return 404 if user cannot access the object
         # else fetch the object
@@ -298,7 +297,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         if items:
             # before creating the items in the given workspace, update the
-            # plio ids that they are linked to and reset the key
+            # plio ids that they are linked to and reset the primary key;
             # django will auto-generate the keys when they are set to None
             for index, _ in enumerate(items):
                 items[index].plio = plio

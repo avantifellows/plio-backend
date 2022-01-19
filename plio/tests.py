@@ -542,9 +542,10 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(len(cache.keys(cache_key_name)), 1)
         self.assertEqual(cache.get(cache_key_name)["name"], new_name)
 
-    def test_copying_without_workspace_fails(self):
+    def test_copying_without_specifying_workspace_fails(self):
         response = self.client.post(f"/api/v1/plios/{self.plio_1.uuid}/copy/")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "workspace is not provided")
 
     def test_copying_to_non_existing_workspace_fails(self):
         response = self.client.post(

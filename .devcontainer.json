@@ -1,0 +1,8 @@
+{
+    "forwardPorts": [8001],
+    "portsAttributes":{
+        "8001": {
+            "label": "analytics",
+        },
+    }
+}

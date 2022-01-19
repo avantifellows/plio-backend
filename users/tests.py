@@ -11,17 +11,16 @@ from plio.tests import BaseTestCase
 from plio.cache import get_cache_key
 
 
-class OtpAuthTestCase(BaseTestCase):  
+class OtpAuthTestCase(BaseTestCase):
     """Tests the OTP functionality."""
 
     def setUp(self):
         super().setUp()
         # unset client credentials token so that the subsequent API calls goes as guest
         self.client.credentials()
+
     def test_request_otp_mobile_not_passed(self):
-        response = self.client.post(
-            reverse("request-otp")
-        )
+        response = self.client.post(reverse("request-otp"))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_guest_can_request_for_otp(self):

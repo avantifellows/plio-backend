@@ -19,12 +19,16 @@ class OtpAuthTestCase(BaseTestCase):
         # unset client credentials token so that the subsequent API calls goes as guest
         self.client.credentials()
 
+    def test_requesting_otp_fails_when_mobile_not_passed(self):
+        response = self.client.post(reverse("request-otp"))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "mobile not provided")
+
     def test_guest_can_request_for_otp(self):
         response = self.client.post(
             reverse("request-otp"), {"mobile": self.user.mobile}
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         otp_exists = OneTimePassword.objects.filter(mobile=self.user.mobile).exists()
         self.assertTrue(otp_exists)
 

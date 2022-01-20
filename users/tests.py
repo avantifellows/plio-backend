@@ -22,7 +22,7 @@ class OtpAuthTestCase(BaseTestCase):
     def test_requesting_otp_fails_when_mobile_not_passed(self):
         response = self.client.post(reverse("request-otp"))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["detail"], "Mobile Not Provided")
+        self.assertEqual(response.data["detail"], "mobile not provided")
 
     def test_guest_can_request_for_otp(self):
         response = self.client.post(

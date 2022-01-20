@@ -13,6 +13,7 @@ The pre-commit hook in this repository uses various plugins to run different kin
 
 ### Installation
 1. Install pre-commit
+
     Use `pip` to install pre-commit
     ```sh
     pip install pre-commit

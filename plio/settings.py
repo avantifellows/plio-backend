@@ -233,7 +233,6 @@ STATICFILES_DIRS = [
 ]
 
 CMS_URL = "https://cms.peerlearning.com/api"
-CMS_TOKEN = os.environ.get("CMS_TOKEN")
 GET_CMS_PROBLEM_URL = "/problems"
 
 DATABASES = {

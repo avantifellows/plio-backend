@@ -83,8 +83,6 @@ Hostname of your Redis instance
 #### `REDIS_PORT`
 Port of your Redis instance
 
-
-
 ### Superuser
 #### `SUPERUSER_EMAIL`
 Email for the superuser created during installation.

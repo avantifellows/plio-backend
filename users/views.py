@@ -180,6 +180,13 @@ def request_otp(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def verify_otp(request):
+
+    for key in ["mobile", "otp"]:
+        if key not in request.data:
+            return Response(
+                {"detail": f"{key} not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
     mobile = request.data["mobile"]
     otp = request.data["otp"]
     try:

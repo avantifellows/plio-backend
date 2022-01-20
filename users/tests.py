@@ -28,6 +28,18 @@ class OtpAuthTestCase(BaseTestCase):
         otp_exists = OneTimePassword.objects.filter(mobile=self.user.mobile).exists()
         self.assertTrue(otp_exists)
 
+    def test_verifying_otp_fails_when_otp_not_passed(self):
+        # check whether otp param is passed
+        response = self.client.post(reverse("verify-otp"), {"mobile": self.user.mobile})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "otp not provided")
+
+    def test_verifying_otp_fails_when_mobile_not_passed(self):
+        # check whether mobile param is passed
+        response = self.client.post(reverse("verify-otp"))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "mobile not provided")
+
     def test_invalid_otp_should_fail(self):
         # request otp
         self.client.post(reverse("request-otp"), {"mobile": self.user.mobile})

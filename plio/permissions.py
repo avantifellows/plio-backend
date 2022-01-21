@@ -6,16 +6,17 @@ from users.models import OrganizationUser
 
 
 class PlioPermission(permissions.BasePermission):
-    """
-    Permission check for plios.
-    """
+    """Permission check for plios."""
 
     def has_permission(self, request, view):
         """View-level permissions for plio. This determines whether the request can access plio instances or not."""
         return True
 
     def has_object_permission(self, request, view, obj):
-        """Object-level permissions for plio/item/question. This determines whether the request can access a plio/item/question instance or not."""
+        """
+        Object-level permissions for plio/item/question.
+        This determines whether the request can access a plio/item/question instance or not.
+        """
         if request.user.is_superuser:
             return True
 

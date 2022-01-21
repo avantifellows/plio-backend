@@ -233,6 +233,161 @@ class PlioViewSet(viewsets.ModelViewSet):
         detail=True,
         permission_classes=[IsAuthenticated, PlioPermission],
     )
+    def metrics(self, request, uuid):
+        # return 404 if user cannot access the object
+        # else fetch the object
+        plio = self.get_object()
+
+        if not Session.objects.filter(plio=plio.id):
+            return Response({})
+
+        query = f"""
+            WITH summary AS (
+            SELECT
+                session.id,
+                session.plio_id,
+                session.watch_time,
+                session.retention,
+                ROW_NUMBER() OVER(PARTITION BY session.user_id, session.plio_id
+
+                                ORDER BY session.id DESC) AS rank
+                FROM {connection.schema_name}.session
+            )
+            SELECT id, watch_time, retention
+                FROM summary
+            WHERE rank = 1 AND plio_id = {plio.id}
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            results = cursor.fetchall()
+
+        df = pd.DataFrame(results, columns=["id", "watch_time", "retention"])
+        num_views = len(df)
+        average_watch_time = df["watch_time"].mean()
+
+        # retention at one minute
+        if plio.video.duration is None or plio.video.duration < 60:
+            percent_one_minute_retention = None
+        else:
+            valid_retention_rows = df[~df["retention"].isna()]
+            if not len(valid_retention_rows):
+                percent_one_minute_retention = 0
+            else:
+                import numpy as np
+
+                valid_retention_rows = (
+                    valid_retention_rows["retention"]
+                    .apply(lambda row: list(map(int, row.split(","))))
+                    .values
+                )
+                retention = np.vstack(valid_retention_rows)[:, 60:]
+                percent_one_minute_retention = (
+                    (retention.sum(axis=1) > 0).sum() / num_views
+                ) * 100
+
+        # question-based metrics
+        questions = Question.objects.filter(item__plio=plio.id)
+        if not questions:
+            accuracy = None
+            average_num_answered = None
+            percent_completed = None
+
+        else:
+            query = f"""
+                SELECT
+                    sessionAnswer.id,
+                    session.user_id,
+                    sessionAnswer.answer,
+                    item.type AS item_type,
+                    question.type AS question_type,
+                    question.correct_answer AS question_correct_answer
+                FROM {connection.schema_name}.session AS session
+                INNER JOIN {connection.schema_name}.session_answer AS sessionAnswer
+                ON session.id = sessionAnswer.session_id
+                INNER JOIN {connection.schema_name}.item AS item
+                ON item.id=sessionAnswer.item_id
+                INNER JOIN {connection.schema_name}.question AS question ON question.item_id = item.id
+                WHERE session.id IN {tuple(df['id'])}
+            """
+            with connection.cursor() as cursor:
+                cursor.execute(query)
+                results = cursor.fetchall()
+
+            df = pd.DataFrame(
+                results,
+                columns=[
+                    "id",
+                    "user_id",
+                    "answer",
+                    "item_type",
+                    "question_type",
+                    "correct_answer",
+                ],
+            )
+            question_df = df[df["item_type"] == "question"].reset_index(drop=True)
+            num_questions = len(questions)
+
+            def is_answer_correct(row):
+                if row["question_type"] in ["mcq", "checkbox"]:
+                    return row["answer"] == row["correct_answer"]
+                return row["answer"] is not None
+
+            num_answered_list = []
+            num_correct_list = []
+
+            user_grouping = question_df.groupby("user_id")
+            for group in user_grouping.groups:
+                group_df = user_grouping.get_group(group)
+
+                assert num_questions == len(
+                    group_df
+                ), "Inconsistency in the number of questions"
+
+                num_answered = sum(
+                    group_df["answer"].apply(lambda value: value is not None)
+                )
+
+                num_answered_list.append(num_answered)
+
+                if not num_answered:
+                    num_correct_list.append(None)
+                else:
+                    num_correct_list.append(
+                        sum(group_df.apply(is_answer_correct, axis=1))
+                    )
+
+            num_answered_list = np.array(num_answered_list)
+            num_correct_list = np.array(num_correct_list)
+            average_num_answered = round(num_answered_list.mean())
+            percent_completed = round(
+                100 * (sum(num_answered_list == num_questions) / num_views)
+            )
+
+            answered_at_least_one_index = num_answered_list > 0
+            num_answered_list = num_answered_list[answered_at_least_one_index]
+            num_correct_list = num_correct_list[answered_at_least_one_index]
+
+            if not num_correct_list:
+                accuracy = None
+            else:
+                accuracy = round((num_correct_list / num_answered_list).mean() * 100)
+
+        return Response(
+            {
+                "num_views": num_views,
+                "average_watch_time": average_watch_time,
+                "percent_one_minute_retention": percent_one_minute_retention,
+                "accuracy": accuracy,
+                "average_num_answered": average_num_answered,
+                "percent_completed": percent_completed,
+            }
+        )
+
+    @action(
+        methods=["get"],
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+    )
     def download_data(self, request, uuid):
         """
         Downloads a zip file containing various CSVs for a Plio.

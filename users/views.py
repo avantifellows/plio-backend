@@ -179,6 +179,11 @@ def get_new_access_token(user, application):
 @permission_classes([AllowAny])
 def request_otp(request):
     otp = OneTimePassword()
+    if "mobile" not in request.data:
+        return Response(
+            {"detail": "mobile not provided"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     otp.mobile = request.data["mobile"]
     otp.otp = random.randint(100000, 999999)
     otp.expires_at = timezone.now() + datetime.timedelta(seconds=OTP_EXPIRE_SECONDS)
@@ -197,6 +202,13 @@ def request_otp(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def verify_otp(request):
+
+    for key in ["mobile", "otp"]:
+        if key not in request.data:
+            return Response(
+                {"detail": f"{key} not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
     mobile = request.data["mobile"]
     otp = request.data["otp"]
     try:

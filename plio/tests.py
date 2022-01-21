@@ -22,6 +22,7 @@ from plio.models import Plio, Video, Item, Question, Image
 from entries.models import Session
 from plio.views import StandardResultsSetPagination
 from plio.cache import get_cache_key
+from plio.serializers import ImageSerializer
 
 
 class BaseTestCase(APITestCase):
@@ -635,7 +636,126 @@ class PlioTestCase(BaseTestCase):
             .config["settings"]["player"],
             json.loads(test_settings)["player"],
         )
+        
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
 
+    def test_copying_without_specifying_workspace_fails(self):
+        response = self.client.post(f"/api/v1/plios/{self.plio_1.uuid}/copy/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["detail"], "workspace is not provided")
+
+    def test_copying_to_non_existing_workspace_fails(self):
+        response = self.client.post(
+            f"/api/v1/plios/{self.plio_1.uuid}/copy/", {"workspace": "abcd"}
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data["detail"], "workspace does not exist")
+
+    def test_copying_to_workspace(self):
+        # create some items and questions
+        item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
+        item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)
+        item_3 = Item.objects.create(type="question", plio=self.plio_1, time=20)
+
+        question_1 = Question.objects.create(type="checkbox", item=item_1)
+        # attach an image to one question
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(
+                reverse("images-list"), {"url": img, "alt_text": "test image"}
+            )
+        image_id = response.json()["id"]
+        question_2 = Question.objects.create(
+            type="subjective",
+            item=item_2,
+            image=Image.objects.filter(id=image_id).first(),
+        )
+        question_3 = Question.objects.create(type="checkbox", item=item_3)
+
+        response = self.client.post(
+            f"/api/v1/plios/{self.plio_1.uuid}/copy/",
+            {"workspace": self.organization.shortcode},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_plio_id = response.data["id"]
+        new_plio_uuid = response.data["uuid"]
+        new_video_id = response.data["video"]["id"]
+        new_item_ids = []
+        new_question_ids = []
+
+        for item in response.data.get("items", []):
+            new_item_ids.append(item["id"])
+            new_question_ids.append(item["details"]["id"])
+
+        # check that the instances are actually created in the given workspace
+        connection.set_schema(self.organization.schema_name)
+
+        response = self.client.get(
+            f"/api/v1/videos/{new_video_id}/",
+            HTTP_ORGANIZATION=self.organization.shortcode,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.get(
+            f"/api/v1/plios/{new_plio_uuid}/",
+            HTTP_ORGANIZATION=self.organization.shortcode,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for new_item_id, old_item in zip(new_item_ids, [item_1, item_2, item_3]):
+            response = self.client.get(
+                f"/api/v1/items/{new_item_id}/",
+                HTTP_ORGANIZATION=self.organization.shortcode,
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["plio"], new_plio_id)
+            self.assertEqual(response.data["type"], old_item.type)
+            self.assertEqual(response.data["time"], old_item.time)
+
+        for old_question, new_question_id, new_item_id in zip(
+            [question_1, question_2, question_3],
+            new_question_ids,
+            new_item_ids,
+        ):
+            response = self.client.get(
+                f"/api/v1/questions/{new_question_id}/",
+                HTTP_ORGANIZATION=self.organization.shortcode,
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["item"], new_item_id)
+            self.assertEqual(response.data["type"], old_question.type)
+
+            if old_question.image is not None:
+                self.assertEqual(
+                    ImageSerializer(old_question.image).data["url"],
+                    response.data["image"]["url"],
+                )
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
+
+    def test_copying_to_workspace_with_no_video(self):
+        plio = Plio.objects.create(
+            name="Plio 1", created_by=self.user, status="published"
+        )
+        response = self.client.post(
+            f"/api/v1/plios/{plio.uuid}/copy/",
+            {"workspace": self.organization.shortcode},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_plio_uuid = response.data["uuid"]
+
+        # check that the instance is actually created in the given workspace
+        connection.set_schema(self.organization.schema_name)
+
+        response = self.client.get(
+            f"/api/v1/plios/{new_plio_uuid}/",
+            HTTP_ORGANIZATION=self.organization.shortcode,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["video"]["url"], "")
+        
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
 

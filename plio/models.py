@@ -117,6 +117,7 @@ class Item(SafeDeleteModel):
 
     class Meta:
         db_table = "item"
+        ordering = ["time"]
 
     def __str__(self):
         return "%d: %s - %s" % (self.id, self.plio.name, self.type)
@@ -140,3 +141,4 @@ class Question(SafeDeleteModel):
 
     class Meta:
         db_table = "question"
+        ordering = ["item__time"]

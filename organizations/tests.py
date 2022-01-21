@@ -91,3 +91,130 @@ class OrganizationTestCase(BaseTestCase):
         self.assertEqual(
             cache.get(cache_key_name)["organizations"][0]["name"], org_new_name
         )
+
+    def test_settings_support_only_put_method(self):
+        """ /settings/ action only supports PUT method """
+        # some dummy settings
+        dummy_settings = {"setting_name": "setting_value"}
+
+        # make the current user a superuser
+        self.user.is_superuser = True
+        self.user.save()
+
+        # try to list the settings
+        response = self.client.get(
+            f"/api/v1/organizations/{self.organization_1.id}/setting/"
+        )
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # try a POST request to settings
+        response = self.client.post(
+            f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
+        )
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # try a PATCH request to settings
+        response = self.client.patch(
+            f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
+        )
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        # try a PUT request to settings
+        response = self.client.put(
+            f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Organization.objects.filter(id=self.organization_1.id)
+            .first()
+            .config["settings"],
+            dummy_settings,
+        )
+
+    def test_superuser_can_update_any_org_settings(self):
+        """A superuse is allowed to update settings of any org"""
+        # some dummy settings
+        dummy_settings = {"setting_name": "setting_value"}
+
+        # turn the current user into a superuser
+        self.user.is_superuser = True
+        self.user.save()
+
+        # try updating settings of org 1
+        response = self.client.put(
+            f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Organization.objects.filter(id=self.organization_1.id)
+            .first()
+            .config["settings"],
+            dummy_settings,
+        )
+
+        # try updating settings of org 2
+        response = self.client.put(
+            f"/api/v1/organizations/{self.organization_2.id}/setting/", dummy_settings
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Organization.objects.filter(id=self.organization_2.id)
+            .first()
+            .config["settings"],
+            dummy_settings,
+        )
+
+    def test_org_admin_can_update_own_org_settings_only(self):
+        """Only an admin of an org can update the org's settings"""
+        from rest_framework.test import APIClient
+        from users.models import User
+        from plio.tests import get_new_access_token
+
+        # some dummy settings
+        dummy_settings = {"setting_name": "setting_value"}
+
+        # user should NOT be able to update org 1 settings as
+        # the user is not an org admin
+        response = self.client.put(
+            f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # create a new super user
+        superuser_client = APIClient()
+        superuser = User.objects.create(mobile="+919988776655", is_superuser=True)
+        superuser_access_token = get_new_access_token(superuser, self.application)
+        superuser_client.credentials(
+            HTTP_AUTHORIZATION="Bearer " + superuser_access_token.token
+        )
+
+        # Make the current user org admin for organization 1 (using the created super user above)
+        superuser_client.post(
+            reverse("organization-users-list"),
+            {
+                "user": self.user.id,
+                "organization": self.organization_1.id,
+                "role": self.org_admin_role.id,
+            },
+        )
+
+        # user should be able to update org 1 settings
+        response = self.client.put(
+            f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Organization.objects.filter(id=self.organization_1.id)
+            .first()
+            .config["settings"],
+            dummy_settings,
+        )
+
+        # but the user still should NOT be able to update settings for org 2
+        response = self.client.put(
+            f"/api/v1/organizations/{self.organization_2.id}/setting/", dummy_settings
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            Organization.objects.filter(id=self.organization_2.id).first().config, None
+        )

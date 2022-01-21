@@ -1,6 +1,3 @@
-from plio.settings import BIGQUERY
-
-
 def get_plio_details_query(plio_uuid: str, schema: str, **kwargs):
     """
     Returns the details for the given plio
@@ -38,11 +35,11 @@ def get_sessions_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = Tr
             CASE
                 WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
-                {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'}
+                'MD5(session.user_id::varchar(255))'
             END AS user_identifier
         FROM {schema}.session AS session
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
-        INNER JOIN {schema if BIGQUERY['enabled'] else 'public'}.user AS users ON session.user_id = users.id
+        INNER JOIN public.user AS users ON session.user_id = users.id
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 
@@ -60,7 +57,7 @@ def get_responses_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = T
             CASE
                 WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
-                {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'}
+                'MD5(session.user_id::varchar(255))'
             END AS user_identifier,
             sessionAnswer.answer,
             sessionAnswer.item_id,
@@ -68,7 +65,7 @@ def get_responses_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = T
         FROM {schema}.session AS session
         INNER JOIN {schema}.session_answer sessionAnswer ON session.id = sessionAnswer.session_id
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
-        INNER JOIN {schema if BIGQUERY['enabled'] else 'public'}.user AS users ON session.user_id = users.id
+        INNER JOIN public.user AS users ON session.user_id = users.id
         INNER JOIN {schema}.item item ON item.id = sessionAnswer.item_id
         INNER JOIN {schema}.question question ON question.item_id = item.id
         WHERE plio.uuid  = '{plio_uuid}'"""
@@ -88,7 +85,7 @@ def get_events_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
             CASE
                 WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
-                {'TO_HEX(MD5(CAST(session.user_id as STRING)))' if BIGQUERY['enabled'] else 'MD5(session.user_id::varchar(255))'}
+                'MD5(session.user_id::varchar(255))'
             END AS user_identifier,
             event.type AS event_type,
             event.player_time AS event_player_time,
@@ -97,5 +94,5 @@ def get_events_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
         FROM {schema}.session AS session
         INNER JOIN {schema}.event AS event ON session.id = event.session_id
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
-        INNER JOIN {schema if BIGQUERY['enabled'] else 'public'}.user AS users ON session.user_id = users.id
+        INNER JOIN public.user AS users ON session.user_id = users.id
         WHERE plio.uuid  = '{plio_uuid}'"""

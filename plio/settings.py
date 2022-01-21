@@ -309,13 +309,6 @@ AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 AWS_QUERYSTRING_AUTH = False
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 mb
 
-BIGQUERY = {
-    "enabled": True if os.environ.get("BIGQUERY_ENABLED") == "True" else False,
-    "project_id": os.environ.get("BIGQUERY_PROJECT_ID", ""),
-    "location": os.environ.get("BIGQUERY_LOCATION", ""),
-    "credentials": os.environ.get("BIGQUERY_CREDENTIALS", ""),
-}
-
 SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
 
 if APP_ENV in ["staging", "production"] and SENTRY_DSN is not None:

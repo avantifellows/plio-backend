@@ -636,7 +636,7 @@ class PlioTestCase(BaseTestCase):
             .config["settings"]["player"],
             json.loads(test_settings)["player"],
         )
-        
+
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
 
@@ -755,7 +755,7 @@ class PlioTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["video"]["url"], "")
-        
+
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
 

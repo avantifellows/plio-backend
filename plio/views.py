@@ -307,8 +307,13 @@ class PlioViewSet(viewsets.ModelViewSet):
                 INNER JOIN {connection.schema_name}.item AS item
                 ON item.id=sessionAnswer.item_id
                 INNER JOIN {connection.schema_name}.question AS question ON question.item_id = item.id
-                WHERE session.id IN {tuple(df['id'])}
             """
+            session_ids = tuple(df["id"])
+            if len(session_ids) == 1:
+                query += f"WHERE session.id = {session_ids[0]}"
+            else:
+                query += f"WHERE session.id IN {session_ids}"
+
             with connection.cursor() as cursor:
                 cursor.execute(query)
                 results = cursor.fetchall()

@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import FileResponse
 import pandas as pd
 from storages.backends.s3boto3 import S3Boto3Storage
@@ -22,6 +22,7 @@ from organizations.middleware import OrganizationTenantMiddleware
 from organizations.models import Organization
 from users.models import OrganizationUser
 from plio.models import Video, Plio, Item, Question, Image
+from entries.models import Session
 from plio.serializers import (
     VideoSerializer,
     PlioSerializer,
@@ -136,9 +137,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     def is_organizational_workspace(self):
         return self.organization_shortcode != DEFAULT_TENANT_SHORTCODE
 
-    @action(detail=False, permission_classes=[IsAuthenticated])
-    def list_uuid(self, request):
-        """Retrieves a list of UUIDs for all the plios"""
+    def list(self, request):
         queryset = self.get_queryset()
 
         # personal workspace
@@ -161,17 +160,36 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         num_plios = queryset.count()
         queryset = self.filter_queryset(queryset)
-
-        uuid_list = queryset.values_list("uuid", flat=True)
-        page = self.paginate_queryset(uuid_list)
+        page = self.paginate_queryset(queryset.values())
 
         if page is not None:
+            # find the number of unique views
+            plio_ids = list(queryset.values_list(flat=True))
+
+            unique_user_counts = (
+                Session.objects.filter(plio__in=plio_ids)
+                .values("plio")
+                .annotate(count=Count("user", distinct=True))
+            ).order_by()
+
+            plio_id_to_count = {
+                unique_user_count["plio"]: unique_user_count["count"]
+                for unique_user_count in unique_user_counts
+            }
+
+            for index, plio in enumerate(page):
+                page[index]["num_views"] = plio_id_to_count.get(plio["id"], 0)
+                page[index]["items"] = ItemSerializer(
+                    queryset[index].item_set, many=True
+                ).data
+
             return self.get_paginated_response({"data": page, "raw_count": num_plios})
 
         # return an empty response in the paginated format if pagination fails
         return Response(
             {
                 "count": 0,
+                "raw_count": 0,
                 "page_size": self.get_page_size(self.request),
                 "next": None,
                 "previous": None,

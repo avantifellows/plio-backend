@@ -81,6 +81,7 @@ class Plio(SafeDeleteModel):
 
     class Meta:
         db_table = "plio"
+        ordering = ["-updated_at"]
 
     def __str__(self):
         return "%d: %s" % (self.id, self.name)

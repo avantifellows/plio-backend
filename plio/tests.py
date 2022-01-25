@@ -232,17 +232,15 @@ class PlioTestCase(BaseTestCase):
     def test_guest_cannot_list_plio_uuids(self):
         # unset the credentials
         self.client.credentials()
-        # get plio uuids
         response = self.client.get("/api/v1/plios/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_user_list_empty_plio_uuids(self):
+    def test_user_list_empty_plio(self):
         """Tests that a user with no plios receives an empty list of uuids"""
         # change user
         self.client.credentials(
             HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
         )
-        # get plio uuids
         response = self.client.get("/api/v1/plios/")
         self.assertEqual(
             response.data,
@@ -256,9 +254,8 @@ class PlioTestCase(BaseTestCase):
             },
         )
 
-    def test_user_list_plio_uuids(self):
+    def test_user_list_with_plios(self):
         """Test valid user listing plio uuids when they have plios"""
-        # get plio uuids
         response = self.client.get("/api/v1/plios/")
 
         expected_results = list(
@@ -280,6 +277,19 @@ class PlioTestCase(BaseTestCase):
                 "raw_count": 2,
             },
         )
+
+    def test_listing_plios_returns_unique_num_views(self):
+        # create some sessions - 2 sessions for one user and one more session for another user
+        Session.objects.create(plio=self.plio_1, user=self.user)
+        Session.objects.create(plio=self.plio_1, user=self.user)
+        Session.objects.create(plio=self.plio_1, user=self.user_2)
+
+        response = self.client.get("/api/v1/plios/")
+        plios = response.data["results"]
+
+        # plio 2 will be listed first because it was created later
+        expected_num_views = [0, 2]
+        self.assertEqual([plio["num_views"] for plio in plios], expected_num_views)
 
     def test_guest_can_play_plio(self):
         # unset the credentials

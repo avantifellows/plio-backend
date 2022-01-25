@@ -523,7 +523,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     def download_data(self, request, uuid):
         """
         Downloads a zip file containing various CSVs for a Plio.
-        If BigQuery is enabled, the report data is fetch from BigQuery dataset.
 
         request: HTTP request.
         uuid: UUID of the plio for which report needs to be downloaded.

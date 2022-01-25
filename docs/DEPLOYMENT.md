@@ -19,7 +19,6 @@ Deploying on AWS requires a basic understanding of the following tools and servi
 9. AWS Elastic IPs
 10. AWS Identity and Access Management (IAM)
 11. AWS Relational Database Service (RDS)
-12. Google BigQuery
 
 ## Staging
 

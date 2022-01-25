@@ -489,18 +489,20 @@ class PlioViewSet(viewsets.ModelViewSet):
             num_answered_list = np.array(num_answered_list)
             num_correct_list = np.array(num_correct_list)
             average_num_answered = round(num_answered_list.mean())
-            percent_completed = round(
-                100 * (sum(num_answered_list == num_questions) / num_views)
+            percent_completed = np.round(
+                100 * (sum(num_answered_list == num_questions) / num_views), 2
             )
 
             answered_at_least_one_index = num_answered_list > 0
             num_answered_list = num_answered_list[answered_at_least_one_index]
             num_correct_list = num_correct_list[answered_at_least_one_index]
 
-            if not num_correct_list:
+            if not len(num_correct_list):
                 accuracy = None
             else:
-                accuracy = round((num_correct_list / num_answered_list).mean() * 100)
+                accuracy = np.round(
+                    (num_correct_list / num_answered_list).mean() * 100, 2
+                )
 
         return Response(
             {

@@ -389,21 +389,26 @@ class PlioViewSet(viewsets.ModelViewSet):
         if plio.video.duration is None or plio.video.duration < 60:
             percent_one_minute_retention = None
         else:
-            valid_retention_rows = df[~df["retention"].isna()]
-            if not len(valid_retention_rows):
+            import numpy as np
+
+            df["retention"] = df["retention"].apply(lambda row: row.split(","))
+            df["is_retention_valid"] = df["retention"].apply(
+                lambda row: ("NaN" not in row and len(row) == plio.video.duration)
+            )
+
+            # remove rows where NaN values might be present
+            df = df[df["is_retention_valid"]]
+
+            if not len(df):
                 percent_one_minute_retention = 0
             else:
-                import numpy as np
-
-                valid_retention_rows = (
-                    valid_retention_rows["retention"]
-                    .apply(lambda row: list(map(int, row.split(","))))
-                    .values
+                retention = (
+                    df["retention"].apply(lambda row: list(map(int, row))).values
                 )
-                retention = np.vstack(valid_retention_rows)[:, 60:]
-                percent_one_minute_retention = (
-                    (retention.sum(axis=1) > 0).sum() / num_views
-                ) * 100
+                retention = np.vstack(retention)[:, 59:]
+                percent_one_minute_retention = np.round(
+                    ((retention.sum(axis=1) > 0).sum() / num_views) * 100, 2
+                )
 
         # question-based metrics
         questions = Question.objects.filter(item__plio=plio.id)

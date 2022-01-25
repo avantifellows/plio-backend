@@ -567,28 +567,6 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(len(cache.keys(cache_key_name)), 1)
         self.assertEqual(cache.get(cache_key_name)["name"], new_name)
 
-    def test_metrics_returns_empty_if_no_sessions(self):
-        response = self.client.get(
-            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {})
-
-    def test_metrics_num_views_and_average_watch_time(self):
-        Session.objects.create(plio=self.plio_1, user=self.user, watch_time=10)
-        Session.objects.create(plio=self.plio_1, user=self.user, watch_time=20)
-        Session.objects.create(plio=self.plio_1, user=self.user_2, watch_time=50)
-
-        response = self.client.get(
-            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
-        )
-        self.assertEqual(response.data["num_views"], 2)
-        self.assertEqual(response.data["average_watch_time"], 35.0)
-        self.assertEqual(response.data["percent_one_minute_retention"], None)
-        self.assertEqual(response.data["accuracy"], None)
-        self.assertEqual(response.data["average_num_answered"], None)
-        self.assertEqual(response.data["percent_completed"], None)
-
     def test_copying_without_specifying_workspace_fails(self):
         response = self.client.post(f"/api/v1/plios/{self.plio_1.uuid}/copy/")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -707,6 +685,91 @@ class PlioTestCase(BaseTestCase):
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
+
+    def test_metrics_returns_empty_if_no_sessions(self):
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {})
+
+    def test_metrics_num_views_and_average_watch_time(self):
+        # seed some sessions
+        Session.objects.create(plio=self.plio_1, user=self.user, watch_time=10)
+        Session.objects.create(plio=self.plio_1, user=self.user, watch_time=20)
+        Session.objects.create(plio=self.plio_1, user=self.user_2, watch_time=50)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.data["num_views"], 2)
+        self.assertEqual(response.data["average_watch_time"], 35.0)
+        self.assertEqual(response.data["percent_one_minute_retention"], None)
+        self.assertEqual(response.data["accuracy"], None)
+        self.assertEqual(response.data["average_num_answered"], None)
+        self.assertEqual(response.data["percent_completed"], None)
+
+    def test_metrics_video_duration_valid_no_valid_retention(self):
+        # make the video's duration a valid one for calculating retention
+        response = self.client.put(
+            f"/api/v1/videos/{self.video.id}/", {"url": self.video.url, "duration": 100}
+        )
+
+        # seed some sessions
+        Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20, retention="NaN,NaN"
+        )
+        Session.objects.create(plio=self.plio_1, user=self.user_2, watch_time=50)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+
+        # retention at 60 seconds should still be None
+        self.assertEqual(response.data["percent_one_minute_retention"], 0)
+
+    def test_metrics_valid_retention_values(self):
+        # make the video's duration a valid one for calculating retention
+        import numpy as np
+
+        video_duration = 100
+        response = self.client.put(
+            f"/api/v1/videos/{self.video.id}/",
+            {"url": self.video.url, "duration": video_duration},
+        )
+
+        user_3 = User.objects.create(mobile="+919998776655")
+
+        # seed some sessions with valid retention values
+        retention_user_1 = [0] * video_duration
+        retention_user_1[59:] = np.random.randint(0, 4, video_duration - 59)
+        retention_user_1 = ",".join(list(map(str, retention_user_1)))
+
+        retention_user_2 = [0] * video_duration
+        retention_user_2[59:] = np.random.randint(0, 4, video_duration - 59)
+        retention_user_2 = ",".join(list(map(str, retention_user_2)))
+
+        retention_user_3 = ",".join(["0"] * video_duration)
+
+        Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20, retention=retention_user_1
+        )
+        Session.objects.create(
+            plio=self.plio_1,
+            user=self.user_2,
+            watch_time=50,
+            retention=retention_user_2,
+        )
+        Session.objects.create(
+            plio=self.plio_1, user=user_3, watch_time=100, retention=retention_user_3
+        )
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+
+        # retention at 60 seconds should still be None
+        self.assertEqual(response.data["percent_one_minute_retention"], 66.67)
 
 
 class PlioDownloadTestCase(BaseTestCase):

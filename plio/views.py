@@ -361,6 +361,8 @@ class PlioViewSet(viewsets.ModelViewSet):
         if not Session.objects.filter(plio=plio.id):
             return Response({})
 
+        import numpy as np
+
         query = f"""
             WITH summary AS (
             SELECT
@@ -389,8 +391,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         if plio.video.duration is None or plio.video.duration < 60:
             percent_one_minute_retention = None
         else:
-            import numpy as np
-
             df["retention"] = df["retention"].apply(lambda row: row.split(","))
             df["is_retention_valid"] = df["retention"].apply(
                 lambda row: ("NaN" not in row and len(row) == plio.video.duration)

@@ -35,7 +35,7 @@ def get_sessions_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = Tr
             CASE
                 WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
-                'MD5(session.user_id::varchar(255))'
+                {'MD5(session.user_id::varchar(255))'}
             END AS user_identifier
         FROM {schema}.session AS session
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
@@ -57,7 +57,7 @@ def get_responses_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = T
             CASE
                 WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
-                'MD5(session.user_id::varchar(255))'
+                {'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,
             sessionAnswer.answer,
             sessionAnswer.item_id,
@@ -85,7 +85,7 @@ def get_events_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
             CASE
                 WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
-                'MD5(session.user_id::varchar(255))'
+                {'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,
             event.type AS event_type,
             event.player_time AS event_player_time,

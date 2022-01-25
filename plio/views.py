@@ -11,6 +11,9 @@ from rest_framework.pagination import PageNumberPagination
 from django.db import connection
 from django.db.models import Q, Count
 from django.http import FileResponse
+
+from django_tenants.utils import get_tenant_model
+
 import pandas as pd
 from storages.backends.s3boto3 import S3Boto3Storage
 
@@ -38,6 +41,7 @@ from plio.queries import (
 )
 from plio.permissions import PlioPermission
 from plio.ordering import CustomOrderingFilter
+from plio.cache import invalidate_cache_for_instance
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -66,6 +70,23 @@ class StandardResultsSetPagination(PageNumberPagination):
         )
 
 
+def set_tenant(workspace: str):
+    """
+    Sets the current tenant to the given workspace if it exists
+
+    :param workspace: workspace shortcode to use as the current tenant
+    :type workspace: str
+    """
+    tenant_model = get_tenant_model()
+    tenant = tenant_model.objects.filter(shortcode=workspace).first()
+
+    if not tenant:
+        return False
+
+    connection.set_tenant(tenant)
+    return True
+
+
 class VideoViewSet(viewsets.ModelViewSet):
     """
     Video ViewSet description
@@ -80,6 +101,7 @@ class VideoViewSet(viewsets.ModelViewSet):
 
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
+    permission_classes = [IsAuthenticated]
 
 
 class PlioViewSet(viewsets.ModelViewSet):
@@ -226,6 +248,104 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio.uuid = None
         plio.status = "draft"  # a duplicated plio will always be in "draft" mode
         plio.save()
+        return Response(self.get_serializer(plio).data)
+
+    @action(
+        methods=["post"],
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+    )
+    def copy(self, request, uuid):
+        """Copies the given plio to another workspace"""
+        if "workspace" not in request.data:
+            return Response(
+                {"detail": "workspace is not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # return 404 if user cannot access the object
+        # else fetch the object
+        plio = self.get_object()
+
+        if plio.video is not None:
+            video = Video.objects.filter(id=plio.video.id).first()
+            video.pk = None
+
+            items = list(Item.objects.filter(plio__id=plio.id))
+            questions = list(Question.objects.filter(item__plio__id=plio.id))
+
+            # will be needed to handle questions with images
+            question_indices_with_image = []
+            images = []
+
+            for index, question in enumerate(questions):
+                if question.image is not None:
+                    question_indices_with_image.append(index)
+                    images.append(question.image)
+        else:
+            video = None
+            items = []
+            questions = []
+
+        # django will auto-generate the key when the key is set to None
+        plio.pk = None
+        plio.uuid = None
+        plio.status = "draft"
+
+        # change workspace
+        workspace = request.data.get("workspace")
+        success = set_tenant(workspace)
+
+        if not success:
+            return Response(
+                {"detail": "workspace does not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if video is not None:
+            video.save()
+            plio.video = video
+
+        plio.save()
+
+        if items:
+            # before creating the items in the given workspace, update the
+            # plio ids that they are linked to and reset the primary key;
+            # django will auto-generate the keys when they are set to None
+            for index, _ in enumerate(items):
+                items[index].plio = plio
+                items[index].pk = None
+
+            # create the items
+            items = Item.objects.bulk_create(items)
+
+            # before creating the questions in the given workspace, update the
+            # item ids that they are linked to and
+            # since we are ordering both items and questions by the item time,
+            # questions and items at the same index should be linked
+            for index, _ in enumerate(questions):
+                questions[index].item = items[index]
+                questions[index].pk = None
+
+            # if there are any questions with images, create instances of those images in the
+            # new workspace and link them to the question instances that need to be created
+            if images:
+                for index, _ in enumerate(images):
+                    # reset the key - django will auto-generate the keys when they are set to None
+                    images[index].pk = None
+
+                images = Image.objects.bulk_create(images)
+                for index, question_index in enumerate(question_indices_with_image):
+                    questions[question_index].image = images[index]
+
+            # create the questions
+            questions = Question.objects.bulk_create(questions)
+
+            # clear the cache for the destination plio or else the items wouldn't show up
+            # when the plio is fetched; we need to trigger this manually as bulk_create
+            # does not call the post_save signal
+            invalidate_cache_for_instance(plio)
+
         return Response(self.get_serializer(plio).data)
 
     @action(

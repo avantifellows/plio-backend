@@ -728,6 +728,34 @@ class PlioTestCase(BaseTestCase):
         # retention at 60 seconds should still be None
         self.assertEqual(response.data["percent_one_minute_retention"], 0)
 
+    def test_metrics_video_duration_valid_no_valid_retention_has_questions(self):
+        # seed an item
+        item = Item.objects.create(type="question", plio=self.plio_1, time=1)
+
+        # seed a question
+        Question.objects.create(type="mcq", item=item, text="test")
+
+        # make the video's duration a valid one for calculating retention
+        response = self.client.put(
+            f"/api/v1/videos/{self.video.id}/", {"url": self.video.url, "duration": 100}
+        )
+
+        # seed a session and session answer
+        session = Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20, retention="NaN,NaN"
+        )
+        SessionAnswer.objects.create(session=session, item=item)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+
+        # retention at 60 seconds should still be None
+        self.assertEqual(response.data["percent_one_minute_retention"], 0)
+        self.assertEqual(response.data["accuracy"], None)
+        self.assertEqual(response.data["average_num_answered"], 0)
+        self.assertEqual(response.data["percent_completed"], 0)
+
     def test_metrics_valid_retention_values(self):
         # make the video's duration a valid one for calculating retention
         import numpy as np

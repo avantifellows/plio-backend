@@ -292,15 +292,6 @@ CHANNEL_LAYERS = {
     }
 }
 
-# authentication
-ANALYTICS_IDP = {
-    "type": os.environ.get("ANALYTICS_IDP_TYPE"),
-    "token_url": os.environ.get("ANALYTICS_IDP_TOKEN_URL"),
-    "client_id": os.environ.get("ANALYTICS_IDP_CLIENT_ID"),
-    "client_secret": os.environ.get("ANALYTICS_IDP_CLIENT_SECRET"),
-    "audience": os.environ.get("ANALYTICS_IDP_AUDIENCE", ""),
-}
-
 SMS_DRIVER = os.environ.get("SMS_DRIVER")
 
 # file storage for uploaded images

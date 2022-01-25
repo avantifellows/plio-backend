@@ -566,6 +566,28 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(len(cache.keys(cache_key_name)), 1)
         self.assertEqual(cache.get(cache_key_name)["name"], new_name)
 
+    def test_metrics_returns_empty_if_no_sessions(self):
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {})
+
+    def test_metrics_num_views_and_average_watch_time(self):
+        Session.objects.create(plio=self.plio_1, user=self.user, watch_time=10)
+        Session.objects.create(plio=self.plio_1, user=self.user, watch_time=20)
+        Session.objects.create(plio=self.plio_1, user=self.user_2, watch_time=50)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.data["num_views"], 2)
+        self.assertEqual(response.data["average_watch_time"], 35.0)
+        self.assertEqual(response.data["percent_one_minute_retention"], None)
+        self.assertEqual(response.data["accuracy"], None)
+        self.assertEqual(response.data["average_num_answered"], None)
+        self.assertEqual(response.data["percent_completed"], None)
+
 
 class PlioDownloadTestCase(BaseTestCase):
     def setUp(self):

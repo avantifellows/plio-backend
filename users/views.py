@@ -1,7 +1,6 @@
 import datetime
 import string
 import random
-import requests
 
 from django.utils import timezone
 from django.contrib.auth import login
@@ -17,7 +16,6 @@ from plio.settings import (
     API_APPLICATION_NAME,
     OAUTH2_PROVIDER,
     OTP_EXPIRE_SECONDS,
-    ANALYTICS_IDP,
     SMS_DRIVER,
 )
 from users.models import User, OneTimePassword, OrganizationUser
@@ -271,19 +269,3 @@ def generate_external_auth_access_token(request):
     # login the user, get the new access token and return
     token = login_user_and_get_access_token(user, request)
     return Response(token, status=status.HTTP_200_OK)
-
-
-@api_view(["POST"])
-def retrieve_analytics_app_access_token(request):
-    """Requests the configured identity provider to retrieve an access token."""
-
-    payload = {
-        "grant_type": "client_credentials",
-        "client_id": ANALYTICS_IDP["client_id"],
-        "client_secret": ANALYTICS_IDP["client_secret"],
-    }
-    if ANALYTICS_IDP["type"] == "auth0":
-        payload["audience"] = ANALYTICS_IDP["audience"]
-
-    response = requests.post(ANALYTICS_IDP["token_url"], data=payload)
-    return Response(response.json(), status=status.HTTP_200_OK)

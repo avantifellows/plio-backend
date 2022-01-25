@@ -63,10 +63,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_STORAGE_BUCKET_NAME: ${{ secrets.AWS_STORAGE_BUCKET_NAME }}
-          ANALYTICS_IDP_TYPE: ${{ secrets.ANALYTICS_IDP_TYPE }}
-          ANALYTICS_IDP_TOKEN_URL: ${{ secrets.ANALYTICS_IDP_TOKEN_URL }}
-          ANALYTICS_IDP_CLIENT_ID: ${{ secrets.ANALYTICS_IDP_CLIENT_ID }}
-          ANALYTICS_IDP_CLIENT_SECRET: ${{ secrets.ANALYTICS_IDP_CLIENT_SECRET }}
           REDIS_HOSTNAME: 127.0.0.1
           REDIS_PORT: 6379
         # command to run tests and generate coverage metrics

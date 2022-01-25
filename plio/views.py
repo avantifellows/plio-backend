@@ -194,6 +194,8 @@ class PlioViewSet(viewsets.ModelViewSet):
                 for unique_user_count in unique_user_counts
             }
 
+            # add the number of unique viewers and items corresponding
+            # to the plio in each plio object
             for index, plio in enumerate(page):
                 page[index]["num_views"] = plio_id_to_count.get(plio["id"], 0)
                 page[index]["items"] = ItemSerializer(
@@ -354,10 +356,12 @@ class PlioViewSet(viewsets.ModelViewSet):
         permission_classes=[IsAuthenticated, PlioPermission],
     )
     def metrics(self, request, uuid):
+        """Returns usage metrics for the plio"""
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
 
+        # no sessions have been created for the plio: return
         if not Session.objects.filter(plio=plio.id):
             return Response({})
 
@@ -384,34 +388,46 @@ class PlioViewSet(viewsets.ModelViewSet):
             results = cursor.fetchall()
 
         df = pd.DataFrame(results, columns=["id", "watch_time", "retention"])
+
+        # number of unique viewers and average watch time
         num_views = len(df)
         average_watch_time = df["watch_time"].mean()
 
         # retention at one minute
         if plio.video.duration is None or plio.video.duration < 60:
+            # the metric is not applicable in this case
             percent_one_minute_retention = None
         else:
+            # convert "0,1,0" to ["0", "1", "0"]
             df["retention"] = df["retention"].apply(lambda row: row.split(","))
+
+            # remove entries where the retention is either empty or has NaN values
             df["is_retention_valid"] = df["retention"].apply(
                 lambda row: ("NaN" not in row and len(row) == plio.video.duration)
             )
 
-            # remove rows where NaN values might be present
             df = df[df["is_retention_valid"]]
 
             if not len(df):
                 percent_one_minute_retention = 0
             else:
+                # convert ["0", "1", "0"] to [0, 1, 0]
                 retention = (
                     df["retention"].apply(lambda row: list(map(int, row))).values
                 )
+                # create an array out of all the retention values and only
+                # retain the values after one minute
                 retention = np.vstack(retention)[:, 59:]
+
+                # checks if a given user has crossed the second mark
                 percent_one_minute_retention = np.round(
                     ((retention.sum(axis=1) > 0).sum() / num_views) * 100, 2
                 )
 
         # question-based metrics
         questions = Question.objects.filter(item__plio=plio.id)
+
+        # if the plio does not have any questions, these metrics are not applicable
         if not questions:
             accuracy = None
             average_num_answered = None
@@ -434,6 +450,9 @@ class PlioViewSet(viewsets.ModelViewSet):
                 INNER JOIN {connection.schema_name}.question AS question ON question.item_id = item.id
             """
             session_ids = tuple(df["id"])
+
+            # for some reason, when there is only one id, we cannot use the
+            # tuple form and have to resort to equality
             if len(session_ids) == 1:
                 query += f"WHERE session.id = {session_ids[0]}"
             else:
@@ -454,21 +473,28 @@ class PlioViewSet(viewsets.ModelViewSet):
                     "correct_answer",
                 ],
             )
+
+            # retain only the responses to items which are questions
             question_df = df[df["item_type"] == "question"].reset_index(drop=True)
             num_questions = len(questions)
 
             def is_answer_correct(row):
+                """Whether the answer corresponding to the given row is correct"""
                 if row["question_type"] in ["mcq", "checkbox"]:
                     return row["answer"] == row["correct_answer"]
                 return row["answer"] is not None
 
+            # holds the number of questions answered for each viewer
             num_answered_list = []
+            # holds the number of questions correctly answered for each viewer
             num_correct_list = []
 
             user_grouping = question_df.groupby("user_id")
             for group in user_grouping.groups:
+                # get the responses for a given user
                 group_df = user_grouping.get_group(group)
 
+                # sanity check
                 assert num_questions == len(
                     group_df
                 ), "Inconsistency in the number of questions"
@@ -486,6 +512,8 @@ class PlioViewSet(viewsets.ModelViewSet):
                         sum(group_df.apply(is_answer_correct, axis=1))
                     )
 
+            # converting to numpy arrays enabled us to use vectorization
+            # to speed up the computation many folds
             num_answered_list = np.array(num_answered_list)
             num_correct_list = np.array(num_correct_list)
             average_num_answered = round(num_answered_list.mean())
@@ -493,6 +521,8 @@ class PlioViewSet(viewsets.ModelViewSet):
                 100 * (sum(num_answered_list == num_questions) / num_views), 2
             )
 
+            # only use the responses from viewers who have answered at least
+            # one question to compute the accuracy
             answered_at_least_one_index = num_answered_list > 0
             num_answered_list = num_answered_list[answered_at_least_one_index]
             num_correct_list = num_correct_list[answered_at_least_one_index]
@@ -557,7 +587,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         )
 
         def run_query(cursor, query_method):
-            # execute the sql query using postgres DB connection cursor
+            # execute the sql query
             cursor.execute(
                 query_method(uuid, schema=schema_name, mask_user_id=is_user_org_admin)
             )

@@ -406,14 +406,16 @@ class PlioViewSet(viewsets.ModelViewSet):
                 lambda row: ("NaN" not in row and len(row) == plio.video.duration)
             )
 
-            df = df[df["is_retention_valid"]]
+            valid_retention_df = df[df["is_retention_valid"]]
 
-            if not len(df):
+            if not len(valid_retention_df):
                 percent_one_minute_retention = 0
             else:
                 # convert ["0", "1", "0"] to [0, 1, 0]
                 retention = (
-                    df["retention"].apply(lambda row: list(map(int, row))).values
+                    valid_retention_df["retention"]
+                    .apply(lambda row: list(map(int, row)))
+                    .values
                 )
                 # create an array out of all the retention values and only
                 # retain the values after one minute

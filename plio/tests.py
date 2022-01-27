@@ -264,7 +264,7 @@ class PlioTestCase(BaseTestCase):
         )
 
         for index, _ in enumerate(expected_results):
-            expected_results[index]["num_views"] = 0
+            expected_results[index]["unique_viewers"] = 0
             expected_results[index]["items"] = []
 
         self.assertEqual(
@@ -289,8 +289,10 @@ class PlioTestCase(BaseTestCase):
         plios = response.data["results"]
 
         # plio 2 will be listed first because it was created later
-        expected_num_views = [0, 2]
-        self.assertEqual([plio["num_views"] for plio in plios], expected_num_views)
+        expected_num_unique_viewers = [0, 2]
+        self.assertEqual(
+            [plio["unique_viewers"] for plio in plios], expected_num_unique_viewers
+        )
 
     def test_guest_can_play_plio(self):
         # unset the credentials
@@ -702,7 +704,7 @@ class PlioTestCase(BaseTestCase):
         response = self.client.get(
             f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
         )
-        self.assertEqual(response.data["num_views"], 2)
+        self.assertEqual(response.data["unique_viewers"], 2)
         self.assertEqual(response.data["average_watch_time"], 35.0)
         self.assertEqual(response.data["percent_one_minute_retention"], None)
         self.assertEqual(response.data["accuracy"], None)

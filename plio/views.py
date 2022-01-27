@@ -1,7 +1,6 @@
 import os
 import shutil
 from copy import deepcopy
-import base64
 import json
 
 from rest_framework import viewsets, status, filters
@@ -10,7 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Q, Count, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from django.http import FileResponse
 
 from django_tenants.utils import get_tenant_model
@@ -18,13 +18,11 @@ from django_tenants.utils import get_tenant_model
 import pandas as pd
 from storages.backends.s3boto3 import S3Boto3Storage
 
-from google.cloud import bigquery
-from google.oauth2 import service_account
-
 from organizations.middleware import OrganizationTenantMiddleware
 from organizations.models import Organization
 from users.models import OrganizationUser
 from plio.models import Video, Plio, Item, Question, Image
+from entries.models import Session
 from plio.serializers import (
     VideoSerializer,
     PlioSerializer,
@@ -35,13 +33,14 @@ from plio.serializers import (
 from plio.settings import (
     DEFAULT_TENANT_SHORTCODE,
     AWS_STORAGE_BUCKET_NAME,
-    BIGQUERY,
 )
 from plio.queries import (
     get_plio_details_query,
     get_sessions_dump_query,
     get_responses_dump_query,
     get_events_query,
+    get_plio_latest_sessions_query,
+    get_plio_latest_responses_query,
 )
 from plio.permissions import PlioPermission
 from plio.ordering import CustomOrderingFilter
@@ -158,9 +157,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     def is_organizational_workspace(self):
         return self.organization_shortcode != DEFAULT_TENANT_SHORTCODE
 
-    @action(detail=False, permission_classes=[IsAuthenticated])
-    def list_uuid(self, request):
-        """Retrieves a list of UUIDs for all the plios"""
+    def list(self, request):
         queryset = self.get_queryset()
 
         # personal workspace
@@ -182,18 +179,38 @@ class PlioViewSet(viewsets.ModelViewSet):
                 queryset = Plio.objects.none()
 
         num_plios = queryset.count()
-        queryset = self.filter_queryset(queryset)
 
-        uuid_list = queryset.values_list("uuid", flat=True)
-        page = self.paginate_queryset(uuid_list)
+        # add the number of unique viewers to the queryset
+        plio_session_group = Session.objects.filter(plio__uuid=OuterRef("uuid")).values(
+            "plio__uuid"
+        )
+
+        plios_unique_users_count = plio_session_group.annotate(
+            count_unique_users=Count("user__id", distinct=True)
+        ).values("count_unique_users")
+
+        # annotate the plio's queryset with the count of unique users
+        queryset = queryset.annotate(
+            unique_viewers=Coalesce(Subquery(plios_unique_users_count), 0)
+        )
+
+        queryset = self.filter_queryset(queryset)
+        page = self.paginate_queryset(queryset.values())
 
         if page is not None:
+            # add the items corresponding to the plio in each plio object
+            for index, _ in enumerate(page):
+                page[index]["items"] = ItemSerializer(
+                    queryset[index].item_set, many=True
+                ).data
+
             return self.get_paginated_response({"data": page, "raw_count": num_plios})
 
         # return an empty response in the paginated format if pagination fails
         return Response(
             {
                 "count": 0,
+                "raw_count": 0,
                 "page_size": self.get_page_size(self.request),
                 "next": None,
                 "previous": None,
@@ -340,10 +357,172 @@ class PlioViewSet(viewsets.ModelViewSet):
         detail=True,
         permission_classes=[IsAuthenticated, PlioPermission],
     )
+    def metrics(self, request, uuid):
+        """Returns usage metrics for the plio"""
+        # return 404 if user cannot access the object
+        # else fetch the object
+        plio = self.get_object()
+
+        # no sessions have been created for the plio: return
+        if not Session.objects.filter(plio=plio.id):
+            return Response({})
+
+        import numpy as np
+
+        with connection.cursor() as cursor:
+            cursor.execute(
+                get_plio_latest_sessions_query(plio.uuid, connection.schema_name)
+            )
+            results = cursor.fetchall()
+
+        df = pd.DataFrame(results, columns=["id", "watch_time", "retention"])
+
+        # number of unique viewers and average watch time
+        num_unique_viewers = len(df)
+        average_watch_time = df["watch_time"].mean()
+
+        # retention at one minute
+        if plio.video.duration is None or plio.video.duration < 60:
+            # the metric is not applicable in this case
+            percent_one_minute_retention = None
+        else:
+            # convert "0,1,0" to ["0", "1", "0"]
+            df["retention"] = df["retention"].apply(lambda row: row.split(","))
+
+            # remove entries where the retention is either empty or has NaN values
+            df["is_retention_valid"] = df["retention"].apply(
+                lambda row: ("NaN" not in row and len(row) == plio.video.duration)
+            )
+
+            valid_retention_df = df[df["is_retention_valid"]]
+
+            if not len(valid_retention_df):
+                percent_one_minute_retention = 0
+            else:
+                # convert ["0", "1", "0"] to [0, 1, 0]
+                retention = (
+                    valid_retention_df["retention"]
+                    .apply(lambda row: list(map(int, row)))
+                    .values
+                )
+                # create an array out of all the retention values and only
+                # retain the values after one minute
+                retention = np.vstack(retention)[:, 59:]
+
+                # checks if a given user has crossed the second mark
+                percent_one_minute_retention = np.round(
+                    ((retention.sum(axis=1) > 0).sum() / num_unique_viewers) * 100, 2
+                )
+
+        # question-based metrics
+        questions = Question.objects.filter(item__plio=plio.id)
+
+        # if the plio does not have any questions, these metrics are not applicable
+        if not questions:
+            accuracy = None
+            average_num_answered = None
+            percent_completed = None
+
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    get_plio_latest_responses_query(
+                        connection.schema_name, tuple(df["id"])
+                    )
+                )
+                results = cursor.fetchall()
+
+            df = pd.DataFrame(
+                results,
+                columns=[
+                    "id",
+                    "user_id",
+                    "answer",
+                    "item_type",
+                    "question_type",
+                    "correct_answer",
+                ],
+            )
+
+            # retain only the responses to items which are questions
+            question_df = df[df["item_type"] == "question"].reset_index(drop=True)
+            num_questions = len(questions)
+
+            def is_answer_correct(row):
+                """Whether the answer corresponding to the given row is correct"""
+                if row["question_type"] in ["mcq", "checkbox"]:
+                    return row["answer"] == row["correct_answer"]
+                return row["answer"] is not None
+
+            # holds the number of questions answered for each viewer
+            num_answered_list = []
+            # holds the number of questions correctly answered for each viewer
+            num_correct_list = []
+
+            user_grouping = question_df.groupby("user_id")
+            for group in user_grouping.groups:
+                # get the responses for a given user
+                group_df = user_grouping.get_group(group)
+
+                # sanity check
+                assert num_questions == len(
+                    group_df
+                ), "Inconsistency in the number of questions"
+
+                num_answered = sum(
+                    group_df["answer"].apply(lambda value: value is not None)
+                )
+
+                num_answered_list.append(num_answered)
+
+                if not num_answered:
+                    num_correct_list.append(None)
+                else:
+                    num_correct_list.append(
+                        sum(group_df.apply(is_answer_correct, axis=1))
+                    )
+
+            # converting to numpy arrays enabled us to use vectorization
+            # to speed up the computation many folds
+            num_answered_list = np.array(num_answered_list)
+            num_correct_list = np.array(num_correct_list)
+            average_num_answered = round(num_answered_list.mean())
+            percent_completed = np.round(
+                100 * (sum(num_answered_list == num_questions) / num_unique_viewers), 2
+            )
+
+            # only use the responses from viewers who have answered at least
+            # one question to compute the accuracy
+            answered_at_least_one_index = num_answered_list > 0
+            num_answered_list = num_answered_list[answered_at_least_one_index]
+            num_correct_list = num_correct_list[answered_at_least_one_index]
+
+            if not len(num_correct_list):
+                accuracy = None
+            else:
+                accuracy = np.round(
+                    (num_correct_list / num_answered_list).mean() * 100, 2
+                )
+
+        return Response(
+            {
+                "unique_viewers": num_unique_viewers,
+                "average_watch_time": average_watch_time,
+                "percent_one_minute_retention": percent_one_minute_retention,
+                "accuracy": accuracy,
+                "average_num_answered": average_num_answered,
+                "percent_completed": percent_completed,
+            }
+        )
+
+    @action(
+        methods=["get"],
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+    )
     def download_data(self, request, uuid):
         """
         Downloads a zip file containing various CSVs for a Plio.
-        If BigQuery is enabled, the report data is fetch from BigQuery dataset.
 
         request: HTTP request.
         uuid: UUID of the plio for which report needs to be downloaded.
@@ -377,41 +556,15 @@ class PlioViewSet(viewsets.ModelViewSet):
             organization.id
         )
 
-        if BIGQUERY["enabled"]:
-            gcp_service_account_file = "/tmp/gcp-service-account.json"
-            with open(gcp_service_account_file, "wb") as file:
-                file.write(base64.b64decode(BIGQUERY["credentials"]))
-
-            # retrieve credentials from BigQuery credentials file
-            credentials = service_account.Credentials.from_service_account_file(
-                gcp_service_account_file
-            )
-            # create bigquery client
-            client = bigquery.Client(
-                credentials=credentials,
-                project=BIGQUERY["project_id"],
-                location=BIGQUERY["location"],
-            )
-
         def run_query(cursor, query_method):
-            if BIGQUERY["enabled"]:
-                # execute the sql query using BigQuery client and create a dataframe
-                df = client.query(
-                    query_method(
-                        uuid, schema=schema_name, mask_user_id=is_user_org_admin
-                    )
-                ).to_dataframe()
-            else:
-                # execute the sql query using postgres DB connection cursor
-                cursor.execute(
-                    query_method(
-                        uuid, schema=schema_name, mask_user_id=is_user_org_admin
-                    )
-                )
-                # extract column names as cursor.description returns a tuple
-                columns = [col[0] for col in cursor.description]
-                # create a dataframe from the rows and the columns
-                df = pd.DataFrame(cursor.fetchall(), columns=columns)
+            # execute the sql query
+            cursor.execute(
+                query_method(uuid, schema=schema_name, mask_user_id=is_user_org_admin)
+            )
+            # extract column names as cursor.description returns a tuple
+            columns = [col[0] for col in cursor.description]
+            # create a dataframe from the rows and the columns
+            df = pd.DataFrame(cursor.fetchall(), columns=columns)
 
             return df
 

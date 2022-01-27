@@ -1,4 +1,4 @@
-from typing import List
+from typing import Tuple
 
 
 def get_plio_latest_sessions_query(plio_uuid: str, schema: str, **kwargs):
@@ -26,7 +26,7 @@ def get_plio_latest_sessions_query(plio_uuid: str, schema: str, **kwargs):
         WHERE rank = 1 AND plio_uuid = '{plio_uuid}'"""
 
 
-def get_plio_latest_responses_query(schema: str, session_ids: List[int], **kwargs):
+def get_plio_latest_responses_query(schema: str, session_ids: Tuple[int], **kwargs):
     """
     Returns the responses of each user to the given plio based on
     their most recent session.
@@ -34,7 +34,7 @@ def get_plio_latest_responses_query(schema: str, session_ids: List[int], **kwarg
     :param schema: The schema from which the tables are to be accessed
     :type schema: str
     :param session_ids: The database ids corresponding to the most recent session by each user
-    :type session_ids: List[int]
+    :type session_ids: Tuple[int]
     """
     query = f"""
         SELECT

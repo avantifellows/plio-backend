@@ -378,7 +378,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         df = pd.DataFrame(results, columns=["id", "watch_time", "retention"])
 
         # number of unique viewers and average watch time
-        unique_viewers = len(df)
+        num_unique_viewers = len(df)
         average_watch_time = df["watch_time"].mean()
 
         # retention at one minute
@@ -411,7 +411,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
                 # checks if a given user has crossed the second mark
                 percent_one_minute_retention = np.round(
-                    ((retention.sum(axis=1) > 0).sum() / unique_viewers) * 100, 2
+                    ((retention.sum(axis=1) > 0).sum() / num_unique_viewers) * 100, 2
                 )
 
         # question-based metrics
@@ -488,7 +488,7 @@ class PlioViewSet(viewsets.ModelViewSet):
             num_correct_list = np.array(num_correct_list)
             average_num_answered = round(num_answered_list.mean())
             percent_completed = np.round(
-                100 * (sum(num_answered_list == num_questions) / unique_viewers), 2
+                100 * (sum(num_answered_list == num_questions) / num_unique_viewers), 2
             )
 
             # only use the responses from viewers who have answered at least
@@ -506,7 +506,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         return Response(
             {
-                "unique_viewers": unique_viewers,
+                "unique_viewers": num_unique_viewers,
                 "average_watch_time": average_watch_time,
                 "percent_one_minute_retention": percent_one_minute_retention,
                 "accuracy": accuracy,

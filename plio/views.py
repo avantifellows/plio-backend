@@ -9,7 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db import connection
-from django.db.models import Q, Count
+from django.db.models import Q, Count, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from django.http import FileResponse
 
 from django_tenants.utils import get_tenant_model
@@ -178,28 +179,27 @@ class PlioViewSet(viewsets.ModelViewSet):
                 queryset = Plio.objects.none()
 
         num_plios = queryset.count()
+
+        # add the number of unique viewers to the queryset
+        plio_session_group = Session.objects.filter(plio__uuid=OuterRef("uuid")).values(
+            "plio__uuid"
+        )
+
+        plios_unique_users_count = plio_session_group.annotate(
+            count_unique_users=Count("user__id", distinct=True)
+        ).values("count_unique_users")
+
+        # annotate the plio's queryset with the count of unique users
+        queryset = queryset.annotate(
+            unique_viewers=Coalesce(Subquery(plios_unique_users_count), 0)
+        )
+
         queryset = self.filter_queryset(queryset)
         page = self.paginate_queryset(queryset.values())
 
         if page is not None:
-            # find the number of unique views
-            plio_ids = list(queryset.values_list(flat=True))
-
-            unique_user_counts = (
-                Session.objects.filter(plio__in=plio_ids)
-                .values("plio")
-                .annotate(count=Count("user", distinct=True))
-            ).order_by()
-
-            plio_id_to_count = {
-                unique_user_count["plio"]: unique_user_count["count"]
-                for unique_user_count in unique_user_counts
-            }
-
-            # add the number of unique viewers and items corresponding
-            # to the plio in each plio object
-            for index, plio in enumerate(page):
-                page[index]["num_views"] = plio_id_to_count.get(plio["id"], 0)
+            # add the items corresponding to the plio in each plio object
+            for index, _ in enumerate(page):
                 page[index]["items"] = ItemSerializer(
                     queryset[index].item_set, many=True
                 ).data
@@ -378,7 +378,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         df = pd.DataFrame(results, columns=["id", "watch_time", "retention"])
 
         # number of unique viewers and average watch time
-        num_views = len(df)
+        unique_viewers = len(df)
         average_watch_time = df["watch_time"].mean()
 
         # retention at one minute
@@ -411,7 +411,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
                 # checks if a given user has crossed the second mark
                 percent_one_minute_retention = np.round(
-                    ((retention.sum(axis=1) > 0).sum() / num_views) * 100, 2
+                    ((retention.sum(axis=1) > 0).sum() / unique_viewers) * 100, 2
                 )
 
         # question-based metrics
@@ -488,7 +488,7 @@ class PlioViewSet(viewsets.ModelViewSet):
             num_correct_list = np.array(num_correct_list)
             average_num_answered = round(num_answered_list.mean())
             percent_completed = np.round(
-                100 * (sum(num_answered_list == num_questions) / num_views), 2
+                100 * (sum(num_answered_list == num_questions) / unique_viewers), 2
             )
 
             # only use the responses from viewers who have answered at least
@@ -506,7 +506,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         return Response(
             {
-                "num_views": num_views,
+                "unique_viewers": unique_viewers,
                 "average_watch_time": average_watch_time,
                 "percent_one_minute_retention": percent_one_minute_retention,
                 "accuracy": accuracy,

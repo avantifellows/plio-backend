@@ -38,6 +38,8 @@ from plio.queries import (
     get_sessions_dump_query,
     get_responses_dump_query,
     get_events_query,
+    get_plio_latest_sessions_query,
+    get_plio_latest_responses_query,
 )
 from plio.permissions import PlioPermission
 from plio.ordering import CustomOrderingFilter
@@ -367,24 +369,10 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         import numpy as np
 
-        query = f"""
-            WITH summary AS (
-            SELECT
-                session.id,
-                session.plio_id,
-                session.watch_time,
-                session.retention,
-                ROW_NUMBER() OVER(PARTITION BY session.user_id, session.plio_id
-
-                                ORDER BY session.id DESC) AS rank
-                FROM {connection.schema_name}.session
-            )
-            SELECT id, watch_time, retention
-                FROM summary
-            WHERE rank = 1 AND plio_id = {plio.id}
-        """
         with connection.cursor() as cursor:
-            cursor.execute(query)
+            cursor.execute(
+                get_plio_latest_sessions_query(plio.uuid, connection.schema_name)
+            )
             results = cursor.fetchall()
 
         df = pd.DataFrame(results, columns=["id", "watch_time", "retention"])
@@ -436,32 +424,12 @@ class PlioViewSet(viewsets.ModelViewSet):
             percent_completed = None
 
         else:
-            query = f"""
-                SELECT
-                    sessionAnswer.id,
-                    session.user_id,
-                    sessionAnswer.answer,
-                    item.type AS item_type,
-                    question.type AS question_type,
-                    question.correct_answer AS question_correct_answer
-                FROM {connection.schema_name}.session AS session
-                INNER JOIN {connection.schema_name}.session_answer AS sessionAnswer
-                ON session.id = sessionAnswer.session_id
-                INNER JOIN {connection.schema_name}.item AS item
-                ON item.id=sessionAnswer.item_id
-                INNER JOIN {connection.schema_name}.question AS question ON question.item_id = item.id
-            """
-            session_ids = tuple(df["id"])
-
-            # for some reason, when there is only one id, we cannot use the
-            # tuple form and have to resort to equality
-            if len(session_ids) == 1:
-                query += f"WHERE session.id = {session_ids[0]}"
-            else:
-                query += f"WHERE session.id IN {session_ids}"
-
             with connection.cursor() as cursor:
-                cursor.execute(query)
+                cursor.execute(
+                    get_plio_latest_responses_query(
+                        connection.schema_name, tuple(df["id"])
+                    )
+                )
                 results = cursor.fetchall()
 
             df = pd.DataFrame(

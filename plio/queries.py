@@ -1,9 +1,74 @@
+from typing import List
+
+
+def get_plio_latest_sessions_query(plio_uuid: str, schema: str, **kwargs):
+    """Returns the most recent sessions for each user for the given plio
+
+    :param plio_uuid: The plio to fetch the details for
+    :type plio_uuid: str
+    :param schema: The schema from which the tables are to be accessed
+    :type schema: str
+    """
+    return f"""
+        WITH summary AS (
+            SELECT
+                session.id,
+                plio.uuid as plio_uuid,
+                session.watch_time,
+                session.retention,
+                ROW_NUMBER() OVER(PARTITION BY session.user_id, session.plio_id
+                 ORDER BY session.id DESC) AS rank
+            FROM {schema}.session
+            INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
+        )
+        SELECT id, watch_time, retention
+        FROM summary
+        WHERE rank = 1 AND plio_uuid = '{plio_uuid}'"""
+
+
+def get_plio_latest_responses_query(schema: str, session_ids: List[int], **kwargs):
+    """
+    Returns the responses of each user to the given plio based on
+    their most recent session.
+
+    :param schema: The schema from which the tables are to be accessed
+    :type schema: str
+    :param session_ids: The database ids corresponding to the most recent session by each user
+    :type session_ids: List[int]
+    """
+    query = f"""
+        SELECT
+            sessionAnswer.id,
+            session.user_id,
+            sessionAnswer.answer,
+            item.type AS item_type,
+            question.type AS question_type,
+            question.correct_answer AS question_correct_answer
+        FROM {schema}.session AS session
+        INNER JOIN {schema}.session_answer AS sessionAnswer
+        ON session.id = sessionAnswer.session_id
+        INNER JOIN {schema}.item AS item
+        ON item.id=sessionAnswer.item_id
+        INNER JOIN {schema}.question AS question ON question.item_id = item.id """
+
+    # for some reason, when there is only one id, we cannot use the
+    # tuple form and have to resort to equality
+    if len(session_ids) == 1:
+        query += f"WHERE session.id = {session_ids[0]}"
+    else:
+        query += f"WHERE session.id IN {session_ids}"
+
+    return query
+
+
 def get_plio_details_query(plio_uuid: str, schema: str, **kwargs):
     """
     Returns the details for the given plio
 
-    plio_uuid: The plio to fetch the details for.
-    schema: The schema from which the tables are to be accessed.
+    :param plio_uuid: The plio to fetch the details for
+    :type plio_uuid: str
+    :param schema: The schema from which the tables are to be accessed
+    :type schema: str
     """
     return f"""
         SELECT
@@ -24,9 +89,12 @@ def get_sessions_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = Tr
     """
     Returns the dump of all the sessions for the given plio
 
-    plio_uuid: The plio to fetch the details for.
-    schema: The schema from which the tables are to be accessed.
-    mask_user_id: whether the user id should be masked
+    :param plio_uuid: The plio to fetch the details for
+    :type plio_uuid: str
+    :param schema: The schema from which the tables are to be accessed
+    :type schema: str
+    :param mask_user_id: whether the user id should be masked, defaults to True
+    :type mask_user_id: bool
     """
     return f"""
         SELECT
@@ -47,9 +115,12 @@ def get_responses_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = T
     """
     Returns the dump of all the session responses for the given plio
 
-    plio_uuid: The plio to fetch the details for.
-    schema: The schema from which the tables are to be accessed.
-    mask_user_id: whether the user id should be masked
+    :param plio_uuid: The plio to fetch the details for
+    :type plio_uuid: str
+    :param schema: The schema from which the tables are to be accessed
+    :type schema: str
+    :param mask_user_id: whether the user id should be masked, defaults to True
+    :type mask_user_id: bool
     """
     return f"""
         SELECT
@@ -75,9 +146,12 @@ def get_events_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
     """
     Returns the dump of all events across all sessions for the given plio
 
-    plio_uuid: The plio to fetch the details for.
-    schema: The schema from which the tables are to be accessed.
-    mask_user_id: whether the user id should be masked
+    :param plio_uuid: The plio to fetch the details for
+    :type plio_uuid: str
+    :param schema: The schema from which the tables are to be accessed
+    :type schema: str
+    :param mask_user_id: whether the user id should be masked, defaults to True
+    :type mask_user_id: bool
     """
     return f"""
         SELECT

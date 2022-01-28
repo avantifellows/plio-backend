@@ -29,9 +29,9 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         methods=["put"],
     )
     def setting(self, request, pk):
-        """Updates an org's setting key inside it's config"""
+        """Updates an org's settings key inside it's config"""
         org = self.get_object()
-        config = org.config or {"settings": {}}
+        config = org.config if org.config is not None else {"settings": {}}
         config["settings"] = self.request.data
         org.config = config
         org.save()

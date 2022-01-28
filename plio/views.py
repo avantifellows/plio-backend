@@ -155,9 +155,9 @@ class PlioViewSet(viewsets.ModelViewSet):
         methods=["put"],
     )
     def setting(self, request, uuid):
-        """Updates a plio's setting key inside it's config"""
+        """Updates a plio's settings"""
         plio = self.get_object()
-        config = plio.config or {"settings": {}}
+        config = plio.config if plio.config is not None else {"settings": {}}
         config["settings"] = self.request.data
         plio.config = config
         plio.save()

@@ -51,9 +51,6 @@ class UserViewSet(viewsets.ModelViewSet):
     def setting(self, request, pk):
         """Updates a user's setting key inside it's config"""
         user = self.get_object()
-        if "settings" not in user.config:
-            user.config["settings"] = {}
-
         user.config["settings"] = self.request.data
         user.save()
         return Response(

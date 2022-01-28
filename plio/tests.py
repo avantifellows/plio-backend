@@ -530,18 +530,14 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["items"][1]["id"], item_1.id)
 
     def test_retrieving_plio_sets_instance_cache(self):
-        # create a third plio
-        plio_3 = Plio.objects.create(
-            name="Plio 3", video=self.video, created_by=self.user
-        )
 
         # verify cache data doesn't exist
-        cache_key_name = get_cache_key(plio_3)
+        cache_key_name = get_cache_key(self.plio_1)
         self.assertEqual(len(cache.keys(cache_key_name)), 0)
 
         # make a get request
         response = self.client.get(
-            reverse("plios-detail", kwargs={"uuid": plio_3.uuid})
+            reverse("plios-detail", kwargs={"uuid": self.plio_1.uuid})
         )
 
         # verify cache data exists
@@ -575,13 +571,12 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(cache.get(cache_key_name)["name"], new_name)
 
     def test_user_can_update_own_plio_settings(self):
-        test_settings = json.dumps(
-            {"player": {"configuration": {"skipEnabled": False}}}
-        )
+        test_settings = {"player": {"configuration": {"skipEnabled": False}}}
+
         # update settings for plio_1
         response = self.client.put(
             f"/api/v1/plios/{self.plio_1.uuid}/setting/",
-            json.loads(test_settings),
+            test_settings,
             format="json",
         )
 
@@ -592,13 +587,11 @@ class PlioTestCase(BaseTestCase):
             Plio.objects.filter(uuid=self.plio_1.uuid)
             .first()
             .config["settings"]["player"],
-            json.loads(test_settings)["player"],
+            test_settings["player"],
         )
 
     def test_user_cannot_update_other_user_plio_settings(self):
-        test_settings = json.dumps(
-            {"player": {"configuration": {"skipEnabled": False}}}
-        )
+        test_settings = {"player": {"configuration": {"skipEnabled": False}}}
         # user_2 creates a plio
         plio = Plio.objects.create(
             name="Plio_by_user_2", video=self.video, created_by=self.user_2
@@ -607,17 +600,15 @@ class PlioTestCase(BaseTestCase):
         # user_1 tries updating the settings for the above created plio
         response = self.client.put(
             f"/api/v1/plios/{plio.uuid}/setting/",
-            json.loads(test_settings),
+            test_settings,
             format="json",
         )
 
-        # Updating other user's plio's settings should be forbidden
+        # updating other user's plio's settings should be forbidden
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_org_members_can_update_org_plio_settings(self):
-        test_settings = json.dumps(
-            {"player": {"configuration": {"skipEnabled": False}}}
-        )
+        test_settings = {"player": {"configuration": {"skipEnabled": False}}}
 
         # add users to organization
         OrganizationUser.objects.create(
@@ -651,7 +642,7 @@ class PlioTestCase(BaseTestCase):
         # by user_2
         response = self.client.put(
             f"/api/v1/plios/{plio_org.uuid}/setting/",
-            json.loads(test_settings),
+            test_settings,
             format="json",
         )
 
@@ -661,7 +652,7 @@ class PlioTestCase(BaseTestCase):
             Plio.objects.filter(uuid=plio_org.uuid)
             .first()
             .config["settings"]["player"],
-            json.loads(test_settings)["player"],
+            test_settings["player"],
         )
 
         # set db connection back to public (default) schema

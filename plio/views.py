@@ -240,7 +240,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["post"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
@@ -257,7 +256,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["post"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def copy(self, request, uuid):
         """Copies the given plio to another workspace"""
@@ -355,7 +353,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["get"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def metrics(self, request, uuid):
         """Returns usage metrics for the plio"""
@@ -518,7 +515,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["get"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def download_data(self, request, uuid):
         """
@@ -686,7 +682,7 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
         return queryset
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    @action(methods=["post"], detail=True)
     def duplicate(self, request, pk):
         """
         Creates a clone of the item with the given pk and links it to the plio
@@ -756,7 +752,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated, PlioPermission]
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    @action(methods=["post"], detail=True)
     def duplicate(self, request, pk):
         """
         Creates a clone of the question with the given pk and links it to the item
@@ -802,8 +798,9 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
+    permission_classes = [IsAuthenticated]
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    @action(methods=["post"], detail=True)
     def duplicate(self, request, pk):
         """
         Creates a clone of the image with the given pk

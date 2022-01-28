@@ -46,7 +46,6 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=["patch", "get"],
-        permission_classes=[IsAuthenticated, UserPermission],
     )
     def config(self, request, pk):
         user = self.get_object()

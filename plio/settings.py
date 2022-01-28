@@ -292,15 +292,6 @@ CHANNEL_LAYERS = {
     }
 }
 
-# authentication
-ANALYTICS_IDP = {
-    "type": os.environ.get("ANALYTICS_IDP_TYPE"),
-    "token_url": os.environ.get("ANALYTICS_IDP_TOKEN_URL"),
-    "client_id": os.environ.get("ANALYTICS_IDP_CLIENT_ID"),
-    "client_secret": os.environ.get("ANALYTICS_IDP_CLIENT_SECRET"),
-    "audience": os.environ.get("ANALYTICS_IDP_AUDIENCE", ""),
-}
-
 SMS_DRIVER = os.environ.get("SMS_DRIVER")
 
 # file storage for uploaded images
@@ -308,13 +299,6 @@ DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 AWS_QUERYSTRING_AUTH = False
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 mb
-
-BIGQUERY = {
-    "enabled": True if os.environ.get("BIGQUERY_ENABLED") == "True" else False,
-    "project_id": os.environ.get("BIGQUERY_PROJECT_ID", ""),
-    "location": os.environ.get("BIGQUERY_LOCATION", ""),
-    "credentials": os.environ.get("BIGQUERY_CREDENTIALS", ""),
-}
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN", None)
 

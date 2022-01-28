@@ -1,7 +1,4 @@
 from rest_framework.filters import OrderingFilter
-from django.db.models import OuterRef, Subquery, Count
-from entries.models import Session
-from django.db.models.functions import Coalesce
 
 
 class CustomOrderingFilter(OrderingFilter):
@@ -50,23 +47,6 @@ class CustomOrderingFilter(OrderingFilter):
         ordering = self.get_ordering(request, queryset, view)
 
         if ordering:
-            # if the ordering fields contain "unique_viewers"
-            if any("unique_viewers" in order_by for order_by in ordering):
-                # prepare a session queryset which has an annotated field "count_unique_users"
-                # that holds the count of unique users for every plio in the plio's queryset
-                plio_session_group = Session.objects.filter(
-                    plio__uuid=OuterRef("uuid")
-                ).values("plio__uuid")
-
-                plios_unique_users_count = plio_session_group.annotate(
-                    count_unique_users=Count("user__id", distinct=True)
-                ).values("count_unique_users")
-
-                # annotate the plio's queryset with the count of unique users
-                queryset = queryset.annotate(
-                    unique_viewers=Coalesce(Subquery(plios_unique_users_count), 0)
-                )
-
             return queryset.order_by(*ordering)
 
         return queryset

@@ -335,11 +335,6 @@ class UserTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["id"], self.user.id)
 
-    def test_get_analytics_app_access_token(self):
-        response = self.client.post(reverse("get-analytics-token"))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("access_token", response.json())
-
     def test_updating_user_recreates_instance_cache(self):
         # verify cache data doesn't exist
         cache_key_name = get_cache_key(self.user)

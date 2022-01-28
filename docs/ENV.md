@@ -103,53 +103,6 @@ Shortcode for the default tenant (e.g. plio)
 The domain for the default tenant (e.g. 0.0.0.0 locally, plio.in on production)
 
 
-### Identity Provider for Plio Analytics
-While setting up Plio analytics, you need to make sure the following variables are also updated. These are responsible to fetch an access token from the configured Identity Provider.
-
-#### `ANALYTICS_IDP_TYPE`
-Plio Analytics supports two identity providers. The possible values for this variable are `cognito` (AWS Cognito) and `auth0` (Auth0).
-
-#### `ANALYTICS_IDP_TOKEN_URL`
-The url to request access token from the Identity Provider. Generally looks like:
-1. When type is `cognito`: `https://<APP-DOMAIN-PREFIX>.auth.<aws-region>.amazoncognito.com/oauth2/token`. This is the same as the Amazon Cognito domain you have configured.
-2. When type is `auth0`: `https://<AUTH0-SUBDOMAIN>.<REGION>.auth0.com/oauth/token`
-
-#### `ANALYTICS_IDP_CLIENT_ID`
-The client id for your identity provider app.
-1. When type is `cognito`: Retrieve this from your User pool's "App clients" page.
-2. When type is `auth0`: Retrieve from Auth0 Application settings page.
-
-#### `ANALYTICS_IDP_CLIENT_SECRET`
-The client secret for your identity provider app.
-1. When type is `cognito`: Retrieve this from your User pool's "App clients" page.
-2. When type is `auth0`: Retrieve from Auth0 Application settings page.
-
-#### `ANALYTICS_IDP_AUDIENCE`
-Unique Identifier for your Auth0 API.
-1. When type is `cognito`: Not needed.
-2. When type is `auth0`: Retrieve from Auth0 API settings.
-
-
-### BigQuery configurations
-BigQuery settings are needed if Plio Analytics is configured to use BigQuery. We recommended using BigQuery for staging/production set ups.
-
-#### `BIGQUERY_ENABLED`
-Boolean value. Defaults to `False` if not set.
-
-#### `BIGQUERY_PROJECT_ID`
-The BigQuery project id that contains the datasets.
-
-#### `BIGQUERY_LOCATION`
-The location of the BigQuery project. All datasets must be in the same location.
-
-#### `BIGQUERY_CREDENTIALS`
-This is a base64 encoded value of your Google Cloud Platform's service account. You can learn more about acquiring service account credentials [here](https://cloud.google.com/docs/authentication/getting-started) and [here](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts?supportedpurview=project). The service account must have BigQuery admin permissions.
-
-Once you have downloaded the JSON file, run the following commands and use the output for this environment variable:
-```sh
-cat /path/to/gcp-service-account-filename.json | base64
-```
-
 ### Error monitoring
 Plio supports error monitoring on your app with [Sentry](https://sentry.io/). Visit our guide on [Error Monitoring](./docs/../ERROR-MONITORING.md) to enable it for your Plio setup.
 

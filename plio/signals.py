@@ -31,7 +31,7 @@ def question_update_cache(sender, instance, **kwargs):
 
 
 @receiver([post_save], sender=Question)
-def question_delete_image_on_deletion(sender, instance, **kwargs):
+def delete_linked_image_on_question_deletion(sender, instance, **kwargs):
     # check if any image is linked to the instance
     if instance.deleted is not None and instance.image is not None:
         # delete that image as well

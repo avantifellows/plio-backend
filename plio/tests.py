@@ -1300,7 +1300,7 @@ class ItemTestCase(BaseTestCase):
         response = self.client.delete("/api/v1/items/bulk_delete/")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertEqual(response.data["detail"], "id not provided")
+        self.assertEqual(response.data["detail"], "item id(s) not provided")
 
     def test_bulk_delete_fails_with_non_list_id(self):
         response = self.client.delete("/api/v1/items/bulk_delete/", {"id": 1})

@@ -49,7 +49,7 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=["patch"],
     )
     def setting(self, request, pk):
-        """Updates a user's setting key inside it's config"""
+        """Updates a user's settings"""
         user = self.get_object()
         user.config["settings"] = self.request.data
         user.save()

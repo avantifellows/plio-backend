@@ -19,7 +19,6 @@ Deploying on AWS requires a basic understanding of the following tools and servi
 9. AWS Elastic IPs
 10. AWS Identity and Access Management (IAM)
 11. AWS Relational Database Service (RDS)
-12. Google BigQuery
 
 ## Staging
 
@@ -245,11 +244,6 @@ Follow the steps below to set up the staging environment on AWS.
        - AWS_SECRET_ACCESS_KEY
        - AWS_REGION
        - AWS_STORAGE_BUCKET_NAME
-       - ANALYTICS_IDP_TYPE
-       - ANALYTICS_IDP_TOKEN_URL
-       - ANALYTICS_IDP_CLIENT_ID
-       - ANALYTICS_IDP_CLIENT_SECRET
-       - ANALYTICS_IDP_AUDIENCE (optional)
 
 14. We are using Github Actions to trigger deployments. You can find the workflow defined in `.github/workflows/deploy_to_ecs_staging.yml`. It defines a target branch such that a deployment is initiated whenever a change is pushed to the target branch.
 
@@ -296,6 +290,3 @@ Setting up a production environment on AWS is almost the same as staging. Additi
    14. Save the scaling policy.
    15. Create or update the service name.
    16. Use [k6.io](https://k6.io/) or other load testing tool to check if auto-scaling is working fine or not. You can lower down the target threshold for testing purposes.
-5.  If you're setting up [Plio Analytics](https://github.com/avantifellows/plio-analytics), also make sure to configure the required environment variables:
-    1. [Identity Provider for Plio Analytics](./ENV.md#identity-provider-for-plio-analytics).
-    2. [BigQuery configurations](./ENV.md#bigquery-configurations).

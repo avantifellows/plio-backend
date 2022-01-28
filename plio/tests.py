@@ -19,10 +19,14 @@ from users.models import User, Role, OrganizationUser
 from organizations.models import Organization
 from plio.settings import API_APPLICATION_NAME, OAUTH2_PROVIDER
 from plio.models import Plio, Video, Item, Question, Image
-from entries.models import Session
+from entries.models import Session, SessionAnswer
 from plio.views import StandardResultsSetPagination
 from plio.cache import get_cache_key
 from plio.serializers import ImageSerializer
+
+
+def get_uuid_list(plio_list):
+    return [plio["uuid"] for plio in plio_list]
 
 
 class BaseTestCase(APITestCase):
@@ -102,12 +106,12 @@ class PlioTestCase(BaseTestCase):
         # unset the credentials
         self.client.credentials()
         # get plios
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_user_can_list_plios(self):
         # get plios
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 2)
 
@@ -117,7 +121,7 @@ class PlioTestCase(BaseTestCase):
         Plio.objects.create(name="Plio 1", video=self.video, created_by=self.user_2)
 
         # get plios
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # the count should remain 2 as the new plio was created with user 2
         self.assertEqual(response.data["count"], 2)
@@ -149,11 +153,11 @@ class PlioTestCase(BaseTestCase):
         )
 
         # get plios
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
 
         # the plio created above should be listed
         self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0], plio_org.uuid)
+        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
@@ -189,11 +193,11 @@ class PlioTestCase(BaseTestCase):
         )
 
         # get plios
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
 
         # the plio created above should be listed
         self.assertEqual(len(response.data["results"]), 1)
-        self.assertEqual(response.data["results"][0], plio_org.uuid)
+        self.assertEqual(response.data["results"][0]["uuid"], plio_org.uuid)
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
@@ -218,7 +222,7 @@ class PlioTestCase(BaseTestCase):
         )
 
         # get plios
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
 
         # no plios should be listed
         self.assertEqual(len(response.data["results"]), 0)
@@ -229,18 +233,16 @@ class PlioTestCase(BaseTestCase):
     def test_guest_cannot_list_plio_uuids(self):
         # unset the credentials
         self.client.credentials()
-        # get plio uuids
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_user_list_empty_plio_uuids(self):
+    def test_user_list_empty_plio(self):
         """Tests that a user with no plios receives an empty list of uuids"""
         # change user
         self.client.credentials(
             HTTP_AUTHORIZATION="Bearer " + self.access_token_2.token
         )
-        # get plio uuids
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
         self.assertEqual(
             response.data,
             {
@@ -253,10 +255,17 @@ class PlioTestCase(BaseTestCase):
             },
         )
 
-    def test_user_list_plio_uuids(self):
+    def test_user_list_with_plios(self):
         """Test valid user listing plio uuids when they have plios"""
-        # get plio uuids
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
+
+        expected_results = list(
+            Plio.objects.filter(id__in=[self.plio_2.id, self.plio_1.id]).values()
+        )
+
+        for index, _ in enumerate(expected_results):
+            expected_results[index]["unique_viewers"] = 0
+            expected_results[index]["items"] = []
 
         self.assertEqual(
             response.data,
@@ -265,9 +274,24 @@ class PlioTestCase(BaseTestCase):
                 "page_size": StandardResultsSetPagination.page_size,
                 "next": None,
                 "previous": None,
-                "results": [self.plio_2.uuid, self.plio_1.uuid],
+                "results": expected_results,
                 "raw_count": 2,
             },
+        )
+
+    def test_listing_plios_returns_unique_num_views(self):
+        # create some sessions - 2 sessions for one user and one more session for another user
+        Session.objects.create(plio=self.plio_1, user=self.user)
+        Session.objects.create(plio=self.plio_1, user=self.user)
+        Session.objects.create(plio=self.plio_1, user=self.user_2)
+
+        response = self.client.get("/api/v1/plios/")
+        plios = response.data["results"]
+
+        # plio 2 will be listed first because it was created later
+        expected_num_unique_viewers = [0, 2]
+        self.assertEqual(
+            [plio["unique_viewers"] for plio in plios], expected_num_unique_viewers
         )
 
     def test_guest_can_play_plio(self):
@@ -335,15 +359,16 @@ class PlioTestCase(BaseTestCase):
         # make a request to list the plio uuids without specifying any order
         # NOTE: default ordering should come out to be '-updated_at'
         # order of plios should be [plio_3, plio_2, plio_1]
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
+        results = get_uuid_list(response.data["results"])
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("-updated_at")],
-            response.data["results"],
+            results,
         )
         # also manually checking the order
         self.assertListEqual(
             [plio_3.uuid, self.plio_2.uuid, self.plio_1.uuid],
-            response.data["results"],
+            results,
         )
 
         # update the first plio - ordering should change according to 'updated_at'
@@ -353,15 +378,16 @@ class PlioTestCase(BaseTestCase):
         # make a request to list the plio uuids
         # NOTE: default ordering should come out to be '-updated_at'
         # order of plios should be [plio_1, plio_3, plio_2]
-        response = self.client.get("/api/v1/plios/list_uuid/")
+        response = self.client.get("/api/v1/plios/")
+        results = get_uuid_list(response.data["results"])
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("-updated_at")],
-            response.data["results"],
+            results,
         )
         # also manually checking the order
         self.assertListEqual(
             [self.plio_1.uuid, plio_3.uuid, self.plio_2.uuid],
-            response.data["results"],
+            results,
         )
 
     def test_ordering_applied_as_specified(self):
@@ -379,47 +405,48 @@ class PlioTestCase(BaseTestCase):
         plio_3.name = "C_plio"
         plio_3.save()
 
-        # `list_uuid` should give the result ordered as [plio_1, plio_2, plio_3]
+        # listing plios should give the result ordered as [plio_1, plio_2, plio_3]
         # when "name" ordering is specified
-        response = self.client.get("/api/v1/plios/list_uuid/", {"ordering": "name"})
+        response = self.client.get("/api/v1/plios/", {"ordering": "name"})
+        results = get_uuid_list(response.data["results"])
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("name")],
-            response.data["results"],
+            results,
         )
         # also manually checking the order
         self.assertListEqual(
             [self.plio_1.uuid, self.plio_2.uuid, plio_3.uuid],
-            response.data["results"],
+            results,
         )
 
         # ordering by "-name"
-        # 'list_uuid` should give the result ordered as [plio_3, plio_2, plio_1]
+        # listing plios should give the result ordered as [plio_3, plio_2, plio_1]
         # when "-name" ordering is specified
-        response = self.client.get("/api/v1/plios/list_uuid/", {"ordering": "-name"})
+        response = self.client.get("/api/v1/plios/", {"ordering": "-name"})
+        results = get_uuid_list(response.data["results"])
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("-name")],
-            response.data["results"],
+            results,
         )
         # also manually checking the order
         self.assertListEqual(
             [plio_3.uuid, self.plio_2.uuid, self.plio_1.uuid],
-            response.data["results"],
+            results,
         )
 
         # ordering by 'created_at'
-        # 'list_uuid` should give the result ordered as [plio_1, plio_2, plio_3]
+        # listing plios should give the result ordered as [plio_1, plio_2, plio_3]
         # when "created_at" ordering is specified
-        response = self.client.get(
-            "/api/v1/plios/list_uuid/", {"ordering": "created_at"}
-        )
+        response = self.client.get("/api/v1/plios/", {"ordering": "created_at"})
+        results = get_uuid_list(response.data["results"])
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("created_at")],
-            response.data["results"],
+            results,
         )
         # also manually checking the order
         self.assertListEqual(
             [self.plio_1.uuid, self.plio_2.uuid, plio_3.uuid],
-            response.data["results"],
+            results,
         )
 
         # ordering by "-unique_viewers"
@@ -438,27 +465,27 @@ class PlioTestCase(BaseTestCase):
 
         Session.objects.create(plio=self.plio_1, user=self.user)
 
-        # 'list_uuid` should give the result ordered as [plio_3, plio_2, plio_1]
+        # listing plios should give the result ordered as [plio_3, plio_2, plio_1]
         # when "-unique_viewers" ordering is specified
-        response = self.client.get(
-            "/api/v1/plios/list_uuid/", {"ordering": "-unique_viewers"}
-        )
+        response = self.client.get("/api/v1/plios/", {"ordering": "-unique_viewers"})
         self.assertListEqual(
-            [plio_3.uuid, self.plio_2.uuid, self.plio_1.uuid], response.data["results"]
+            [plio_3.uuid, self.plio_2.uuid, self.plio_1.uuid],
+            get_uuid_list(response.data["results"]),
         )
 
         # ordering by "-unique_viewers" and "name"
-        # 'list_uuid` should give the result ordered as [plio_3, plio_1, plio_2]
+        # listing plios should give the result ordered as [plio_3, plio_1, plio_2]
         # when ordering is specified as "-unique_viewers" and "name"
 
         # add one more unique_view to plio_1 so that plio_1 and plio_2 both have 2 views each
         # that way, the second ordering will be done using the "name"
         Session.objects.create(plio=self.plio_1, user=self.user_2)
         response = self.client.get(
-            "/api/v1/plios/list_uuid/", {"ordering": "-unique_viewers,name"}
+            "/api/v1/plios/", {"ordering": "-unique_viewers,name"}
         )
         self.assertListEqual(
-            [plio_3.uuid, self.plio_1.uuid, self.plio_2.uuid], response.data["results"]
+            [plio_3.uuid, self.plio_1.uuid, self.plio_2.uuid],
+            get_uuid_list(response.data["results"]),
         )
 
     def test_invalid_ordering_results_in_default_ordering(self):
@@ -466,12 +493,12 @@ class PlioTestCase(BaseTestCase):
         Plio.objects.create(name="Plio 3", video=self.video, created_by=self.user)
 
         # order by some invalid ordering string - "xyz"
-        # `list_uuid` should give the result ordered as [plio_3, plio_2, plio_1]
+        # listing plios should give the result ordered as [plio_3, plio_2, plio_1]
         # because an invalid ordering field will result in the default ordering
-        response = self.client.get("/api/v1/plios/list_uuid/", {"ordering": "xyz"})
+        response = self.client.get("/api/v1/plios/", {"ordering": "xyz"})
         self.assertListEqual(
             [plio.uuid for plio in Plio.objects.order_by("-updated_at")],
-            response.data["results"],
+            get_uuid_list(response.data["results"]),
         )
 
     def test_delete(self):
@@ -660,6 +687,205 @@ class PlioTestCase(BaseTestCase):
 
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
+
+    def test_metrics_returns_empty_if_no_sessions(self):
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {})
+
+    def test_metrics_num_views_and_average_watch_time(self):
+        # seed some sessions
+        Session.objects.create(plio=self.plio_1, user=self.user, watch_time=10)
+        Session.objects.create(plio=self.plio_1, user=self.user, watch_time=20)
+        Session.objects.create(plio=self.plio_1, user=self.user_2, watch_time=50)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.data["unique_viewers"], 2)
+        self.assertEqual(response.data["average_watch_time"], 35.0)
+        self.assertEqual(response.data["percent_one_minute_retention"], None)
+        self.assertEqual(response.data["accuracy"], None)
+        self.assertEqual(response.data["average_num_answered"], None)
+        self.assertEqual(response.data["percent_completed"], None)
+
+    def test_metrics_video_duration_valid_no_valid_retention(self):
+        # make the video's duration a valid one for calculating retention
+        response = self.client.put(
+            f"/api/v1/videos/{self.video.id}/", {"url": self.video.url, "duration": 100}
+        )
+
+        # seed some sessions
+        Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20, retention="NaN,NaN"
+        )
+        Session.objects.create(plio=self.plio_1, user=self.user_2, watch_time=50)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+
+        # retention at 60 seconds should still be None
+        self.assertEqual(response.data["percent_one_minute_retention"], 0)
+
+    def test_metrics_video_duration_valid_no_valid_retention_has_questions(self):
+        # seed an item
+        item = Item.objects.create(type="question", plio=self.plio_1, time=1)
+
+        # seed a question
+        Question.objects.create(type="mcq", item=item, text="test")
+
+        # make the video's duration a valid one for calculating retention
+        response = self.client.put(
+            f"/api/v1/videos/{self.video.id}/", {"url": self.video.url, "duration": 100}
+        )
+
+        # seed a session and session answer
+        session = Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20, retention="NaN,NaN"
+        )
+        SessionAnswer.objects.create(session=session, item=item)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+
+        # retention at 60 seconds should still be None
+        self.assertEqual(response.data["percent_one_minute_retention"], 0)
+        self.assertEqual(response.data["accuracy"], None)
+        self.assertEqual(response.data["average_num_answered"], 0)
+        self.assertEqual(response.data["percent_completed"], 0)
+
+    def test_metrics_valid_retention_values(self):
+        # make the video's duration a valid one for calculating retention
+        import numpy as np
+
+        video_duration = 100
+        response = self.client.put(
+            f"/api/v1/videos/{self.video.id}/",
+            {"url": self.video.url, "duration": video_duration},
+        )
+
+        user_3 = User.objects.create(mobile="+919998776655")
+
+        # seed some sessions with valid retention values
+        retention_user_1 = [0] * video_duration
+        retention_user_1[59:] = np.random.randint(0, 4, video_duration - 59)
+        retention_user_1 = ",".join(list(map(str, retention_user_1)))
+
+        retention_user_2 = [0] * video_duration
+        retention_user_2[59:] = np.random.randint(0, 4, video_duration - 59)
+        retention_user_2 = ",".join(list(map(str, retention_user_2)))
+
+        retention_user_3 = ",".join(["0"] * video_duration)
+
+        Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20, retention=retention_user_1
+        )
+        Session.objects.create(
+            plio=self.plio_1,
+            user=self.user_2,
+            watch_time=50,
+            retention=retention_user_2,
+        )
+        Session.objects.create(
+            plio=self.plio_1, user=user_3, watch_time=100, retention=retention_user_3
+        )
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+
+        # retention at 60 seconds should still be None
+        self.assertEqual(response.data["percent_one_minute_retention"], 66.67)
+
+    def test_question_metrics_with_single_session_no_answer(self):
+        # seed an item
+        item = Item.objects.create(type="question", plio=self.plio_1, time=1)
+
+        # seed a question
+        Question.objects.create(type="mcq", item=item, text="test")
+
+        # seed a session and session answer
+        session = Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20
+        )
+        SessionAnswer.objects.create(session=session, item=item)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.data["average_num_answered"], 0)
+        self.assertEqual(response.data["percent_completed"], 0)
+        self.assertEqual(response.data["accuracy"], None)
+
+    def test_question_metrics_with_multiple_sessions_no_answer(self):
+        # seed an item
+        item = Item.objects.create(type="question", plio=self.plio_1, time=1)
+
+        # seed a question
+        Question.objects.create(type="mcq", item=item, text="test")
+
+        # seed a few session and session answer objects with empty answers
+        session = Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20
+        )
+        SessionAnswer.objects.create(session=session, item=item)
+
+        session_2 = Session.objects.create(
+            plio=self.plio_1, user=self.user_2, watch_time=40
+        )
+        SessionAnswer.objects.create(session=session_2, item=item)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.data["average_num_answered"], 0)
+        self.assertEqual(response.data["percent_completed"], 0)
+        self.assertEqual(response.data["accuracy"], None)
+
+    def test_question_metrics_answers_provided(self):
+        # seed items
+        item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
+        item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)
+        item_3 = Item.objects.create(type="question", plio=self.plio_1, time=20)
+
+        # seed questions
+        Question.objects.create(
+            type="mcq", item=item_1, text="test", options=["", ""], correct_answer=0
+        )
+        Question.objects.create(
+            type="checkbox",
+            item=item_2,
+            text="test",
+            options=["", ""],
+            correct_answer=[0, 1],
+        )
+        Question.objects.create(type="subjective", item=item_3, text="test")
+
+        # seed a few session and session answer objects with answers
+        session = Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20
+        )
+        SessionAnswer.objects.create(session=session, item=item_1, answer=0)
+        SessionAnswer.objects.create(session=session, item=item_2, answer=[1])
+        SessionAnswer.objects.create(session=session, item=item_3, answer="abcd")
+
+        session_2 = Session.objects.create(
+            plio=self.plio_1, user=self.user_2, watch_time=40
+        )
+        SessionAnswer.objects.create(session=session_2, item=item_1, answer=1)
+        SessionAnswer.objects.create(session=session_2, item=item_2, answer=[0, 1])
+        SessionAnswer.objects.create(session=session_2, item=item_3)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.data["average_num_answered"], 2)
+        self.assertEqual(response.data["percent_completed"], 50)
+        self.assertEqual(response.data["accuracy"], 58.33)
 
 
 class PlioDownloadTestCase(BaseTestCase):

@@ -29,7 +29,7 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         methods=["patch"],
     )
     def setting(self, request, pk):
-        """Updates an org's settings key inside it's config"""
+        """Updates an org's settings"""
         org = self.get_object()
         config = org.config if org.config is not None else {}
         config["settings"] = self.request.data

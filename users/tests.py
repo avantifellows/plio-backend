@@ -363,7 +363,7 @@ class UserTestCase(BaseTestCase):
             "app": {"appearance": {"darkMode": True}},
         }
         # update settings for user 1
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/users/{self.user.id}/setting/",
             test_settings,
             format="json",
@@ -384,7 +384,7 @@ class UserTestCase(BaseTestCase):
         }
 
         # try to update settings for user_2
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/users/{self.user_2.id}/setting/",
             test_settings,
             format="json",
@@ -398,7 +398,7 @@ class UserTestCase(BaseTestCase):
         self.user.save()
 
         # try the request again
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/users/{self.user_2.id}/setting/",
             test_settings,
             format="json",

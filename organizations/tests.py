@@ -36,11 +36,11 @@ class OrganizationTestCase(BaseTestCase):
         response = self.client.get(reverse("organizations-list"))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_non_superuser_cannot_list_organizations(self):
-        """A non-superuser should not be able to list organizations"""
+    def test_non_superuser_can_list_organizations(self):
+        """A non-superuser should be able to list organizations"""
         # get organizations
         response = self.client.get(reverse("organizations-list"))
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_superuser_can_list_organizations(self):
         """A superuser should be able to list organizations"""
@@ -139,7 +139,7 @@ class OrganizationTestCase(BaseTestCase):
         self.user.save()
 
         # try updating settings of org 1
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -151,7 +151,7 @@ class OrganizationTestCase(BaseTestCase):
         )
 
         # try updating settings of org 2
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/organizations/{self.organization_2.id}/setting/", dummy_settings
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -173,12 +173,13 @@ class OrganizationTestCase(BaseTestCase):
 
         # user should NOT be able to update org 1 settings as
         # the user is not an org admin
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-        # create a new super user
+        # create a new super user and a new APIClient that will be attached to the super user
+        # this is being done so we can use this superuser client to update our user and make them an org admin
         superuser_client = APIClient()
         superuser = User.objects.create(mobile="+919988776655", is_superuser=True)
         superuser_access_token = get_new_access_token(superuser, self.application)
@@ -197,7 +198,7 @@ class OrganizationTestCase(BaseTestCase):
         )
 
         # user should be able to update org 1 settings
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -209,7 +210,7 @@ class OrganizationTestCase(BaseTestCase):
         )
 
         # but the user still should NOT be able to update settings for org 2
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/organizations/{self.organization_2.id}/setting/", dummy_settings
         )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

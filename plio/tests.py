@@ -574,7 +574,7 @@ class PlioTestCase(BaseTestCase):
         test_settings = {"player": {"configuration": {"skipEnabled": False}}}
 
         # update settings for plio_1
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/plios/{self.plio_1.uuid}/setting/",
             test_settings,
             format="json",
@@ -598,7 +598,7 @@ class PlioTestCase(BaseTestCase):
         )
 
         # user_1 tries updating the settings for the above created plio
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/plios/{plio.uuid}/setting/",
             test_settings,
             format="json",
@@ -640,7 +640,7 @@ class PlioTestCase(BaseTestCase):
 
         # user_1 tries to update the org plio's settings which was created
         # by user_2
-        response = self.client.put(
+        response = self.client.patch(
             f"/api/v1/plios/{plio_org.uuid}/setting/",
             test_settings,
             format="json",

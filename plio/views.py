@@ -716,7 +716,7 @@ class ItemViewSet(viewsets.ModelViewSet):
         """deletes items whose ids have been provided"""
         if "id" not in request.data:
             return Response(
-                {"detail": "id not provided"},
+                {"detail": "item id(s) not provided"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

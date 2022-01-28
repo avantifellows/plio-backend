@@ -93,7 +93,6 @@ class OrganizationTestCase(BaseTestCase):
         )
 
     def test_settings_support_only_put_method(self):
-        """ /settings/ action only supports PUT method """
         # some dummy settings
         dummy_settings = {"setting_name": "setting_value"}
 
@@ -132,7 +131,6 @@ class OrganizationTestCase(BaseTestCase):
         )
 
     def test_superuser_can_update_any_org_settings(self):
-        """A superuse is allowed to update settings of any org"""
         # some dummy settings
         dummy_settings = {"setting_name": "setting_value"}
 

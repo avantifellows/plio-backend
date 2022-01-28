@@ -92,7 +92,7 @@ class OrganizationTestCase(BaseTestCase):
             cache.get(cache_key_name)["organizations"][0]["name"], org_new_name
         )
 
-    def test_settings_support_only_put_method(self):
+    def test_settings_support_only_patch_method(self):
         # some dummy settings
         dummy_settings = {"setting_name": "setting_value"}
 
@@ -112,14 +112,14 @@ class OrganizationTestCase(BaseTestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        # try a PATCH request to settings
-        response = self.client.patch(
+        # try a PUT request to settings
+        response = self.client.put(
             f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
         )
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        # try a PUT request to settings
-        response = self.client.put(
+        # try a PATCH request to settings
+        response = self.client.patch(
             f"/api/v1/organizations/{self.organization_1.id}/setting/", dummy_settings
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)

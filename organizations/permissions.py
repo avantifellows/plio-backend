@@ -7,13 +7,8 @@ class OrganizationPermission(permissions.BasePermission):
     """
 
     def has_permission(self, request, view):
-        """View-level permissions for organization. This determines whether the request can access organization instances or not."""
-        if view.action in ["setting"]:
-            org_to_update = int(view.kwargs["pk"])
-            return request.user.is_superuser or request.user.is_org_admin(
-                organization_id=org_to_update
-            )
-        return request.user.is_superuser
+        """View-level permissions for organization viewset. This determines whether the request can access organization viewset or not."""
+        return True
 
     def has_object_permission(self, request, view, obj):
         """Object-level permissions for an organization. This determines whether the request can access an organization instance or not."""

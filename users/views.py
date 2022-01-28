@@ -46,7 +46,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         permission_classes=[IsAuthenticated, UserPermission],
-        methods=["put"],
+        methods=["patch"],
     )
     def setting(self, request, pk):
         """Updates a user's setting key inside it's config"""

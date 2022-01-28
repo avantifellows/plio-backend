@@ -152,12 +152,12 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         permission_classes=[IsAuthenticated, PlioPermission],
-        methods=["put"],
+        methods=["patch"],
     )
     def setting(self, request, uuid):
         """Updates a plio's settings"""
         plio = self.get_object()
-        config = plio.config if plio.config is not None else {"settings": {}}
+        config = plio.config if plio.config is not None else {}
         config["settings"] = self.request.data
         plio.config = config
         plio.save()

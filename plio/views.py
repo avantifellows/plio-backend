@@ -157,13 +157,10 @@ class PlioViewSet(viewsets.ModelViewSet):
     def setting(self, request, uuid):
         """Updates a plio's settings"""
         plio = self.get_object()
-        config = plio.config if plio.config is not None else {}
-        config["settings"] = self.request.data
-        plio.config = config
+        plio.config = plio.config if plio.config is not None else {}
+        plio.config["settings"] = self.request.data
         plio.save()
-        return Response(
-            self.get_serializer(plio).data["config"], status=status.HTTP_200_OK
-        )
+        return Response(self.get_serializer(plio).data["config"])
 
     @property
     def organization_shortcode(self):

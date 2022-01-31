@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from organizations.models import Organization
 from organizations.serializers import OrganizationSerializer
 from rest_framework.permissions import IsAuthenticated
@@ -34,6 +34,4 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         org.config = org.config if org.config is not None else {}
         org.config["settings"] = self.request.data
         org.save()
-        return Response(
-            self.get_serializer(org).data["config"]
-        )
+        return Response(self.get_serializer(org).data["config"])

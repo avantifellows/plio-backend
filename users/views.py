@@ -53,9 +53,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         user.config["settings"] = self.request.data
         user.save()
-        return Response(
-            self.get_serializer(user).data["config"], status=status.HTTP_200_OK
-        )
+        return Response(self.get_serializer(user).data["config"])
 
     @action(
         detail=True,
@@ -221,7 +219,7 @@ def verify_otp(request):
 
         # login the user, get the new access token and return
         token = login_user_and_get_access_token(user, request)
-        return Response(token, status=status.HTTP_200_OK)
+        return Response(token)
 
     except OneTimePassword.DoesNotExist:
         return Response({"detail": "unauthorized"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -282,4 +280,4 @@ def generate_external_auth_access_token(request):
 
     # login the user, get the new access token and return
     token = login_user_and_get_access_token(user, request)
-    return Response(token, status=status.HTTP_200_OK)
+    return Response(token)

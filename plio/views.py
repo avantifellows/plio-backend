@@ -240,7 +240,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["post"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
@@ -257,7 +256,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["post"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def copy(self, request, uuid):
         """Copies the given plio to another workspace"""
@@ -355,7 +353,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["get"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def metrics(self, request, uuid):
         """Returns usage metrics for the plio"""
@@ -518,7 +515,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["get"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def download_data(self, request, uuid):
         """
@@ -686,7 +682,7 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
         return queryset
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    @action(methods=["post"], detail=True)
     def duplicate(self, request, pk):
         """
         Creates a clone of the item with the given pk and links it to the plio
@@ -711,6 +707,34 @@ class ItemViewSet(viewsets.ModelViewSet):
         item.save()
         return Response(self.get_serializer(item).data)
 
+    @action(methods=["delete"], detail=False)
+    def bulk_delete(self, request):
+        """deletes items whose ids have been provided"""
+        if "id" not in request.data:
+            return Response(
+                {"detail": "item id(s) not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ids_to_delete = request.data["id"]
+
+        # ensure that a list of ids has been provided
+        if not isinstance(ids_to_delete, list):
+            return Response(
+                {"detail": "id should contain a list of item ids to be deleted"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        items_to_delete = Item.objects.filter(pk__in=ids_to_delete)
+        if len(items_to_delete) != len(ids_to_delete):
+            return Response(
+                {"detail": "one or more of the ids provided do not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        items_to_delete.delete()
+        return Response("deletion successful")
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
     """
@@ -728,7 +752,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated, PlioPermission]
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    @action(methods=["post"], detail=True)
     def duplicate(self, request, pk):
         """
         Creates a clone of the question with the given pk and links it to the item
@@ -774,8 +798,9 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
+    permission_classes = [IsAuthenticated]
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    @action(methods=["post"], detail=True)
     def duplicate(self, request, pk):
         """
         Creates a clone of the image with the given pk

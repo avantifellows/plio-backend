@@ -36,5 +36,5 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         org.config = config
         org.save()
         return Response(
-            self.get_serializer(org).data["config"], status=status.HTTP_200_OK
+            self.get_serializer(org).data["config"]
         )

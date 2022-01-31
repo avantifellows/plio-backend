@@ -33,10 +33,10 @@ def question_update_cache(sender, instance, **kwargs):
 @receiver([post_save], sender=Question)
 def delete_linked_image_on_question_deletion(sender, instance, **kwargs):
     # since we are using soft deletion, the `post_delete` signal is never called
-    # also, the way deletion works under the hood when using soft delete is that
+    # also, the way deletion works under the hood when using soft delete is that it
     # just sets the `deleted` attribute and updates the instance. so, by default,
     # the deleted attribute is None. When we execute soft_delete, that attribute gets set
     if instance.deleted is not None and instance.image is not None:
-        # if any image is linked to the question instance
+        # if any image is linked to the question instance,
         # (soft) delete that image as well
         instance.image.delete()

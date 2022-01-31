@@ -31,9 +31,8 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     def setting(self, request, pk):
         """Updates an org's settings"""
         org = self.get_object()
-        config = org.config if org.config is not None else {}
-        config["settings"] = self.request.data
-        org.config = config
+        org.config = org.config if org.config is not None else {}
+        org.config["settings"] = self.request.data
         org.save()
         return Response(
             self.get_serializer(org).data["config"]

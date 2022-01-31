@@ -1296,6 +1296,53 @@ class ItemTestCase(BaseTestCase):
         # check plio cache with the update item time
         self.assertEqual(cache.get(cache_key_name)["items"][0]["time"], item_new_time)
 
+    def test_bulk_delete_fails_without_id(self):
+        response = self.client.delete("/api/v1/items/bulk_delete/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(response.data["detail"], "item id(s) not provided")
+
+    def test_bulk_delete_fails_with_non_list_id(self):
+        response = self.client.delete("/api/v1/items/bulk_delete/", {"id": 1})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(
+            response.data["detail"],
+            "id should contain a list of item ids to be deleted",
+        )
+
+    def test_bulk_delete_fails_with_non_existing_item_ids(self):
+        response = self.client.delete(
+            "/api/v1/items/bulk_delete/",
+            json.dumps({"id": [self.item.id, 100]}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "one or more of the ids provided do not exist"
+        )
+
+    def test_bulk_delete(self):
+        # create a few more items and associate with different plios
+        item_2 = Item.objects.create(type="question", plio=self.plio, time=10)
+        plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user
+        )
+        item_3 = Item.objects.create(type="question", plio=plio, time=20)
+
+        item_ids = [self.item.id, item_2.id, item_3.id]
+
+        response = self.client.delete(
+            "/api/v1/items/bulk_delete/",
+            json.dumps({"id": item_ids}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for item_id in item_ids:
+            response = self.client.get(f"/api/v1/items/{item_id}/")
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class QuestionTestCase(BaseTestCase):
     def setUp(self):
@@ -1496,6 +1543,27 @@ class QuestionTestCase(BaseTestCase):
         self.assertEqual(
             cache.get(cache_key_name)["items"][0]["details"]["text"], question_new_text
         )
+
+    def test_deleting_question_deletes_linked_image(self):
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(
+                reverse("images-list"), {"url": img, "alt_text": "test image"}
+            )
+        image_id = response.json()["id"]
+
+        # attach image id to question
+        response = self.client.put(
+            reverse("questions-detail", args=[self.question.id]),
+            {"item": self.item.id, "image": image_id},
+        )
+
+        # delete question
+        response = self.client.delete(f"/api/v1/questions/{self.question.id}/")
+
+        # the image should be deleted as well
+        response = self.client.get(f"/api/v1/images/{image_id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class ImageTestCase(BaseTestCase):

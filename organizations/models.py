@@ -12,6 +12,7 @@ class Organization(TenantMixin, SafeDeleteModel):
     name = models.CharField(max_length=255)
     shortcode = models.SlugField()
     api_key = models.CharField(null=True, max_length=20)
+    config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

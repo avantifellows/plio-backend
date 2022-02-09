@@ -149,6 +149,19 @@ class PlioViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(created_by=self.get_object().created_by)
 
+    @action(
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+        methods=["patch"],
+    )
+    def setting(self, request, uuid):
+        """Updates a plio's settings"""
+        plio = self.get_object()
+        plio.config = plio.config if plio.config is not None else {}
+        plio.config["settings"] = self.request.data
+        plio.save()
+        return Response(self.get_serializer(plio).data["config"])
+
     @property
     def organization_shortcode(self):
         return OrganizationTenantMiddleware.get_organization_shortcode(self.request)

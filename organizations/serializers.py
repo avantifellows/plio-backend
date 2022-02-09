@@ -11,6 +11,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "name",
             "shortcode",
             "api_key",
+            "config",
             "created_at",
             "updated_at",
         ]

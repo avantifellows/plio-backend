@@ -357,6 +357,60 @@ class UserTestCase(BaseTestCase):
         self.assertEqual(len(cache.keys(cache_key_name)), 1)
         self.assertEqual(cache.get(cache_key_name)["first_name"], first_name)
 
+    def test_user_can_update_its_own_settings(self):
+        test_settings = {
+            "player": {"configuration": {"skipEnabled": False}},
+            "app": {"appearance": {"darkMode": True}},
+        }
+        # update settings for user 1
+        response = self.client.patch(
+            f"/api/v1/users/{self.user.id}/setting/",
+            test_settings,
+            format="json",
+        )
+
+        # 200 OK returned as status
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # the plio should contain the new updated settings object
+        self.assertEqual(
+            User.objects.filter(id=self.user.id).first().config["settings"],
+            test_settings,
+        )
+
+    def test_only_superuser_can_update_other_user_settings(self):
+        test_settings = {
+            "player": {"configuration": {"skipEnabled": False}},
+            "app": {"appearance": {"darkMode": True}},
+        }
+
+        # try to update settings for user_2
+        response = self.client.patch(
+            f"/api/v1/users/{self.user_2.id}/setting/",
+            test_settings,
+            format="json",
+        )
+
+        # forbidden action
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # make user 1 the superuser
+        self.user.is_superuser = True
+        self.user.save()
+
+        # try the request again
+        response = self.client.patch(
+            f"/api/v1/users/{self.user_2.id}/setting/",
+            test_settings,
+            format="json",
+        )
+
+        # 200 OK returned as status
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            User.objects.filter(id=self.user_2.id).first().config["settings"],
+            test_settings,
+        )
+
 
 class UserMetaTestCase(BaseTestCase):
     def setUp(self):

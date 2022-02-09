@@ -245,7 +245,9 @@ class PlioViewSet(viewsets.ModelViewSet):
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
         # docker attach --detach-keys="ctrl-a" eab6b14b8825
-        import ipdb; ipdb.set_trace()
+        import ipdb
+
+        ipdb.set_trace()
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
@@ -254,8 +256,8 @@ class PlioViewSet(viewsets.ModelViewSet):
         # django will auto-generate the key when the key is set to None
         plio.pk = None
         plio.uuid = None
-        plio.status = "draft" 
-         # a duplicated plio will always be in "draft" mode
+        plio.status = "draft"
+        # a duplicated plio will always be in "draft" mode
         # import ipdb; ipdb.set_trace()
         plio.save()
 
@@ -266,7 +268,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
             # create the items
             items = Item.objects.bulk_create(items)
-        #questions part
+        # questions part
         if questions:
             for index, _ in enumerate(questions):
                 questions[index].item = items[index]
@@ -274,7 +276,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
             questions = Question.objects.bulk_create(questions)
         return Response(self.get_serializer(plio).data)
-        
+
     @action(
         methods=["post"],
         detail=True,
@@ -282,7 +284,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     )
     def copy(self, request, uuid):
         """Copies the given plio to another workspace"""
-        
+
         if "workspace" not in request.data:
             return Response(
                 {"detail": "workspace is not provided"},

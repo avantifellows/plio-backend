@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db import connection
-from django.db.models import Q, Count, OuterRef, Subquery
+from django.db.models import Q, F, Count, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.http import FileResponse
 
@@ -208,6 +208,8 @@ class PlioViewSet(viewsets.ModelViewSet):
         )
 
         queryset = self.filter_queryset(queryset)
+        # adds the video URL to the queryset
+        queryset = queryset.annotate(video_url=F("video__url"))
         page = self.paginate_queryset(queryset.values())
 
         if page is not None:

@@ -266,6 +266,7 @@ class PlioTestCase(BaseTestCase):
         for index, _ in enumerate(expected_results):
             expected_results[index]["unique_viewers"] = 0
             expected_results[index]["items"] = []
+            expected_results[index]["video_url"] = self.video.url
 
         self.assertEqual(
             response.data,

@@ -245,9 +245,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
         # docker attach --detach-keys="ctrl-a" eab6b14b8825
-        import ipdb
-
-        ipdb.set_trace()
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
@@ -710,113 +707,113 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
         return queryset
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
-    def duplicate(self, request, pk):
-        """
-        Creates a clone of the item with the given pk and links it to the plio
-        that's provided in the payload
-        """
-        item = self.get_object()
-        item.pk = None
-        plio_id = self.request.data.get("plioId")
-        if not plio_id:
-            return Response(
-                {"detail": "Plio id not passed in the payload."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+    # @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+    # def duplicate(self, request, pk):
+    #     """
+    #     Creates a clone of the item with the given pk and links it to the plio
+    #     that's provided in the payload
+    #     """
+    #     item = self.get_object()
+    #     item.pk = None
+    #     plio_id = self.request.data.get("plioId")
+    #     if not plio_id:
+    #         return Response(
+    #             {"detail": "Plio id not passed in the payload."},
+    #             status=status.HTTP_404_NOT_FOUND,
+    #         )
 
-        plio = Plio.objects.filter(id=plio_id).first()
-        if not plio:
-            return Response(
-                {"detail": "Specified plio not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+    #     plio = Plio.objects.filter(id=plio_id).first()
+    #     if not plio:
+    #         return Response(
+    #             {"detail": "Specified plio not found"}, status=status.HTTP_404_NOT_FOUND
+    #         )
 
-        item.plio = plio
-        item.save()
-        return Response(self.get_serializer(item).data)
-
-
-class QuestionViewSet(viewsets.ModelViewSet):
-    """
-    Question ViewSet description
-
-    list: List all questions
-    retrieve: Retrieve a question
-    update: Update a question
-    create: Create a question
-    partial_update: Patch a question
-    destroy: Soft delete a question
-    """
-
-    queryset = Question.objects.all()
-    serializer_class = QuestionSerializer
-    permission_classes = [IsAuthenticated, PlioPermission]
-
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
-    def duplicate(self, request, pk):
-        """
-        Creates a clone of the question with the given pk and links it to the item
-        that is provided in the payload
-        """
-        question = self.get_object()
-        question.pk = None
-        item_id = self.request.data.get("itemId")
-        if not item_id:
-            return Response(
-                {"details": "Item id not passed in the payload"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        item = Item.objects.filter(id=item_id).first()
-        if not item:
-            return Response(
-                {"detail": "Specified item not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        if question.image:
-            # create duplicate for image if the question has an image
-            duplicate_image_id = ImageViewSet.as_view({"post": "duplicate"})(
-                request=request._request, pk=question.image.id
-            ).data["id"]
-            question.image = Image.objects.filter(id=duplicate_image_id).first()
-
-        question.item = item
-        question.save()
-        return Response(self.get_serializer(question).data)
+    #     item.plio = plio
+    #     item.save()
+    #     return Response(self.get_serializer(item).data)
 
 
-class ImageViewSet(viewsets.ModelViewSet):
-    """
-    Image ViewSet description
+# class QuestionViewSet(viewsets.ModelViewSet):
+#     """
+#     Question ViewSet description
 
-    list: List all image file entries
-    retrieve: Retrieve an image file entry
-    update: Update an image file entry
-    create: Create an image file entry
-    partial_update: Patch an image file entry
-    destroy: Soft delete a image file entry
-    """
+#     list: List all questions
+#     retrieve: Retrieve a question
+#     update: Update a question
+#     create: Create a question
+#     partial_update: Patch a question
+#     destroy: Soft delete a question
+#     """
 
-    queryset = Image.objects.all()
-    serializer_class = ImageSerializer
+#     queryset = Question.objects.all()
+#     serializer_class = QuestionSerializer
+#     permission_classes = [IsAuthenticated, PlioPermission]
 
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
-    def duplicate(self, request, pk):
-        """
-        Creates a clone of the image with the given pk
-        """
-        image = self.get_object()
+# @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+# def duplicate(self, request, pk):
+#     """
+#     Creates a clone of the question with the given pk and links it to the item
+#     that is provided in the payload
+#     """
+#     question = self.get_object()
+#     question.pk = None
+#     item_id = self.request.data.get("itemId")
+#     if not item_id:
+#         return Response(
+#             {"details": "Item id not passed in the payload"},
+#             status=status.HTTP_404_NOT_FOUND,
+#         )
+#     item = Item.objects.filter(id=item_id).first()
+#     if not item:
+#         return Response(
+#             {"detail": "Specified item not found"}, status=status.HTTP_404_NOT_FOUND
+#         )
 
-        # create new image object
-        new_image = Image.objects.create(
-            alt_text=image.alt_text, url=deepcopy(image.url)
-        )
-        new_image.save()
+#     if question.image:
+#         # create duplicate for image if the question has an image
+#         duplicate_image_id = ImageViewSet.as_view({"post": "duplicate"})(
+#             request=request._request, pk=question.image.id
+#         ).data["id"]
+#         question.image = Image.objects.filter(id=duplicate_image_id).first()
 
-        # creating the image at the new path
-        s3 = S3Boto3Storage()
-        copy_source = {"Bucket": AWS_STORAGE_BUCKET_NAME, "Key": image.url.name}
-        s3.bucket.meta.client.copy(
-            copy_source, AWS_STORAGE_BUCKET_NAME, new_image.url.name
-        )
+#     question.item = item
+#     question.save()
+#     return Response(self.get_serializer(question).data)
 
-        return Response(self.get_serializer(new_image).data)
+
+# class ImageViewSet(viewsets.ModelViewSet):
+#     """
+#     Image ViewSet description
+
+#     list: List all image file entries
+#     retrieve: Retrieve an image file entry
+#     update: Update an image file entry
+#     create: Create an image file entry
+#     partial_update: Patch an image file entry
+#     destroy: Soft delete a image file entry
+#     """
+
+#     queryset = Image.objects.all()
+#     serializer_class = ImageSerializer
+
+# @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+# def duplicate(self, request, pk):
+#     """
+#     Creates a clone of the image with the given pk
+#     """
+#     image = self.get_object()
+
+#     # create new image object
+#     new_image = Image.objects.create(
+#         alt_text=image.alt_text, url=deepcopy(image.url)
+#     )
+#     new_image.save()
+
+#     # creating the image at the new path
+#     s3 = S3Boto3Storage()
+#     copy_source = {"Bucket": AWS_STORAGE_BUCKET_NAME, "Key": image.url.name}
+#     s3.bucket.meta.client.copy(
+#         copy_source, AWS_STORAGE_BUCKET_NAME, new_image.url.name
+#     )
+
+#     return Response(self.get_serializer(new_image).data)

@@ -4,7 +4,12 @@ import string
 import random
 import os
 from safedelete.models import SafeDeleteModel, SOFT_DELETE, SOFT_DELETE_CASCADE
-from plio.config import plio_status_choices, item_type_choices, question_type_choices
+from plio.config import (
+    plio_status_choices,
+    plio_type_choices,
+    item_type_choices,
+    question_type_choices,
+)
 
 
 class Image(SafeDeleteModel):
@@ -74,6 +79,7 @@ class Plio(SafeDeleteModel):
     status = models.CharField(
         max_length=255, choices=plio_status_choices, default="draft"
     )
+    type = models.CharField(max_length=255, choices=plio_type_choices, default="video")
     is_public = models.BooleanField(default=True)
     config = models.JSONField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)

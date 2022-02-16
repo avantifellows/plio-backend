@@ -44,6 +44,7 @@ class PlioSerializer(serializers.ModelSerializer):
             "uuid",
             "failsafe_url",
             "status",
+            "type",
             "is_public",
             "config",
             "created_by",

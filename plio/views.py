@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db import connection
-from django.db.models import Q, Count, OuterRef, Subquery
+from django.db.models import Q, F, Count, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.http import FileResponse
 
@@ -149,6 +149,19 @@ class PlioViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save(created_by=self.get_object().created_by)
 
+    @action(
+        detail=True,
+        permission_classes=[IsAuthenticated, PlioPermission],
+        methods=["patch"],
+    )
+    def setting(self, request, uuid):
+        """Updates a plio's settings"""
+        plio = self.get_object()
+        plio.config = plio.config if plio.config is not None else {}
+        plio.config["settings"] = self.request.data
+        plio.save()
+        return Response(self.get_serializer(plio).data["config"])
+
     @property
     def organization_shortcode(self):
         return OrganizationTenantMiddleware.get_organization_shortcode(self.request)
@@ -195,6 +208,8 @@ class PlioViewSet(viewsets.ModelViewSet):
         )
 
         queryset = self.filter_queryset(queryset)
+        # adds the video URL to the queryset
+        queryset = queryset.annotate(video_url=F("video__url"))
         page = self.paginate_queryset(queryset.values())
 
         if page is not None:
@@ -240,7 +255,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["post"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def duplicate(self, request, uuid):
         """Creates a clone of the plio with the given uuid"""
@@ -275,7 +289,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["post"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def copy(self, request, uuid):
         """Copies the given plio to another workspace"""
@@ -374,7 +387,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["get"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def metrics(self, request, uuid):
         """Returns usage metrics for the plio"""
@@ -537,7 +549,6 @@ class PlioViewSet(viewsets.ModelViewSet):
     @action(
         methods=["get"],
         detail=True,
-        permission_classes=[IsAuthenticated, PlioPermission],
     )
     def download_data(self, request, uuid):
         """
@@ -705,6 +716,62 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
         return queryset
 
+<<<<<<< HEAD
+=======
+    @action(methods=["post"], detail=True)
+    def duplicate(self, request, pk):
+        """
+        Creates a clone of the item with the given pk and links it to the plio
+        that's provided in the payload
+        """
+        item = self.get_object()
+        item.pk = None
+        plio_id = self.request.data.get("plioId")
+        if not plio_id:
+            return Response(
+                {"detail": "Plio id not passed in the payload."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        plio = Plio.objects.filter(id=plio_id).first()
+        if not plio:
+            return Response(
+                {"detail": "Specified plio not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        item.plio = plio
+        item.save()
+        return Response(self.get_serializer(item).data)
+
+    @action(methods=["delete"], detail=False)
+    def bulk_delete(self, request):
+        """deletes items whose ids have been provided"""
+        if "id" not in request.data:
+            return Response(
+                {"detail": "item id(s) not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ids_to_delete = request.data["id"]
+
+        # ensure that a list of ids has been provided
+        if not isinstance(ids_to_delete, list):
+            return Response(
+                {"detail": "id should contain a list of item ids to be deleted"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        items_to_delete = Item.objects.filter(pk__in=ids_to_delete)
+        if len(items_to_delete) != len(ids_to_delete):
+            return Response(
+                {"detail": "one or more of the ids provided do not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        items_to_delete.delete()
+        return Response("deletion successful")
+
+>>>>>>> master
 
 class QuestionViewSet(viewsets.ModelViewSet):
     """
@@ -722,6 +789,40 @@ class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated, PlioPermission]
 
+<<<<<<< HEAD
+=======
+    @action(methods=["post"], detail=True)
+    def duplicate(self, request, pk):
+        """
+        Creates a clone of the question with the given pk and links it to the item
+        that is provided in the payload
+        """
+        question = self.get_object()
+        question.pk = None
+        item_id = self.request.data.get("itemId")
+        if not item_id:
+            return Response(
+                {"details": "Item id not passed in the payload"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        item = Item.objects.filter(id=item_id).first()
+        if not item:
+            return Response(
+                {"detail": "Specified item not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if question.image:
+            # create duplicate for image if the question has an image
+            duplicate_image_id = ImageViewSet.as_view({"post": "duplicate"})(
+                request=request._request, pk=question.image.id
+            ).data["id"]
+            question.image = Image.objects.filter(id=duplicate_image_id).first()
+
+        question.item = item
+        question.save()
+        return Response(self.get_serializer(question).data)
+
+>>>>>>> master
 
 class ImageViewSet(viewsets.ModelViewSet):
     """
@@ -737,3 +838,29 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
+<<<<<<< HEAD
+=======
+    permission_classes = [IsAuthenticated]
+
+    @action(methods=["post"], detail=True)
+    def duplicate(self, request, pk):
+        """
+        Creates a clone of the image with the given pk
+        """
+        image = self.get_object()
+
+        # create new image object
+        new_image = Image.objects.create(
+            alt_text=image.alt_text, url=deepcopy(image.url)
+        )
+        new_image.save()
+
+        # creating the image at the new path
+        s3 = S3Boto3Storage()
+        copy_source = {"Bucket": AWS_STORAGE_BUCKET_NAME, "Key": image.url.name}
+        s3.bucket.meta.client.copy(
+            copy_source, AWS_STORAGE_BUCKET_NAME, new_image.url.name
+        )
+
+        return Response(self.get_serializer(new_image).data)
+>>>>>>> master

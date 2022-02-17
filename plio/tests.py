@@ -266,6 +266,7 @@ class PlioTestCase(BaseTestCase):
         for index, _ in enumerate(expected_results):
             expected_results[index]["unique_viewers"] = 0
             expected_results[index]["items"] = []
+            expected_results[index]["video_url"] = self.video.url
 
         self.assertEqual(
             response.data,
@@ -587,6 +588,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["items"][1]["id"], item_1.id)
 
     def test_retrieving_plio_sets_instance_cache(self):
+
         # verify cache data doesn't exist
         cache_key_name = get_cache_key(self.plio_1)
         self.assertEqual(len(cache.keys(cache_key_name)), 0)
@@ -625,6 +627,94 @@ class PlioTestCase(BaseTestCase):
         # verify cache data exist with the updated value
         self.assertEqual(len(cache.keys(cache_key_name)), 1)
         self.assertEqual(cache.get(cache_key_name)["name"], new_name)
+
+    def test_user_can_update_own_plio_settings(self):
+        test_settings = {"player": {"configuration": {"skipEnabled": False}}}
+
+        # update settings for plio_1
+        response = self.client.patch(
+            f"/api/v1/plios/{self.plio_1.uuid}/setting/",
+            test_settings,
+            format="json",
+        )
+
+        # 200 OK returned as status
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # The plio should contain the new updated settings object
+        self.assertEqual(
+            Plio.objects.filter(uuid=self.plio_1.uuid)
+            .first()
+            .config["settings"]["player"],
+            test_settings["player"],
+        )
+
+    def test_user_cannot_update_other_user_plio_settings(self):
+        test_settings = {"player": {"configuration": {"skipEnabled": False}}}
+        # user_2 creates a plio
+        plio = Plio.objects.create(
+            name="Plio_by_user_2", video=self.video, created_by=self.user_2
+        )
+
+        # user_1 tries updating the settings for the above created plio
+        response = self.client.patch(
+            f"/api/v1/plios/{plio.uuid}/setting/",
+            test_settings,
+            format="json",
+        )
+
+        # updating other user's plio's settings should be forbidden
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_org_members_can_update_org_plio_settings(self):
+        test_settings = {"player": {"configuration": {"skipEnabled": False}}}
+
+        # add users to organization
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user, role=self.org_view_role
+        )
+
+        OrganizationUser.objects.create(
+            organization=self.organization, user=self.user_2, role=self.org_view_role
+        )
+
+        # set db connection to organization schema
+        connection.set_schema(self.organization.schema_name)
+
+        # create video in the org workspace
+        video_org = Video.objects.create(
+            title="Video 1", url="https://www.youtube.com/watch?v=vnISjBbrMUM"
+        )
+
+        # create plio within the org workspace by user 2
+        plio_org = Plio.objects.create(
+            name="Plio 1", video=video_org, created_by=self.user_2
+        )
+
+        # set organization in request and access token for user 1
+        self.client.credentials(
+            HTTP_ORGANIZATION=self.organization.shortcode,
+            HTTP_AUTHORIZATION="Bearer " + self.access_token.token,
+        )
+
+        # user_1 tries to update the org plio's settings which was created
+        # by user_2
+        response = self.client.patch(
+            f"/api/v1/plios/{plio_org.uuid}/setting/",
+            test_settings,
+            format="json",
+        )
+
+        # updating an org plio's settings should be possible by any org member
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            Plio.objects.filter(uuid=plio_org.uuid)
+            .first()
+            .config["settings"]["player"],
+            test_settings["player"],
+        )
+
+        # set db connection back to public (default) schema
+        connection.set_schema_to_public()
 
     def test_copying_without_specifying_workspace_fails(self):
         response = self.client.post(f"/api/v1/plios/{self.plio_1.uuid}/copy/")
@@ -1324,6 +1414,53 @@ class ItemTestCase(BaseTestCase):
         # check plio cache with the update item time
         self.assertEqual(cache.get(cache_key_name)["items"][0]["time"], item_new_time)
 
+    def test_bulk_delete_fails_without_id(self):
+        response = self.client.delete("/api/v1/items/bulk_delete/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(response.data["detail"], "item id(s) not provided")
+
+    def test_bulk_delete_fails_with_non_list_id(self):
+        response = self.client.delete("/api/v1/items/bulk_delete/", {"id": 1})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(
+            response.data["detail"],
+            "id should contain a list of item ids to be deleted",
+        )
+
+    def test_bulk_delete_fails_with_non_existing_item_ids(self):
+        response = self.client.delete(
+            "/api/v1/items/bulk_delete/",
+            json.dumps({"id": [self.item.id, 100]}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            response.data["detail"], "one or more of the ids provided do not exist"
+        )
+
+    def test_bulk_delete(self):
+        # create a few more items and associate with different plios
+        item_2 = Item.objects.create(type="question", plio=self.plio, time=10)
+        plio = Plio.objects.create(
+            name="Plio 2", video=self.video, created_by=self.user
+        )
+        item_3 = Item.objects.create(type="question", plio=plio, time=20)
+
+        item_ids = [self.item.id, item_2.id, item_3.id]
+
+        response = self.client.delete(
+            "/api/v1/items/bulk_delete/",
+            json.dumps({"id": item_ids}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for item_id in item_ids:
+            response = self.client.get(f"/api/v1/items/{item_id}/")
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class QuestionTestCase(BaseTestCase):
     def setUp(self):
@@ -1467,6 +1604,27 @@ class QuestionTestCase(BaseTestCase):
         self.assertEqual(
             cache.get(cache_key_name)["items"][0]["details"]["text"], question_new_text
         )
+
+    def test_deleting_question_deletes_linked_image(self):
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(
+                reverse("images-list"), {"url": img, "alt_text": "test image"}
+            )
+        image_id = response.json()["id"]
+
+        # attach image id to question
+        response = self.client.put(
+            reverse("questions-detail", args=[self.question.id]),
+            {"item": self.item.id, "image": image_id},
+        )
+
+        # delete question
+        response = self.client.delete(f"/api/v1/questions/{self.question.id}/")
+
+        # the image should be deleted as well
+        response = self.client.get(f"/api/v1/images/{image_id}/")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class ImageTestCase(BaseTestCase):

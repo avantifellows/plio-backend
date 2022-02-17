@@ -342,7 +342,7 @@ class PlioTestCase(BaseTestCase):
 
     def test_duplicate(self):
         plio = Plio.objects.filter(created_by=self.user).first()
-         # create some items and questions
+        # create some items and questions
         item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
         item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)
         item_3 = Item.objects.create(type="question", plio=self.plio_1, time=20)
@@ -375,7 +375,7 @@ class PlioTestCase(BaseTestCase):
             new_question_ids.append(item["details"]["id"])
 
         response = self.client.get(
-            f"/api/v1/plios/{new_plio_uuid}/duplicate", 
+            f"/api/v1/plios/{new_plio_uuid}/duplicate",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -1274,24 +1274,6 @@ class ItemTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/items/{new_item.id}/")
         self.assertEqual(response.json()["time"], 2)
 
-    # def test_duplicate_no_plio_id(self):
-    # """Testing duplicate without providing any plio id"""
-    # duplicate item
-    # response = self.client.post(f"/api/v1/items/{self.item.id}/duplicate/")
-    # new response comes via single api call to /plios
-    # self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    # def test_duplicate_wrong_plio_id(self):
-    #     """Testing duplicate by providing plio id that does not exist"""
-    #     # duplicate item
-    #     response = self.client.post(
-    #         f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": 2}
-    #     )
-    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    #     self.assertEqual(
-    #         json.loads(response.content)["detail"], "Specified plio not found"
-    #     )
-
     def test_deleting_plio_deletes_items(self):
         """Deleting a plio should delete the items associated with it"""
         # fetching the created item works at first
@@ -1428,24 +1410,6 @@ class QuestionTestCase(BaseTestCase):
         # check question was updated
         response = self.client.get(f"/api/v1/questions/{new_question.id}/")
         self.assertEqual(response.json()["type"], "subjective")
-
-    # def test_duplicate_no_item_id(self):
-    #     """Testing duplicate without providing any item id"""
-    #     # duplicate question
-    #     response = self.client.post(f"/api/v1/questions/{self.question.id}/duplicate/")
-    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    # def test_duplicate_wrong_item_id(self):
-    #     """Testing duplicate by providing item id that does not exist"""
-    #     # duplicate question
-    #     response = self.client.post(
-    #         f"/api/v1/questions/{self.question.id}/duplicate/",
-    #         {"itemId": self.item.id + 100},
-    #     )
-    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    #     self.assertEqual(
-    #         json.loads(response.content)["detail"], "Specified item not found"
-    #     )
 
     def test_deleting_plio_deletes_questions(self):
         """Deleting a plio should delete the questions associated with it"""

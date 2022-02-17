@@ -33,9 +33,9 @@ from experiments.views import ExperimentViewSet, ExperimentPlioViewSet
 from plio.views import (
     VideoViewSet,
     PlioViewSet,
-    # ItemViewSet,
-    # QuestionViewSet,
-    # ImageViewSet,
+    ItemViewSet,
+    QuestionViewSet,
+    ImageViewSet,
 )
 from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
 from users import consumers
@@ -62,10 +62,9 @@ api_router = routers.DefaultRouter()
 api_router.register(r"organizations", OrganizationViewSet, basename="organizations")
 api_router.register(r"users", UserViewSet, basename="users")
 api_router.register(r"videos", VideoViewSet, basename="videos")
-# https://stackoverflow.com/questions/48548622/base-name-argument-not-specified-and-could-not-automatically-determine-the-name
 api_router.register(r"plios", PlioViewSet, basename="plios")
-# api_router.register(r"items", ItemViewSet, basename="items")
-# api_router.register(r"questions", QuestionViewSet, basename="questions")
+api_router.register(r"items", ItemViewSet, basename="items")
+api_router.register(r"questions", QuestionViewSet, basename="questions")
 api_router.register(r"experiments", ExperimentViewSet, basename="experiments")
 api_router.register(
     r"experiment-plios", ExperimentPlioViewSet, basename="experiment-plios"
@@ -79,7 +78,7 @@ api_router.register(r"tags", TagViewSet, basename="tags")
 api_router.register(
     r"organization-users", OrganizationUserViewSet, basename="organization-users"
 )
-# api_router.register(r"images", ImageViewSet, basename="images")
+api_router.register(r"images", ImageViewSet, basename="images")
 
 # http/https url patterns
 urlpatterns = [

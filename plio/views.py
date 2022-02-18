@@ -258,12 +258,21 @@ class PlioViewSet(viewsets.ModelViewSet):
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
+
+        video = Video.objects.get(pk=plio.video.id)
+        # django will auto-generate the key when the key is set to None
+        video.pk = None
+        # create a new instance of video
+        video.save()
+
         items = Item.objects.filter(plio__id=plio.id)
         questions = Question.objects.filter(item__plio__id=plio.id)
+
         # django will auto-generate the key when the key is set to None
         plio.pk = None
         plio.uuid = None
         plio.status = "draft"
+        plio.video = video
         # a duplicated plio will always be in "draft" mode
         plio.save()
 

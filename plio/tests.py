@@ -367,12 +367,19 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         new_plio_id = response.data["id"]
         new_plio_uuid = response.data["uuid"]
+        new_video_id = response.data["video"]["id"]
         new_item_ids = []
         new_question_ids = []
 
         for item in response.data.get("items", []):
             new_item_ids.append(item["id"])
             new_question_ids.append(item["details"]["id"])
+
+        response = self.client.get(
+            f"/api/v1/videos/{new_video_id}/",
+        )
+        self.assertNotEqual(new_video_id, self.video.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response = self.client.get(
             f"/api/v1/plios/{new_plio_uuid}/",

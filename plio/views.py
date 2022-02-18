@@ -294,7 +294,8 @@ class PlioViewSet(viewsets.ModelViewSet):
                 questions[question_index].image = images[index]
 
         if questions:
-            question_items = items.filter(type="question")
+            item_ids = [item.id for item in items]
+            question_items = Item.objects.filter(id__in=item_ids, type="question")
             for index, item in zip(range(len(questions)), question_items):
                 questions[index].item = item
                 questions[index].pk = None

@@ -275,12 +275,29 @@ class PlioViewSet(viewsets.ModelViewSet):
             # create the items
             items = Item.objects.bulk_create(items)
         # questions part
+        question_indices_with_image = []
+        images = []
+
+        for index, question in enumerate(questions):
+            if question.image is not None:
+                question_indices_with_image.append(index)
+                images.append(question.image)
+
+        if images:
+            for index, _ in enumerate(images):
+                # reset the key - django will auto-generate the keys when they are set to None
+                images[index].pk = None
+
+            images = Image.objects.bulk_create(images)
+            for index, question_index in enumerate(question_indices_with_image):
+                questions[question_index].image = images[index]
         if questions:
             for index, _ in enumerate(questions):
                 questions[index].item = items[index]
                 questions[index].pk = None
 
             questions = Question.objects.bulk_create(questions)
+
         return Response(self.get_serializer(plio).data)
 
     @action(
@@ -299,7 +316,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
-
         if plio.video is not None:
             video = Video.objects.filter(id=plio.video.id).first()
             video.pk = None

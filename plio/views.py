@@ -1,6 +1,5 @@
 import os
 import shutil
-from copy import deepcopy
 import json
 
 from rest_framework import viewsets, status, filters
@@ -16,7 +15,6 @@ from django.http import FileResponse
 from django_tenants.utils import get_tenant_model
 
 import pandas as pd
-from storages.backends.s3boto3 import S3Boto3Storage
 
 from organizations.middleware import OrganizationTenantMiddleware
 from organizations.models import Organization
@@ -32,7 +30,6 @@ from plio.serializers import (
 )
 from plio.settings import (
     DEFAULT_TENANT_SHORTCODE,
-    AWS_STORAGE_BUCKET_NAME,
 )
 from plio.queries import (
     get_plio_details_query,
@@ -261,11 +258,59 @@ class PlioViewSet(viewsets.ModelViewSet):
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
+
+        video = Video.objects.get(pk=plio.video.id)
+        # django will auto-generate the key when the key is set to None
+        video.pk = None
+        # create a new instance of video
+        video.save()
+
+        items = Item.objects.filter(plio__id=plio.id)
+        questions = Question.objects.filter(item__plio__id=plio.id)
+
         # django will auto-generate the key when the key is set to None
         plio.pk = None
         plio.uuid = None
-        plio.status = "draft"  # a duplicated plio will always be in "draft" mode
+        plio.status = "draft"
+        plio.video = video
+        # a duplicated plio will always be in "draft" mode
         plio.save()
+
+        if items:
+            for index, _ in enumerate(items):
+                items[index].plio = plio
+                items[index].pk = None
+
+            # create the items
+            items = Item.objects.bulk_create(items)
+
+        # questions part
+        question_indices_with_image = []
+        images = []
+
+        for index, question in enumerate(questions):
+            if question.image is not None:
+                question_indices_with_image.append(index)
+                images.append(question.image)
+
+        if images:
+            for index, _ in enumerate(images):
+                # reset the key - django will auto-generate the keys when they are set to None
+                images[index].pk = None
+
+            images = Image.objects.bulk_create(images)
+            for index, question_index in enumerate(question_indices_with_image):
+                questions[question_index].image = images[index]
+
+        if questions:
+            item_ids = [item.id for item in items]
+            question_items = Item.objects.filter(id__in=item_ids, type="question")
+            for index, item in zip(range(len(questions)), question_items):
+                questions[index].item = item
+                questions[index].pk = None
+
+            Question.objects.bulk_create(questions)
+
         return Response(self.get_serializer(plio).data)
 
     @action(
@@ -274,6 +319,7 @@ class PlioViewSet(viewsets.ModelViewSet):
     )
     def copy(self, request, uuid):
         """Copies the given plio to another workspace"""
+
         if "workspace" not in request.data:
             return Response(
                 {"detail": "workspace is not provided"},
@@ -283,7 +329,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
-
         if plio.video is not None:
             video = Video.objects.filter(id=plio.video.id).first()
             video.pk = None
@@ -697,31 +742,6 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
         return queryset
 
-    @action(methods=["post"], detail=True)
-    def duplicate(self, request, pk):
-        """
-        Creates a clone of the item with the given pk and links it to the plio
-        that's provided in the payload
-        """
-        item = self.get_object()
-        item.pk = None
-        plio_id = self.request.data.get("plioId")
-        if not plio_id:
-            return Response(
-                {"detail": "Plio id not passed in the payload."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        plio = Plio.objects.filter(id=plio_id).first()
-        if not plio:
-            return Response(
-                {"detail": "Specified plio not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        item.plio = plio
-        item.save()
-        return Response(self.get_serializer(item).data)
-
     @action(methods=["delete"], detail=False)
     def bulk_delete(self, request):
         """deletes items whose ids have been provided"""
@@ -767,37 +787,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated, PlioPermission]
 
-    @action(methods=["post"], detail=True)
-    def duplicate(self, request, pk):
-        """
-        Creates a clone of the question with the given pk and links it to the item
-        that is provided in the payload
-        """
-        question = self.get_object()
-        question.pk = None
-        item_id = self.request.data.get("itemId")
-        if not item_id:
-            return Response(
-                {"details": "Item id not passed in the payload"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        item = Item.objects.filter(id=item_id).first()
-        if not item:
-            return Response(
-                {"detail": "Specified item not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-        if question.image:
-            # create duplicate for image if the question has an image
-            duplicate_image_id = ImageViewSet.as_view({"post": "duplicate"})(
-                request=request._request, pk=question.image.id
-            ).data["id"]
-            question.image = Image.objects.filter(id=duplicate_image_id).first()
-
-        question.item = item
-        question.save()
-        return Response(self.get_serializer(question).data)
-
 
 class ImageViewSet(viewsets.ModelViewSet):
     """
@@ -814,25 +803,3 @@ class ImageViewSet(viewsets.ModelViewSet):
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
     permission_classes = [IsAuthenticated]
-
-    @action(methods=["post"], detail=True)
-    def duplicate(self, request, pk):
-        """
-        Creates a clone of the image with the given pk
-        """
-        image = self.get_object()
-
-        # create new image object
-        new_image = Image.objects.create(
-            alt_text=image.alt_text, url=deepcopy(image.url)
-        )
-        new_image.save()
-
-        # creating the image at the new path
-        s3 = S3Boto3Storage()
-        copy_source = {"Bucket": AWS_STORAGE_BUCKET_NAME, "Key": image.url.name}
-        s3.bucket.meta.client.copy(
-            copy_source, AWS_STORAGE_BUCKET_NAME, new_image.url.name
-        )
-
-        return Response(self.get_serializer(new_image).data)

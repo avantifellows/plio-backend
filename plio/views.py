@@ -1,6 +1,5 @@
 import os
 import shutil
-from copy import deepcopy
 import json
 
 from rest_framework import viewsets, status, filters
@@ -16,7 +15,6 @@ from django.http import FileResponse
 from django_tenants.utils import get_tenant_model
 
 import pandas as pd
-from storages.backends.s3boto3 import S3Boto3Storage
 
 from organizations.middleware import OrganizationTenantMiddleware
 from organizations.models import Organization
@@ -32,7 +30,6 @@ from plio.serializers import (
 )
 from plio.settings import (
     DEFAULT_TENANT_SHORTCODE,
-    AWS_STORAGE_BUCKET_NAME,
 )
 from plio.queries import (
     get_plio_details_query,
@@ -733,6 +730,34 @@ class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated, PlioPermission]
 
+    @action(methods=["delete"], detail=False)
+    def bulk_delete(self, request):
+        """deletes items whose ids have been provided"""
+        if "id" not in request.data:
+            return Response(
+                {"detail": "item id(s) not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ids_to_delete = request.data["id"]
+
+        # ensure that a list of ids has been provided
+        if not isinstance(ids_to_delete, list):
+            return Response(
+                {"detail": "id should contain a list of item ids to be deleted"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        items_to_delete = Item.objects.filter(pk__in=ids_to_delete)
+        if len(items_to_delete) != len(ids_to_delete):
+            return Response(
+                {"detail": "one or more of the ids provided do not exist"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        items_to_delete.delete()
+        return Response("deletion successful")
+
 
 class ImageViewSet(viewsets.ModelViewSet):
     """
@@ -748,3 +773,4 @@ class ImageViewSet(viewsets.ModelViewSet):
 
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
+    permission_classes = [IsAuthenticated]

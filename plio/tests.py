@@ -342,7 +342,6 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_duplicate(self):
-        plio = Plio.objects.filter(created_by=self.user).first()
         # create some items and questions
         item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
         item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)
@@ -376,7 +375,7 @@ class PlioTestCase(BaseTestCase):
             new_question_ids.append(item["details"]["id"])
 
         response = self.client.get(
-            f"/api/v1/plios/{new_plio_uuid}/duplicate",
+            f"/api/v1/plios/{new_plio_uuid}/",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -406,7 +405,6 @@ class PlioTestCase(BaseTestCase):
                     ImageSerializer(old_question.image).data["url"],
                     response.data["image"]["url"],
                 )
-        response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
 
     def test_default_ordering_when_no_ordering_specified(self):
         # create a third plio

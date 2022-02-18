@@ -65,6 +65,7 @@ api_router.register(r"videos", VideoViewSet, basename="videos")
 api_router.register(r"plios", PlioViewSet, basename="plios")
 api_router.register(r"items", ItemViewSet, basename="items")
 api_router.register(r"questions", QuestionViewSet, basename="questions")
+# https://stackoverflow.com/questions/48548622/base-name-argument-not-specified-and-could-not-automatically-determine-the-name
 api_router.register(r"experiments", ExperimentViewSet, basename="experiments")
 api_router.register(
     r"experiment-plios", ExperimentPlioViewSet, basename="experiment-plios"

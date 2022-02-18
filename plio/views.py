@@ -258,7 +258,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         # return 404 if user cannot access the object
         # else fetch the object
         plio = self.get_object()
-        items = list(Item.objects.filter(plio__id=plio.id))
+        items = Item.objects.filter(plio__id=plio.id)
         questions = Question.objects.filter(item__plio__id=plio.id)
         # django will auto-generate the key when the key is set to None
         plio.pk = None
@@ -274,6 +274,7 @@ class PlioViewSet(viewsets.ModelViewSet):
 
             # create the items
             items = Item.objects.bulk_create(items)
+
         # questions part
         question_indices_with_image = []
         images = []
@@ -291,12 +292,14 @@ class PlioViewSet(viewsets.ModelViewSet):
             images = Image.objects.bulk_create(images)
             for index, question_index in enumerate(question_indices_with_image):
                 questions[question_index].image = images[index]
+
         if questions:
-            for index, _ in enumerate(questions):
-                questions[index].item = items[index]
+            question_items = items.filter(type="question")
+            for index, item in zip(range(len(questions)), question_items):
+                questions[index].item = item
                 questions[index].pk = None
 
-            questions = Question.objects.bulk_create(questions)
+            Question.objects.bulk_create(questions)
 
         return Response(self.get_serializer(plio).data)
 
@@ -729,23 +732,6 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(plio__uuid=plio_uuid).order_by("time")
         return queryset
 
-
-class QuestionViewSet(viewsets.ModelViewSet):
-    """
-    Question ViewSet description
-
-    list: List all questions
-    retrieve: Retrieve a question
-    update: Update a question
-    create: Create a question
-    partial_update: Patch a question
-    destroy: Soft delete a question
-    """
-
-    queryset = Question.objects.all()
-    serializer_class = QuestionSerializer
-    permission_classes = [IsAuthenticated, PlioPermission]
-
     @action(methods=["delete"], detail=False)
     def bulk_delete(self, request):
         """deletes items whose ids have been provided"""
@@ -773,6 +759,23 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         items_to_delete.delete()
         return Response("deletion successful")
+
+
+class QuestionViewSet(viewsets.ModelViewSet):
+    """
+    Question ViewSet description
+
+    list: List all questions
+    retrieve: Retrieve a question
+    update: Update a question
+    create: Create a question
+    partial_update: Patch a question
+    destroy: Soft delete a question
+    """
+
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
+    permission_classes = [IsAuthenticated, PlioPermission]
 
 
 class ImageViewSet(viewsets.ModelViewSet):

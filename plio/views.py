@@ -210,12 +210,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset.values())
 
         if page is not None:
-            # add the items corresponding to the plio in each plio object
-            for index, _ in enumerate(page):
-                page[index]["items"] = ItemSerializer(
-                    queryset[index].item_set, many=True
-                ).data
-
             return self.get_paginated_response({"data": page, "raw_count": num_plios})
 
         # return an empty response in the paginated format if pagination fails

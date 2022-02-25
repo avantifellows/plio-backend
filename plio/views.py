@@ -425,6 +425,9 @@ class PlioViewSet(viewsets.ModelViewSet):
                 )
 
         # question-based metrics
+        import ipdb
+
+        ipdb.set_trace()
         questions = Question.objects.filter(item__plio=plio.id)
 
         # if the plio does not have any questions, these metrics are not applicable
@@ -451,11 +454,13 @@ class PlioViewSet(viewsets.ModelViewSet):
                     "item_type",
                     "question_type",
                     "correct_answer",
+                    "survey",
                 ],
             )
 
             # retain only the responses to items which are questions
-            question_df = df[df["item_type"] == "question"].reset_index(drop=True)
+            dff = df[df["survey"] == "TRUE"].reset_index(drop=True)
+            question_df = dff[dff["item_type"] == "question"].reset_index(drop=True)
             num_questions = len(questions)
 
             def is_answer_correct(row):

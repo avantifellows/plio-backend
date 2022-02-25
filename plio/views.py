@@ -522,16 +522,16 @@ class PlioViewSet(viewsets.ModelViewSet):
                         (num_correct_list / num_answered_list).mean() * 100, 2
                     )
 
-            return Response(
-                {
-                    "unique_viewers": num_unique_viewers,
-                    "average_watch_time": average_watch_time,
-                    "percent_one_minute_retention": percent_one_minute_retention,
-                    "accuracy": accuracy,
-                    "average_num_answered": average_num_answered,
-                    "percent_completed": percent_completed,
-                }
-            )
+                return Response(
+                    {
+                        "unique_viewers": num_unique_viewers,
+                        "average_watch_time": average_watch_time,
+                        "percent_one_minute_retention": percent_one_minute_retention,
+                        "accuracy": accuracy,
+                        "average_num_answered": average_num_answered,
+                        "percent_completed": percent_completed,
+                    }
+                )
 
     @action(
         methods=["get"],

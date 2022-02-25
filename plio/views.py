@@ -456,15 +456,16 @@ class PlioViewSet(viewsets.ModelViewSet):
             )
 
             # retain only the responses to items which are questions
-            dff = df[df.survey.eq(False)].reset_index(drop=True)
-            question_df = dff[dff["item_type"] == "question"].reset_index(drop=True)
-            num_questions = len(dff)
+            dff = df[df["item_type"] == "question"].reset_index(drop=True)
+            question_df = dff[dff.survey.eq(False)].reset_index(drop=True)
+            num_questions = len(question_df)
 
             if num_questions == 0:
                 return Response(
                     {
                         "unique_viewers": num_unique_viewers,
                         "average_watch_time": average_watch_time,
+                        "isQuesSurvey": True,
                     }
                 )
             else:
@@ -522,6 +523,11 @@ class PlioViewSet(viewsets.ModelViewSet):
                         (num_correct_list / num_answered_list).mean() * 100, 2
                     )
 
+                if num_questions != len(dff):
+                    quesSurvey = (True,)
+                else:
+                    quesSurvey = (False,)
+
                 return Response(
                     {
                         "unique_viewers": num_unique_viewers,
@@ -530,6 +536,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                         "accuracy": accuracy,
                         "average_num_answered": average_num_answered,
                         "percent_completed": percent_completed,
+                        "isQuesSurvey": quesSurvey[0],
                     }
                 )
 

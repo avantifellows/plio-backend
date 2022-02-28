@@ -456,8 +456,10 @@ class PlioViewSet(viewsets.ModelViewSet):
             )
 
             # retain only the responses to items which are questions
-            dff = df[df["item_type"] == "question"].reset_index(drop=True)
-            question_df = dff[dff.survey.eq(False)].reset_index(drop=True)
+            question_df = df[df["item_type"] == "question"].reset_index(drop=True)
+            question_df = question_df[question_df.survey.eq(False)].reset_index(
+                drop=True
+            )
             num_questions = len(question_df)
 
             if num_questions == 0:
@@ -465,7 +467,11 @@ class PlioViewSet(viewsets.ModelViewSet):
                     {
                         "unique_viewers": num_unique_viewers,
                         "average_watch_time": average_watch_time,
-                        "isQuesSurvey": True,
+                        "percent_one_minute_retention": None,
+                        "accuracy": None,
+                        "average_num_answered": None,
+                        "percent_completed": None,
+                        "has_survey_question": True,
                     }
                 )
             else:
@@ -489,6 +495,10 @@ class PlioViewSet(viewsets.ModelViewSet):
                     num_answered = sum(
                         group_df["answer"].apply(lambda value: value is not None)
                     )
+                    # sanity check
+                    assert num_questions == len(
+                        group_df
+                    ), "Inconsistency in the number of questions"
 
                     num_answered_list.append(num_answered)
 
@@ -523,11 +533,6 @@ class PlioViewSet(viewsets.ModelViewSet):
                         (num_correct_list / num_answered_list).mean() * 100, 2
                     )
 
-                if num_questions != len(dff):
-                    quesSurvey = (True,)
-                else:
-                    quesSurvey = (False,)
-
                 return Response(
                     {
                         "unique_viewers": num_unique_viewers,
@@ -536,7 +541,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                         "accuracy": accuracy,
                         "average_num_answered": average_num_answered,
                         "percent_completed": percent_completed,
-                        "isQuesSurvey": quesSurvey[0],
+                        "has_survey_question": (df.survey.eq(True)).sum() > 0,
                     }
                 )
 

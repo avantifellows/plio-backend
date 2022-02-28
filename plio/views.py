@@ -495,6 +495,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                     num_answered = sum(
                         group_df["answer"].apply(lambda value: value is not None)
                     )
+
                     # sanity check
                     assert num_questions == len(
                         group_df

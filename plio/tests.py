@@ -824,7 +824,7 @@ class PlioTestCase(BaseTestCase):
         item = Item.objects.create(type="question", plio=self.plio_1, time=1)
 
         # seed a question
-        Question.objects.create(type="mcq", item=item, text="test")
+        Question.objects.create(type="mcq", item=item, text="test", survey=False)
 
         # make the video's duration a valid one for calculating retention
         response = self.client.put(
@@ -846,6 +846,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["accuracy"], None)
         self.assertEqual(response.data["average_num_answered"], 0)
         self.assertEqual(response.data["percent_completed"], 0)
+        self.assertEqual(response.data["has_survey_question"], False)
 
     def test_metrics_valid_retention_values(self):
         # make the video's duration a valid one for calculating retention

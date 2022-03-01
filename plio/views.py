@@ -375,7 +375,14 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         # no sessions have been created for the plio: return
         if not Session.objects.filter(plio=plio.id):
-            return Response({})
+            return Response(
+                {
+                    "has_survey_question": len(
+                        Question.objects.filter(item__plio=plio.id, survey=True)
+                    )
+                    > 0
+                }
+            )
 
         import numpy as np
 
@@ -457,12 +464,11 @@ class PlioViewSet(viewsets.ModelViewSet):
 
             # retain only the responses to items which are questions
             question_df = df[df["item_type"] == "question"].reset_index(drop=True)
-            question_df = question_df[question_df.survey.eq(False)].reset_index(
-                drop=True
-            )
+            # retian only questions which are not survey questions
+            question_df = question_df[~question_df.survey].reset_index(drop=True)
             num_questions = len(question_df)
 
-            if num_questions == 0:
+            if not num_questions:
                 return Response(
                     {
                         "unique_viewers": num_unique_viewers,
@@ -474,76 +480,75 @@ class PlioViewSet(viewsets.ModelViewSet):
                         "has_survey_question": True,
                     }
                 )
-            else:
 
-                def is_answer_correct(row):
-                    """Whether the answer corresponding to the given row is correct"""
-                    if row["question_type"] in ["mcq", "checkbox"]:
-                        return row["answer"] == row["correct_answer"]
-                    return row["answer"] is not None
+            def is_answer_correct(row):
+                """Whether the answer corresponding to the given row is correct"""
+                if row["question_type"] in ["mcq", "checkbox"]:
+                    return row["answer"] == row["correct_answer"]
+                return row["answer"] is not None
 
-                # holds the number of questions answered for each viewer
-                num_answered_list = []
-                # holds the number of questions correctly answered for each viewer
-                num_correct_list = []
+            # holds the number of questions answered for each viewer
+            num_answered_list = []
+            # holds the number of questions correctly answered for each viewer
+            num_correct_list = []
 
-                user_grouping = question_df.groupby("user_id")
-                for group in user_grouping.groups:
-                    # get the responses for a given user
-                    group_df = user_grouping.get_group(group)
+            user_grouping = question_df.groupby("user_id")
+            for group in user_grouping.groups:
+                # get the responses for a given user
+                group_df = user_grouping.get_group(group)
 
-                    num_answered = sum(
-                        group_df["answer"].apply(lambda value: value is not None)
-                    )
-                    # sanity check
-                    assert num_questions == len(
-                        group_df
-                    ), "Inconsistency in the number of questions"
-
-                    num_answered_list.append(num_answered)
-
-                    if not num_answered:
-                        num_correct_list.append(None)
-                    else:
-                        num_correct_list.append(
-                            sum(group_df.apply(is_answer_correct, axis=1))
-                        )
-
-                # converting to numpy arrays enabled us to use vectorization
-                # to speed up the computation many folds
-                num_answered_list = np.array(num_answered_list)
-                num_correct_list = np.array(num_correct_list)
-                average_num_answered = round(num_answered_list.mean())
-                percent_completed = np.round(
-                    100
-                    * (sum(num_answered_list == num_questions) / num_unique_viewers),
-                    2,
+                num_answered = sum(
+                    group_df["answer"].apply(lambda value: value is not None)
                 )
 
-                # only use the responses from viewers who have answered at least
-                # one question to compute the accuracy
-                answered_at_least_one_index = num_answered_list > 0
-                num_answered_list = num_answered_list[answered_at_least_one_index]
-                num_correct_list = num_correct_list[answered_at_least_one_index]
+                # sanity check
+                assert num_questions == len(
+                    group_df
+                ), "Inconsistency in the number of questions"
 
-                if not len(num_correct_list):
-                    accuracy = None
+                num_answered_list.append(num_answered)
+
+                if not num_answered:
+                    num_correct_list.append(None)
                 else:
-                    accuracy = np.round(
-                        (num_correct_list / num_answered_list).mean() * 100, 2
+                    num_correct_list.append(
+                        sum(group_df.apply(is_answer_correct, axis=1))
                     )
 
-                return Response(
-                    {
-                        "unique_viewers": num_unique_viewers,
-                        "average_watch_time": average_watch_time,
-                        "percent_one_minute_retention": percent_one_minute_retention,
-                        "accuracy": accuracy,
-                        "average_num_answered": average_num_answered,
-                        "percent_completed": percent_completed,
-                        "has_survey_question": (df.survey.eq(True)).sum() > 0,
-                    }
+            # converting to numpy arrays enabled us to use vectorization
+            # to speed up the computation many folds
+            num_answered_list = np.array(num_answered_list)
+            num_correct_list = np.array(num_correct_list)
+            average_num_answered = round(num_answered_list.mean())
+            percent_completed = np.round(
+                100 * (sum(num_answered_list == num_questions) / num_unique_viewers),
+                2,
+            )
+
+            # only use the responses from viewers who have answered at least
+            # one question to compute the accuracy
+            answered_at_least_one_index = num_answered_list > 0
+            num_answered_list = num_answered_list[answered_at_least_one_index]
+            num_correct_list = num_correct_list[answered_at_least_one_index]
+
+            if not len(num_correct_list):
+                accuracy = None
+            else:
+                accuracy = np.round(
+                    (num_correct_list / num_answered_list).mean() * 100, 2
                 )
+
+            return Response(
+                {
+                    "unique_viewers": num_unique_viewers,
+                    "average_watch_time": average_watch_time,
+                    "percent_one_minute_retention": percent_one_minute_retention,
+                    "accuracy": accuracy,
+                    "average_num_answered": average_num_answered,
+                    "percent_completed": percent_completed,
+                    "has_survey_question": (df.survey.eq(True)).sum() > 0,
+                }
+            )
 
     @action(
         methods=["get"],

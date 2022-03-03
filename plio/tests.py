@@ -778,12 +778,12 @@ class PlioTestCase(BaseTestCase):
         connection.set_schema_to_public()
 
     def test_no_metrics_returned_if_no_sessions(self):
-
         response = self.client.get(
             f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # if no sessions are there, no metrics will be returned only question mode will return
         self.assertEqual(response.data, {"has_survey_question": False})
 
     def test_metrics_num_views_and_average_watch_time(self):
@@ -962,7 +962,6 @@ class PlioTestCase(BaseTestCase):
             text="test",
             options=["", ""],
             correct_answer=[0, 1],
-            survey=False,
         )
         Question.objects.create(
             type="subjective",

@@ -777,12 +777,14 @@ class PlioTestCase(BaseTestCase):
         # set db connection back to public (default) schema
         connection.set_schema_to_public()
 
-    def test_metrics_returns_empty_if_no_sessions(self):
+    def test_no_metrics_returned_if_no_sessions(self):
+
         response = self.client.get(
             f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
         )
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {})
+        self.assertEqual(response.data, {"has_survey_question": False})
 
     def test_metrics_num_views_and_average_watch_time(self):
         # seed some sessions
@@ -799,6 +801,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["accuracy"], None)
         self.assertEqual(response.data["average_num_answered"], None)
         self.assertEqual(response.data["percent_completed"], None)
+        self.assertEqual(response.data["has_survey_question"], False)
 
     def test_metrics_video_duration_valid_no_valid_retention(self):
         # make the video's duration a valid one for calculating retention
@@ -818,13 +821,14 @@ class PlioTestCase(BaseTestCase):
 
         # retention at 60 seconds should still be None
         self.assertEqual(response.data["percent_one_minute_retention"], 0)
+        self.assertEqual(response.data["has_survey_question"], False)
 
     def test_metrics_video_duration_valid_no_valid_retention_has_questions(self):
         # seed an item
         item = Item.objects.create(type="question", plio=self.plio_1, time=1)
 
         # seed a question
-        Question.objects.create(type="mcq", item=item, text="test", survey=False)
+        Question.objects.create(type="mcq", item=item, text="test")
 
         # make the video's duration a valid one for calculating retention
         response = self.client.put(
@@ -890,6 +894,7 @@ class PlioTestCase(BaseTestCase):
 
         # retention at 60 seconds should still be None
         self.assertEqual(response.data["percent_one_minute_retention"], 66.67)
+        self.assertEqual(response.data["has_survey_question"], False)
 
     def test_question_metrics_with_single_session_no_answer(self):
         # seed an item
@@ -935,6 +940,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["average_num_answered"], 0)
         self.assertEqual(response.data["percent_completed"], 0)
         self.assertEqual(response.data["accuracy"], None)
+        self.assertEqual(response.data["has_survey_question"], False)
 
     def test_question_metrics_answers_provided(self):
         # seed items
@@ -944,7 +950,11 @@ class PlioTestCase(BaseTestCase):
 
         # seed questions
         Question.objects.create(
-            type="mcq", item=item_1, text="test", options=["", ""], correct_answer=0
+            type="mcq",
+            item=item_1,
+            text="test",
+            options=["", ""],
+            correct_answer=0,
         )
         Question.objects.create(
             type="checkbox",
@@ -952,8 +962,13 @@ class PlioTestCase(BaseTestCase):
             text="test",
             options=["", ""],
             correct_answer=[0, 1],
+            survey=False,
         )
-        Question.objects.create(type="subjective", item=item_3, text="test")
+        Question.objects.create(
+            type="subjective",
+            item=item_3,
+            text="test",
+        )
 
         # seed a few session and session answer objects with answers
         session = Session.objects.create(
@@ -976,6 +991,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["average_num_answered"], 2)
         self.assertEqual(response.data["percent_completed"], 50)
         self.assertEqual(response.data["accuracy"], 58.33)
+        self.assertEqual(response.data["has_survey_question"], False)
 
 
 class PlioDownloadTestCase(BaseTestCase):

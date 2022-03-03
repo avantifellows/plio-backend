@@ -380,7 +380,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                     "has_survey_question": len(
                         Question.objects.filter(item__plio=plio.id, survey=True)
                     )
-                    > 0
+                    > 0,
                 }
             )
 
@@ -466,9 +466,11 @@ class PlioViewSet(viewsets.ModelViewSet):
             question_df = df[df["item_type"] == "question"].reset_index(drop=True)
             # retian only questions which are not survey questions
             question_df = question_df[~question_df.survey].reset_index(drop=True)
-            num_questions = len(question_df)
+            num_questions = len(
+                Question.objects.filter(item__plio=plio.id, survey=False)
+            )
 
-            if not num_questions:
+            if not len(question_df):
                 return Response(
                     {
                         "unique_viewers": num_unique_viewers,
@@ -537,18 +539,20 @@ class PlioViewSet(viewsets.ModelViewSet):
                 accuracy = np.round(
                     (num_correct_list / num_answered_list).mean() * 100, 2
                 )
-
-            return Response(
-                {
-                    "unique_viewers": num_unique_viewers,
-                    "average_watch_time": average_watch_time,
-                    "percent_one_minute_retention": percent_one_minute_retention,
-                    "accuracy": accuracy,
-                    "average_num_answered": average_num_answered,
-                    "percent_completed": percent_completed,
-                    "has_survey_question": (df.survey.eq(True)).sum() > 0,
-                }
-            )
+        return Response(
+            {
+                "unique_viewers": num_unique_viewers,
+                "average_watch_time": average_watch_time,
+                "percent_one_minute_retention": percent_one_minute_retention,
+                "accuracy": accuracy,
+                "average_num_answered": average_num_answered,
+                "percent_completed": percent_completed,
+                "has_survey_question": len(
+                    Question.objects.filter(item__plio=plio.id, survey=True)
+                )
+                > 0,
+            }
+        )
 
     @action(
         methods=["get"],

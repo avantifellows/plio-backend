@@ -783,7 +783,8 @@ class PlioTestCase(BaseTestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # if no sessions are there, no metrics will be returned only question mode will return
+        # if no sessions are there, no metrics will be returned.
+        # only whether any survey questions are there will be returned
         self.assertEqual(response.data, {"has_survey_question": False})
 
     def test_metrics_num_views_and_average_watch_time(self):

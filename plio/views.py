@@ -373,13 +373,16 @@ class PlioViewSet(viewsets.ModelViewSet):
         # else fetch the object
         plio = self.get_object()
 
-        num_survey_questions = Question.objects.filter(item__plio=plio.id, survey=True)
+        # question-based metrics
+        questions = Question.objects.filter(item__plio=plio.id)
+
+        survey_questions = questions.filter(survey=True)
 
         # no sessions have been created for the plio: return
         if not Session.objects.filter(plio=plio.id):
             return Response(
                 {
-                    "has_survey_question": len(num_survey_questions) > 0,
+                    "has_survey_question": len(survey_questions) > 0,
                 }
             )
 
@@ -430,9 +433,6 @@ class PlioViewSet(viewsets.ModelViewSet):
                     ((retention.sum(axis=1) > 0).sum() / num_unique_viewers) * 100, 2
                 )
 
-        # question-based metrics
-        questions = Question.objects.filter(item__plio=plio.id)
-
         # if the plio does not have any questions, these metrics are not applicable
         if not questions:
             accuracy = None
@@ -465,9 +465,7 @@ class PlioViewSet(viewsets.ModelViewSet):
             question_df = df[df["item_type"] == "question"].reset_index(drop=True)
             # retain only non-survey questions
             question_df = question_df[~question_df.survey].reset_index(drop=True)
-            num_non_survey_questions = len(
-                Question.objects.filter(item__plio=plio.id, survey=False)
-            )
+            non_survey_questions = len(questions.filter(survey=False))
 
             # no non-survey questions found
             if not len(question_df):
@@ -500,7 +498,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                 group_df = user_grouping.get_group(group)
 
                 # sanity check
-                assert num_non_survey_questions == len(
+                assert non_survey_questions == len(
                     group_df
                 ), "Inconsistency in the number of questions"
 
@@ -524,10 +522,7 @@ class PlioViewSet(viewsets.ModelViewSet):
             average_num_answered = round(num_answered_list.mean())
             percent_completed = np.round(
                 100
-                * (
-                    sum(num_answered_list == num_non_survey_questions)
-                    / num_unique_viewers
-                ),
+                * (sum(num_answered_list == non_survey_questions) / num_unique_viewers),
                 2,
             )
 
@@ -551,7 +546,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                 "accuracy": accuracy,
                 "average_num_answered": average_num_answered,
                 "percent_completed": percent_completed,
-                "has_survey_question": len(num_survey_questions) > 0,
+                "has_survey_question": len(survey_questions) > 0,
             }
         )
 

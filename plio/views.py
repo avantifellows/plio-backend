@@ -373,7 +373,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         # else fetch the object
         plio = self.get_object()
 
-        # question-based metrics
         questions = Question.objects.filter(item__plio=plio.id)
 
         survey_questions = questions.filter(survey=True)
@@ -433,6 +432,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                     ((retention.sum(axis=1) > 0).sum() / num_unique_viewers) * 100, 2
                 )
 
+        # question-based metrics
         # if the plio does not have any questions, these metrics are not applicable
         if not questions:
             accuracy = None

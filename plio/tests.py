@@ -993,7 +993,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["accuracy"], 58.33)
         self.assertEqual(response.data["has_survey_question"], False)
 
-    def test_question_mode_returned_if_no_sessions(self):
+    def test_survey_mode_returned_correctly_if_no_sessions(self):
         # seed items
         item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
 
@@ -1014,7 +1014,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {"has_survey_question": True})
 
-    def test_question_metrics_answers_provided_if_survey_question_exists(self):
+    def test_question_metrics_calculated_using_non_survey_questions(self):
         # seed items
         item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
         item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)
@@ -1027,7 +1027,6 @@ class PlioTestCase(BaseTestCase):
             text="test",
             options=["", ""],
             correct_answer=0,
-            survey=False,
         )
         Question.objects.create(
             type="checkbox",
@@ -1035,7 +1034,6 @@ class PlioTestCase(BaseTestCase):
             text="test",
             options=["", ""],
             correct_answer=[0, 1],
-            survey=False,
         )
         Question.objects.create(
             type="subjective",
@@ -1067,7 +1065,7 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["accuracy"], 50)
         self.assertEqual(response.data["has_survey_question"], True)
 
-    def test_question_metrics_no_answers_provided_if_all_question_survey(self):
+    def test_all_question_metrics_None_if_all_questions_survey(self):
         # seed items
         item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
         item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)

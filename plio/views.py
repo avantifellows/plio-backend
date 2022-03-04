@@ -465,7 +465,7 @@ class PlioViewSet(viewsets.ModelViewSet):
             question_df = df[df["item_type"] == "question"].reset_index(drop=True)
             # retain only non-survey questions
             question_df = question_df[~question_df.survey].reset_index(drop=True)
-            non_survey_questions = len(questions.filter(survey=False))
+            num_non_survey_questions = len(questions.filter(survey=False))
 
             # no non-survey questions found
             if not len(question_df):
@@ -498,7 +498,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                 group_df = user_grouping.get_group(group)
 
                 # sanity check
-                assert non_survey_questions == len(
+                assert num_non_survey_questions == len(
                     group_df
                 ), "Inconsistency in the number of questions"
 
@@ -522,7 +522,10 @@ class PlioViewSet(viewsets.ModelViewSet):
             average_num_answered = round(num_answered_list.mean())
             percent_completed = np.round(
                 100
-                * (sum(num_answered_list == non_survey_questions) / num_unique_viewers),
+                * (
+                    sum(num_answered_list == num_non_survey_questions)
+                    / num_unique_viewers
+                ),
                 2,
             )
 

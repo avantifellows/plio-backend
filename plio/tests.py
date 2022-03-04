@@ -993,6 +993,136 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.data["accuracy"], 58.33)
         self.assertEqual(response.data["has_survey_question"], False)
 
+    def test_question_mode_returned_if_no_sessions(self):
+        # seed items
+        item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
+
+        # seed questions
+        Question.objects.create(
+            type="mcq",
+            item=item_1,
+            text="test",
+            options=["", ""],
+            correct_answer=0,
+            survey=True,
+        )
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"has_survey_question": True})
+
+    def test_question_metrics_answers_provided_if_survey_question_exists(self):
+        # seed items
+        item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
+        item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)
+        item_3 = Item.objects.create(type="question", plio=self.plio_1, time=20)
+
+        # seed questions
+        Question.objects.create(
+            type="mcq",
+            item=item_1,
+            text="test",
+            options=["", ""],
+            correct_answer=0,
+            survey=False,
+        )
+        Question.objects.create(
+            type="checkbox",
+            item=item_2,
+            text="test",
+            options=["", ""],
+            correct_answer=[0, 1],
+            survey=False,
+        )
+        Question.objects.create(
+            type="subjective",
+            item=item_3,
+            text="test",
+            survey=True,
+        )
+
+        # seed a few session and session answer objects with answers
+        session = Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20
+        )
+        SessionAnswer.objects.create(session=session, item=item_1, answer=0)
+        SessionAnswer.objects.create(session=session, item=item_2, answer=[1])
+        SessionAnswer.objects.create(session=session, item=item_3, answer="abcd")
+
+        session_2 = Session.objects.create(
+            plio=self.plio_1, user=self.user_2, watch_time=40
+        )
+        SessionAnswer.objects.create(session=session_2, item=item_1, answer=1)
+        SessionAnswer.objects.create(session=session_2, item=item_2, answer=[0, 1])
+        SessionAnswer.objects.create(session=session_2, item=item_3)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+        self.assertEqual(response.data["average_num_answered"], 2)
+        self.assertEqual(response.data["percent_completed"], 100)
+        self.assertEqual(response.data["accuracy"], 50)
+        self.assertEqual(response.data["has_survey_question"], True)
+
+    def test_question_metrics_no_answers_provided_if_all_question_survey(self):
+        # seed items
+        item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
+        item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)
+        item_3 = Item.objects.create(type="question", plio=self.plio_1, time=20)
+
+        # seed questions
+        Question.objects.create(
+            type="mcq",
+            item=item_1,
+            text="test",
+            options=["", ""],
+            correct_answer=0,
+            survey=True,
+        )
+        Question.objects.create(
+            type="checkbox",
+            item=item_2,
+            text="test",
+            options=["", ""],
+            correct_answer=[0, 1],
+            survey=True,
+        )
+        Question.objects.create(
+            type="subjective",
+            item=item_3,
+            text="test",
+            survey=True,
+        )
+
+        # seed a few session and session answer objects with answers
+        session = Session.objects.create(
+            plio=self.plio_1, user=self.user, watch_time=20
+        )
+        SessionAnswer.objects.create(session=session, item=item_1, answer=0)
+        SessionAnswer.objects.create(session=session, item=item_2, answer=[1])
+        SessionAnswer.objects.create(session=session, item=item_3, answer="abcd")
+
+        session_2 = Session.objects.create(
+            plio=self.plio_1, user=self.user_2, watch_time=40
+        )
+        SessionAnswer.objects.create(session=session_2, item=item_1, answer=1)
+        SessionAnswer.objects.create(session=session_2, item=item_2, answer=[0, 1])
+        SessionAnswer.objects.create(session=session_2, item=item_3)
+
+        response = self.client.get(
+            f"/api/v1/plios/{self.plio_1.uuid}/metrics/",
+        )
+
+        self.assertEqual(response.data["unique_viewers"], 2)
+        self.assertEqual(response.data["average_watch_time"], 30.0)
+        self.assertEqual(response.data["average_num_answered"], None)
+        self.assertEqual(response.data["percent_completed"], None)
+        self.assertEqual(response.data["accuracy"], None)
+        self.assertEqual(response.data["has_survey_question"], True)
+
 
 class PlioDownloadTestCase(BaseTestCase):
     def setUp(self):

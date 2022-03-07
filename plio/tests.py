@@ -265,7 +265,7 @@ class PlioTestCase(BaseTestCase):
 
         for index, _ in enumerate(expected_results):
             expected_results[index]["unique_viewers"] = 0
-            expected_results[index]["items"] = []
+            expected_results[index]["video_url"] = self.video.url
 
         self.assertEqual(
             response.data,
@@ -341,14 +341,76 @@ class PlioTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_duplicate(self):
-        plio = Plio.objects.filter(created_by=self.user).first()
-        # duplicate plio
-        response = self.client.post(f"/api/v1/plios/{plio.uuid}/duplicate/")
+        # create some items and questions
+        item_1 = Item.objects.create(type="question", plio=self.plio_1, time=1)
+        item_2 = Item.objects.create(type="question", plio=self.plio_1, time=10)
+        item_3 = Item.objects.create(type="question", plio=self.plio_1, time=20)
+
+        question_1 = Question.objects.create(type="checkbox", item=item_1)
+        # attach an image to one question
+        # upload a test image and retrieve the id
+        with open("plio/static/plio/test_image.jpeg", "rb") as img:
+            response = self.client.post(
+                "/api/v1/images/", {"url": img, "alt_text": "test image"}
+            )
+        image_id = response.json()["id"]
+        question_2 = Question.objects.create(
+            type="subjective",
+            item=item_2,
+            image=Image.objects.filter(id=image_id).first(),
+        )
+        question_3 = Question.objects.create(type="checkbox", item=item_3)
+        response = self.client.post(
+            f"/api/v1/plios/{self.plio_1.uuid}/duplicate/",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_plio_id = response.data["id"]
+        new_plio_uuid = response.data["uuid"]
+        new_video_id = response.data["video"]["id"]
+        new_item_ids = []
+        new_question_ids = []
+
+        for item in response.data.get("items", []):
+            new_item_ids.append(item["id"])
+            new_question_ids.append(item["details"]["id"])
+
+        response = self.client.get(
+            f"/api/v1/videos/{new_video_id}/",
+        )
+        self.assertNotEqual(new_video_id, self.video.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertNotEqual(plio.id, response.data["id"])
-        self.assertNotEqual(plio.uuid, response.data["uuid"])
-        self.assertEqual(plio.name, response.data["name"])
+        response = self.client.get(
+            f"/api/v1/plios/{new_plio_uuid}/",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for new_item_id, old_item in zip(new_item_ids, [item_1, item_2, item_3]):
+            response = self.client.get(
+                f"/api/v1/items/{new_item_id}/",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["plio"], new_plio_id)
+            self.assertEqual(response.data["type"], old_item.type)
+            self.assertEqual(response.data["time"], old_item.time)
+
+        for old_question, new_question_id, new_item_id in zip(
+            [question_1, question_2, question_3],
+            new_question_ids,
+            new_item_ids,
+        ):
+            response = self.client.get(
+                f"/api/v1/questions/{new_question_id}/",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["item"], new_item_id)
+            self.assertEqual(response.data["type"], old_question.type)
+
+            if old_question.image is not None:
+                self.assertEqual(
+                    ImageSerializer(old_question.image).data["url"],
+                    response.data["image"]["url"],
+                )
 
     def test_default_ordering_when_no_ordering_specified(self):
         # create a third plio
@@ -1451,35 +1513,6 @@ class ItemTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/items/{new_item.id}/")
         self.assertEqual(response.json()["time"], 2)
 
-    def test_duplicate_no_plio_id(self):
-        """Testing duplicate without providing any plio id"""
-        # duplicate item
-        response = self.client.post(f"/api/v1/items/{self.item.id}/duplicate/")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_duplicate_wrong_plio_id(self):
-        """Testing duplicate by providing plio id that does not exist"""
-        # duplicate item
-        response = self.client.post(
-            f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": 2}
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(
-            json.loads(response.content)["detail"], "Specified plio not found"
-        )
-
-    def test_duplicate(self):
-        """Tests the duplicate functionality"""
-        # duplicate item
-        response = self.client.post(
-            f"/api/v1/items/{self.item.id}/duplicate/", {"plioId": self.plio.id}
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertNotEqual(self.item.id, response.data["id"])
-        self.assertEqual(self.item.type, response.data["type"])
-        self.assertEqual(self.item.time, response.data["time"])
-
     def test_deleting_plio_deletes_items(self):
         """Deleting a plio should delete the items associated with it"""
         # fetching the created item works at first
@@ -1664,63 +1697,6 @@ class QuestionTestCase(BaseTestCase):
         response = self.client.get(f"/api/v1/questions/{new_question.id}/")
         self.assertEqual(response.json()["type"], "subjective")
 
-    def test_duplicate_no_item_id(self):
-        """Testing duplicate without providing any item id"""
-        # duplicate question
-        response = self.client.post(f"/api/v1/questions/{self.question.id}/duplicate/")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_duplicate_wrong_item_id(self):
-        """Testing duplicate by providing item id that does not exist"""
-        # duplicate question
-        response = self.client.post(
-            f"/api/v1/questions/{self.question.id}/duplicate/",
-            {"itemId": self.item.id + 100},
-        )
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(
-            json.loads(response.content)["detail"], "Specified item not found"
-        )
-
-    def test_duplicate_own_question(self):
-        """Tests the duplicate functionality"""
-        # duplicate question
-        response = self.client.post(
-            f"/api/v1/questions/{self.question.id}/duplicate/", {"itemId": self.item.id}
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertNotEqual(self.question.id, response.data["id"])
-        self.assertEqual(self.question.type, response.data["type"])
-        self.assertEqual(self.question.text, response.data["text"])
-
-    def test_duplicate_question_with_image(self):
-        """Tests the duplicate functionality for a question which has an image"""
-        # upload a test image and retrieve the id
-        with open("plio/static/plio/test_image.jpeg", "rb") as img:
-            response = self.client.post(
-                reverse("images-list"), {"url": img, "alt_text": "test image"}
-            )
-        image_id = response.json()["id"]
-
-        # attach image id to question
-        response = self.client.put(
-            reverse("questions-detail", args=[self.question.id]),
-            {"item": self.item.id, "image": image_id},
-        )
-
-        # duplicate question
-        response = self.client.post(
-            f"/api/v1/questions/{self.question.id}/duplicate/", {"itemId": self.item.id}
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertNotEqual(self.question.id, response.data["id"])
-        self.assertEqual(self.question.type, response.data["type"])
-        self.assertEqual(self.question.text, response.data["text"])
-        self.assertIsNotNone(response.data["image"])
-        self.assertNotEqual(self.question.image, response.data["image"])
-
     def test_deleting_plio_deletes_questions(self):
         """Deleting a plio should delete the questions associated with it"""
         # fetching the created question works at first
@@ -1902,16 +1878,3 @@ class ImageTestCase(BaseTestCase):
         random.seed(10)
         test_image_2 = Image.objects.create()
         self.assertNotEqual(test_image_1.url.name, test_image_2.url.name)
-
-    def test_duplicate_image(self):
-        """Tests the duplicate functionality for images"""
-        # duplicate image
-        response = self.client.post(f"/api/v1/images/{self.image}/duplicate/")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        image = Image.objects.filter(id=self.image).first()
-        new_image = Image.objects.filter(id=response.data["id"]).first()
-
-        self.assertNotEqual(self.image, response.data["id"])
-        self.assertEqual(image.alt_text, response.data["alt_text"])
-        self.assertEqual(image.url.file.size, new_image.url.file.size)

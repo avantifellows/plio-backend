@@ -415,7 +415,6 @@ class PlioViewSet(viewsets.ModelViewSet):
         plio = self.get_object()
 
         questions = Question.objects.filter(item__plio=plio.id)
-
         survey_questions = questions.filter(survey=True)
 
         # no sessions have been created for the plio: return

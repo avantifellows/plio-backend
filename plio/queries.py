@@ -43,7 +43,8 @@ def get_plio_latest_responses_query(schema: str, session_ids: Tuple[int]):
             sessionAnswer.answer,
             item.type AS item_type,
             question.type AS question_type,
-            question.correct_answer AS question_correct_answer
+            question.correct_answer AS question_correct_answer,
+            question.survey AS survey
         FROM {schema}.session AS session
         INNER JOIN {schema}.session_answer AS sessionAnswer
         ON session.id = sessionAnswer.session_id

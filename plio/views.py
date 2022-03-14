@@ -414,9 +414,16 @@ class PlioViewSet(viewsets.ModelViewSet):
         # else fetch the object
         plio = self.get_object()
 
+        questions = Question.objects.filter(item__plio=plio.id)
+        survey_questions = questions.filter(survey=True)
+
         # no sessions have been created for the plio: return
         if not Session.objects.filter(plio=plio.id):
-            return Response({})
+            return Response(
+                {
+                    "has_survey_question": len(survey_questions) > 0,
+                }
+            )
 
         import numpy as np
 
@@ -466,8 +473,6 @@ class PlioViewSet(viewsets.ModelViewSet):
                 )
 
         # question-based metrics
-        questions = Question.objects.filter(item__plio=plio.id)
-
         # if the plio does not have any questions, these metrics are not applicable
         if not questions:
             accuracy = None
@@ -492,12 +497,29 @@ class PlioViewSet(viewsets.ModelViewSet):
                     "item_type",
                     "question_type",
                     "correct_answer",
+                    "survey",
                 ],
             )
 
             # retain only the responses to items which are questions
             question_df = df[df["item_type"] == "question"].reset_index(drop=True)
-            num_questions = len(questions)
+            # retain only non-survey questions
+            question_df = question_df[~question_df.survey].reset_index(drop=True)
+            num_non_survey_questions = len(questions.filter(survey=False))
+
+            # no non-survey questions found
+            if not len(question_df):
+                return Response(
+                    {
+                        "unique_viewers": num_unique_viewers,
+                        "average_watch_time": average_watch_time,
+                        "percent_one_minute_retention": None,
+                        "accuracy": None,
+                        "average_num_answered": None,
+                        "percent_completed": None,
+                        "has_survey_question": True,
+                    }
+                )
 
             def is_answer_correct(row):
                 """Whether the answer corresponding to the given row is correct"""
@@ -516,7 +538,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                 group_df = user_grouping.get_group(group)
 
                 # sanity check
-                assert num_questions == len(
+                assert num_non_survey_questions == len(
                     group_df
                 ), "Inconsistency in the number of questions"
 
@@ -539,7 +561,12 @@ class PlioViewSet(viewsets.ModelViewSet):
             num_correct_list = np.array(num_correct_list)
             average_num_answered = round(num_answered_list.mean())
             percent_completed = np.round(
-                100 * (sum(num_answered_list == num_questions) / num_unique_viewers), 2
+                100
+                * (
+                    sum(num_answered_list == num_non_survey_questions)
+                    / num_unique_viewers
+                ),
+                2,
             )
 
             # only use the responses from viewers who have answered at least
@@ -554,7 +581,6 @@ class PlioViewSet(viewsets.ModelViewSet):
                 accuracy = np.round(
                     (num_correct_list / num_answered_list).mean() * 100, 2
                 )
-
         return Response(
             {
                 "unique_viewers": num_unique_viewers,
@@ -563,6 +589,7 @@ class PlioViewSet(viewsets.ModelViewSet):
                 "accuracy": accuracy,
                 "average_num_answered": average_num_answered,
                 "percent_completed": percent_completed,
+                "has_survey_question": len(survey_questions) > 0,
             }
         )
 

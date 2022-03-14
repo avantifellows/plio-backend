@@ -103,6 +103,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             "type",
             "options",
             "correct_answer",
+            "survey",
             "image",
             "has_char_limit",
             "max_char_limit",

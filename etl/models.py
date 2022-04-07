@@ -1,6 +1,7 @@
 from django.db import models
 from safedelete.models import SafeDeleteModel, HARD_DELETE
 
+
 class BigqueryJobs(SafeDeleteModel):
     _safedelete_policy = HARD_DELETE
 
@@ -14,6 +15,6 @@ class BigqueryJobs(SafeDeleteModel):
 
     class Meta:
         db_table = "bigquery_jobs"
-    
+
     def __str__(self):
         return "%d: %s - %s" % (self.id, self.schema, self.table_to_sync)

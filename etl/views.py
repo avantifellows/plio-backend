@@ -1,7 +1,6 @@
 from rest_framework import viewsets
 from etl.models import BigqueryJobs
 from etl.serializers import BigqueryJobsSerializer
-from rest_framework.permissions import IsAuthenticated
 from etl.permissions import ETLPermissions
 
 

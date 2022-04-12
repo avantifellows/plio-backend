@@ -6,18 +6,18 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('etl', '0002_auto_20220412_1045'),
+        ("etl", "0002_auto_20220412_1045"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='bigqueryjobs',
-            old_name='table_last_synced_at',
-            new_name='last_synced_at',
+            model_name="bigqueryjobs",
+            old_name="table_last_synced_at",
+            new_name="last_synced_at",
         ),
         migrations.RenameField(
-            model_name='bigqueryjobs',
-            old_name='table_last_updated_at',
-            new_name='last_updated_at',
+            model_name="bigqueryjobs",
+            old_name="table_last_updated_at",
+            new_name="last_updated_at",
         ),
     ]

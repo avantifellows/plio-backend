@@ -9,9 +9,7 @@ class BigqueryJobsSerializer(serializers.ModelSerializer):
             "id",
             "schema",
             "table_to_sync",
-            "table_last_updated_at",
-            "table_last_synced_at",
+            "last_updated_at",
+            "last_synced_at",
             "last_synced_row_id",
-            "created_at",
-            "updated_at",
         ]

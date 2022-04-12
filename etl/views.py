@@ -2,6 +2,7 @@ from rest_framework import viewsets
 from etl.models import BigqueryJobs
 from etl.serializers import BigqueryJobsSerializer
 from rest_framework.permissions import IsAuthenticated
+from etl.permissions import ETLPermissions
 
 
 class BigqueryJobsViewSet(viewsets.ModelViewSet):
@@ -18,4 +19,4 @@ class BigqueryJobsViewSet(viewsets.ModelViewSet):
 
     queryset = BigqueryJobs.objects.all()
     serializer_class = BigqueryJobsSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, ETLPermissions]

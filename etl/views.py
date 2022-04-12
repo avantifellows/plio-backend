@@ -19,4 +19,4 @@ class BigqueryJobsViewSet(viewsets.ModelViewSet):
 
     queryset = BigqueryJobs.objects.all()
     serializer_class = BigqueryJobsSerializer
-    permission_classes = [IsAuthenticated, ETLPermissions]
+    permission_classes = [ETLPermissions]

@@ -39,6 +39,7 @@ from plio.views import (
 )
 from entries.views import SessionViewSet, SessionAnswerViewSet, EventViewSet
 from users import consumers
+from etl.views import BigqueryJobsViewSet
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -80,6 +81,7 @@ api_router.register(
     r"organization-users", OrganizationUserViewSet, basename="organization-users"
 )
 api_router.register(r"images", ImageViewSet, basename="images")
+api_router.register(r"bigquery-jobs", BigqueryJobsViewSet, basename="bigquery-jobs")
 
 # http/https url patterns
 urlpatterns = [

@@ -51,6 +51,7 @@ SHARED_APPS = (
     "social_django",
     "rest_framework_social_oauth2",
     "silk",
+    "etl",
 )
 
 TENANT_APPS = (
@@ -86,6 +87,7 @@ INSTALLED_APPS = [
     "rest_framework_social_oauth2",
     "storages",
     "silk",
+    "etl",
 ]
 
 TENANT_MODEL = "organizations.Organization"

@@ -104,10 +104,14 @@ def get_sessions_dump_query(
             session.id as session_id,
             session.watch_time,
             CASE
-                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
+                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, users.unique_id)
             ELSE
                 {'MD5(session.user_id::varchar(255))'}
-            END AS user_identifier
+            END AS user_identifier,
+            CASE
+                WHEN users.unique_id IS NOT NULL AND users.auth_org_id IS NOT NULL THEN 'true'
+                ELSE 'false'
+            END AS has_user_logged_in_via_sso
         FROM {schema}.session AS session
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
         INNER JOIN public.user AS users ON session.user_id = users.id
@@ -131,10 +135,14 @@ def get_responses_dump_query(
         SELECT
             session.id as session_id,
             CASE
-                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
+                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, users.unique_id)
             ELSE
                 {'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,
+            CASE
+                WHEN users.unique_id IS NOT NULL AND users.auth_org_id IS NOT NULL THEN 'true'
+                ELSE 'false'
+            END AS has_user_logged_in_via_sso,
             sessionAnswer.answer,
             sessionAnswer.item_id,
             question.type as question_type
@@ -162,10 +170,14 @@ def get_events_query(plio_uuid: str, schema: str, show_unmasked_user_id: bool = 
         SELECT
             session.id as session_id,
             CASE
-                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
+                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, users.unique_id)
             ELSE
                 {'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,
+            CASE
+                WHEN users.unique_id IS NOT NULL AND users.auth_org_id IS NOT NULL THEN 'true'
+                ELSE 'false'
+            END AS has_user_logged_in_via_sso,
             event.type AS event_type,
             event.player_time AS event_player_time,
             event.details AS event_details,

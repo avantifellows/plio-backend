@@ -148,6 +148,11 @@ def get_responses_dump_query(
             sessionAnswer.answer,
             sessionAnswer.item_id,
             question.type as question_type,
+            question.correct_answer as correct_answer,
+            CASE
+                WHEN sessionAnswer.answer IS NOT NULL AND sessionAnswer.answer = question.correct_answer THEN 'true'
+                ELSE 'false'
+            END AS is_answer_correct,
             sessionAnswer.created_at as answered_at
         FROM {schema}.session AS session
         INNER JOIN {schema}.session_answer sessionAnswer ON session.id = sessionAnswer.session_id

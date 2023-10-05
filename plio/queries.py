@@ -150,7 +150,13 @@ def get_responses_dump_query(
             question.type as question_type,
             question.correct_answer as correct_answer,
             CASE
-                WHEN sessionAnswer.answer IS NOT NULL AND sessionAnswer.answer = question.correct_answer THEN 'true'
+                WHEN
+                    sessionAnswer.answer IS NOT NULL AND
+                    (
+                        question.type = 'subjective' OR
+                        sessionAnswer.answer = question.correct_answer
+                    )
+                THEN 'true'
                 ELSE 'false'
             END AS is_answer_correct,
             sessionAnswer.created_at as answered_at

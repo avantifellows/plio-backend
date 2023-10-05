@@ -16,8 +16,6 @@ First, we'll clarify the meaning of a few terms that appear in this document.
 
 `event`: we save various events that take place while a user is watching a plio. For example, playing a video, pausing a video, skipping a video, answering a question etc. There is a time associated with each event and for each user, the events should be present in a sequential manner in time so that you can get a complete picture of how each user is interacting with your video. For the full list of event types and their meanings, refer to [Events](#events).
 
-
-
 ## Folder Organization
 
 This section will clarify what each of the `.csv` files in the folder contains:
@@ -31,7 +29,7 @@ This section will clarify what each of the `.csv` files in the folder contains:
   Example:
   | id         | name                    | video                                       |
   |------------|-------------------------|---------------------------------------------|
-  | ash1lasnan | Introduction to Circles | https://www.youtube.com/watch?v=m9dpeG2rKdY |
+  | ash1lasnan | Introduction to Circles | <https://www.youtube.com/watch?v=m9dpeG2rKdY> |
 
 - `plio-interaction-details.csv`: contains the details of each interaction (referred to as `item` as explained above) added to the plio. The columns represent the following:
 
@@ -61,6 +59,8 @@ This section will clarify what each of the `.csv` files in the folder contains:
 
   - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/).
 
+  - `has_user_logged_in_via_sso`: whether the user has logged in via SSO (Single Sign-On) or not. Only valid for users on the organisational plan. Default is `False`.
+
   - `answer`: the user's actual answer to the interaction. For `question_type = mcq`, it represents the index of the option selected by the user. In this case, `answer = 1` indicates that the first option has been submitted as the answer.
 
     For `question_type = checkbox`, it contains a list of indices corresponding to the options selected by the user. In this case, `answer = [2, 3]` indicates that the second and third options have been submitted as the answers.
@@ -69,13 +69,23 @@ This section will clarify what each of the `.csv` files in the folder contains:
 
   - `item_id`: the unique identifier of the interaction that this answer belongs to. You can compare this value with the `id` column in `plio-interaction-details.csv` to identify which item did this answer belong to.
 
-  Example:
-  | session_id | user_identifier                  | answer | item_id | question_type |
-  | ---------- | -------------------------------- | ------ | ------- | ------------- |
-  | 902        | a532400ed62e772b9dc0b86f46e583ff | 1      | 2781    | mcq           |
-  | 902        | a532400ed62e772b9dc0b86f46e583ff | abcd   | 2782    | subjective    |
-  | 1131       | fae0b27c451c728867a567e8c1bb4e53 | [2, 3] | 2781    | Checkbox      |
+  - `correct_answer`: the correct answer for the given question. For `question_type = mcq`, this represents the index of the correct answer among the `question_options`. In this case, `correct_answer = 1` indicates that the first option is the correct answer.
 
+    For `question_type = checkbox`, it contains a list of indices corresponding to the options which are correct. In this case, `correct_answer = [2,3]` indicates that the second and third options have been marked as the correct answers.
+
+    For `question_type = subjective`, this field is empty. There is no one final answer for subjective questions. All answers to subjective questions are considered correct.
+
+  - `is_answer_correct`: whether the user's answer was correct or not. For `question_type = mcq` and `question_type = checkbox`, this is `True` if the user's answer matches the `correct_answer` and `False` otherwise. For `question_type = subjective`, this is always `True`.
+
+  - `answered_at`: the timestamp when the user submitted the answer to the question
+
+  Example:
+
+  | session_id | user_identifier                  | has_user_logged_in_via_sso | answer | question_type | item_id | correct_answer | is_answer_correct | answered_at           |
+  | ---------- | -------------------------------- | -------------------------- | ------ | ------------- | ------- | -------------- | ----------------- | --------------------- |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | False                      | 1      | mcq           | 2781    | 1              | True              | 2021-06-01T12:00:00Z  |
+  | 902        | a532400ed62e772b9dc0b86f46e583ff | False                      | abcd   | subjective    | 2782    |                | True              | 2021-06-01T12:00:00Z  |
+  | 1131       | fae0b27c451c728867a567e8c1bb4e53 | True                       | [2, 3] | checkbox      | 2781    | [2, 3]         | True              | 2021-06-01T12:00:00Z  |
 
 - `sessions.csv`: contains the details of each session of every user. The columns represent the following:
 
@@ -84,12 +94,31 @@ This section will clarify what each of the `.csv` files in the folder contains:
   - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/).
 
   - `watch_time`: the amount of time the user has watched the video (in seconds) - the most recent session of any user includes the total time across all previous sessions by that user.
-
+  - `has_user_logged_in_via_sso`: whether the user has logged in via SSO (Single Sign-On) or not. Only valid for users on the organisational plan. Default is `False`.
+  - `created_at`: the timestamp when the session was created
+  - `last_updated_at`: the timestamp when the session was last updated
 
   Example:
-  | session_id | watch_time | user_identifier                  |
-  | ---------- | ---------- | -------------------------------- |
-  | 1951       | 50         | addfa9b7e234254d26e9c7f2af1005cb |
+  | session_id | watch_time | user_identifier                  | has_user_logged_in_via_sso | created_at            | last_updated_at       |
+  | ---------- | ---------- | -------------------------------- | -------------------------- | --------------------- | --------------------- |
+  | 1951       | 50         | addfa9b7e234254d26e9c7f2af1005cb | False                      | 2021-06-01T12:00:00Z  | 2021-06-01T12:00:00Z  |
+  | 1952       | 100        | addfa9b7e234254d26e9c7f2af1005cb | False                      | 2021-06-01T12:00:00Z  | 2021-06-01T12:00:00Z  |
+  | 1953       | 150        | addfa9b7e234254d26e9c7f2af1005cb | False                      | 2021-06-01T12:00:00Z  | 2021-06-01T12:00:00Z  |
+
+- `user-level-metrics.csv`: contains the metrics for each user for the given plio. These include:
+
+  - `user_identifier`: the unique identifier for the user associated with this session. To preserve user privacy, this field would not contain any Personally Identifiable Information (PII) and would instead be a hashed value. However, the same user will have the same hashed value across different plios. So, you can still safely identify user trends across plios without harming user privacy. However, if you are on the organisational plan and want to map the user ids to your beneficiaries, we provide a way for you to access the true identities of the users interacting with your plio. Read about it [here](https://docs.plio.in/plio-for-teams/).
+  - `has_user_logged_in_via_sso`: whether the user has logged in via SSO (Single Sign-On) or not. Only valid for users on the organisational plan. Default is `False`.
+  - `num_questions_attempted`: the number of questions attempted by the user
+  - `num_questions_answered_correctly`: the number of questions answered correctly by the user
+  - `are_all_questions_attempted`: whether the user has attempted all the questions in the plio or not
+
+  Example:
+  | user_identifier                  | has_user_logged_in_via_sso | num_questions_attempted | num_questions_answered_correctly | are_all_questions_attempted |
+  | -------------------------------- | -------------------------- | ----------------------- | -------------------------------- | --------------------------- |
+  | 4b0250793549726d5c1ea3906726ebfe | False                      | 1                       | 1                                | true                        |
+  | d64a340bcb633f536d56e51874281454 | False                      | 2                       | 1                                | false                       |
+  | 4b0250793549726d5c1ea3906726ebfe | False                      | 1                       | 1                                | true                        |
 
 - `events.csv`: contains the details of each event in each session of every user. The columns represent the following:
 
@@ -107,7 +136,6 @@ This section will clarify what each of the `.csv` files in the folder contains:
   | 770        | d64a340bcb633f536d56e51874281454 | option_selected | 2.5               | {"itemIndex": 1, "optionIndex": 1} |
   | 770        | d64a340bcb633f536d56e51874281454 | video_seeked    | 0.08              | {"currentTime": 0.08}              |
   | 3844       | 4b0250793549726d5c1ea3906726ebfe | paused          | 122               | {}                                 |
-
 
 ## Events
 

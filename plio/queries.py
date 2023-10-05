@@ -252,7 +252,7 @@ def get_user_level_metrics_query(
 
         SELECT
             latestSession.user_identifier,
-            summary.has_user_logged_in_via_sso,
+            MAX(summary.has_user_logged_in_via_sso) as has_user_logged_in_via_sso,
             COUNT(DISTINCT CASE WHEN summary.answer IS NOT NULL THEN summary.item_id END) AS num_questions_attempted,
             COUNT(DISTINCT CASE WHEN summary.answer = question.correct_answer THEN summary.item_id END) AS num_questions_answered_correctly,
             CASE

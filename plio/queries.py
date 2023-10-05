@@ -86,7 +86,9 @@ def get_plio_details_query(plio_uuid: str, schema: str, **kwargs):
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 
-def get_sessions_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
+def get_sessions_dump_query(
+    plio_uuid: str, schema: str, show_unmasked_user_id: bool = True
+):
     """
     Returns the dump of all the sessions for the given plio
 
@@ -94,15 +96,15 @@ def get_sessions_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = Tr
     :type plio_uuid: str
     :param schema: The schema from which the tables are to be accessed
     :type schema: str
-    :param mask_user_id: whether the user id should be masked, defaults to True
-    :type mask_user_id: bool
+    :param show_unmasked_user_id: whether the user id should be masked, defaults to True
+    :type show_unmasked_user_id: bool
     """
     return f"""
         SELECT
             session.id as session_id,
             session.watch_time,
             CASE
-                WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
+                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
                 {'MD5(session.user_id::varchar(255))'}
             END AS user_identifier
@@ -112,7 +114,9 @@ def get_sessions_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = Tr
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 
-def get_responses_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
+def get_responses_dump_query(
+    plio_uuid: str, schema: str, show_unmasked_user_id: bool = True
+):
     """
     Returns the dump of all the session responses for the given plio
 
@@ -120,14 +124,14 @@ def get_responses_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = T
     :type plio_uuid: str
     :param schema: The schema from which the tables are to be accessed
     :type schema: str
-    :param mask_user_id: whether the user id should be masked, defaults to True
-    :type mask_user_id: bool
+    :param mask_useshow_unmasked_user_idr_id: whether the user id should be masked, defaults to True
+    :type show_unmasked_user_id: bool
     """
     return f"""
         SELECT
             session.id as session_id,
             CASE
-                WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
+                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
                 {'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,
@@ -143,7 +147,7 @@ def get_responses_dump_query(plio_uuid: str, schema: str, mask_user_id: bool = T
         WHERE plio.uuid  = '{plio_uuid}'"""
 
 
-def get_events_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
+def get_events_query(plio_uuid: str, schema: str, show_unmasked_user_id: bool = True):
     """
     Returns the dump of all events across all sessions for the given plio
 
@@ -151,14 +155,14 @@ def get_events_query(plio_uuid: str, schema: str, mask_user_id: bool = True):
     :type plio_uuid: str
     :param schema: The schema from which the tables are to be accessed
     :type schema: str
-    :param mask_user_id: whether the user id should be masked, defaults to True
-    :type mask_user_id: bool
+    :param show_unmasked_user_id: whether the user id should be masked, defaults to True
+    :type show_unmasked_user_id: bool
     """
     return f"""
         SELECT
             session.id as session_id,
             CASE
-                WHEN {str(mask_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
+                WHEN {str(show_unmasked_user_id).lower()} THEN COALESCE(users.email, users.mobile, CONCAT('unique_id:', users.unique_id))
             ELSE
                 {'MD5(session.user_id::varchar(255))'}
             END AS user_identifier,

@@ -636,7 +636,9 @@ class PlioViewSet(viewsets.ModelViewSet):
         def run_query(cursor, query_method):
             # execute the sql query
             cursor.execute(
-                query_method(uuid, schema=schema_name, mask_user_id=is_user_org_admin)
+                query_method(
+                    uuid, schema=schema_name, show_unmasked_user_id=is_user_org_admin
+                )
             )
             # extract column names as cursor.description returns a tuple
             columns = [col[0] for col in cursor.description]

@@ -111,7 +111,9 @@ def get_sessions_dump_query(
             CASE
                 WHEN users.unique_id IS NOT NULL AND users.auth_org_id IS NOT NULL THEN 'true'
                 ELSE 'false'
-            END AS has_user_logged_in_via_sso
+            END AS has_user_logged_in_via_sso,
+            session.created_at,
+            session.updated_at as last_updated_at
         FROM {schema}.session AS session
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id
         INNER JOIN public.user AS users ON session.user_id = users.id
@@ -145,7 +147,8 @@ def get_responses_dump_query(
             END AS has_user_logged_in_via_sso,
             sessionAnswer.answer,
             sessionAnswer.item_id,
-            question.type as question_type
+            question.type as question_type,
+            sessionAnswer.created_at as answered_at
         FROM {schema}.session AS session
         INNER JOIN {schema}.session_answer sessionAnswer ON session.id = sessionAnswer.session_id
         INNER JOIN {schema}.plio AS plio ON plio.id = session.plio_id

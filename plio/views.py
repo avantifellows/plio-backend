@@ -35,6 +35,7 @@ from plio.queries import (
     get_plio_details_query,
     get_sessions_dump_query,
     get_responses_dump_query,
+    get_user_level_metrics_query,
     get_events_query,
     get_plio_latest_sessions_query,
     get_plio_latest_responses_query,
@@ -659,6 +660,11 @@ class PlioViewSet(viewsets.ModelViewSet):
         with connection.cursor() as cursor:
             # --- sessions --- #
             run_and_save_query_results(cursor, get_sessions_dump_query, "sessions.csv")
+
+            # --- user level metrics --- #
+            run_and_save_query_results(
+                cursor, get_user_level_metrics_query, "user-level-metrics.csv"
+            )
 
             # --- responses --- #
             # change the submitted answers to make them 1-indexed

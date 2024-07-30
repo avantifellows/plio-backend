@@ -102,6 +102,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             "text",
             "type",
             "options",
+            "option_images",
             "correct_answer",
             "survey",
             "image",
@@ -115,4 +116,11 @@ class QuestionSerializer(serializers.ModelSerializer):
         response = super().to_representation(instance)
         if instance.image:
             response["image"] = ImageSerializer(instance.image).data
+
+        if instance.option_images:
+            response["option_images"] = {
+                index: ImageSerializer(Image.objects.get(id=image_id)).data
+                for index, image_id in instance.option_images.items()
+            }
+
         return response

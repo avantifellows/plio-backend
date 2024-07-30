@@ -134,6 +134,7 @@ class Question(SafeDeleteModel):
     )
     text = models.TextField(blank=True, default="")
     options = models.JSONField(null=True)
+    option_images = models.JSONField(null=True, blank=True)  # This is an object where keys are indices in the options array and values are image IDs
     correct_answer = models.JSONField(null=True)
     survey = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

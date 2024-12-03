@@ -748,6 +748,16 @@ class PlioViewSet(viewsets.ModelViewSet):
         response = FileResponse(zip_file, as_attachment=True)
         return response
 
+    def create(self, request, *args, **kwargs):
+        # Explicitly check permissions before creating a plio
+        if not self.get_permissions()[1].has_permission(request, self):
+            return Response(
+                {"detail": "You do not have permission to perform this action."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        return super().create(request, *args, **kwargs)
+
 
 class ItemViewSet(viewsets.ModelViewSet):
     """

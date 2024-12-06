@@ -9,8 +9,25 @@ class PlioPermission(permissions.BasePermission):
     """Permission check for plios."""
 
     def has_permission(self, request, view):
+
         """View-level permissions for plio. This determines whether the request can access plio instances or not."""
-        return True
+        # For non-create actions, allow access (existing behavior)
+        if view.action != 'create':
+            return True
+        
+        # For create action, check organization membership if in org workspace
+        organization_shortcode = OrganizationTenantMiddleware.get_organization_shortcode(request)
+        print(organization_shortcode)
+        
+        # If it's personal workspace (default tenant), allow creation
+        if organization_shortcode == DEFAULT_TENANT_SHORTCODE:
+            return True
+        # For organizational workspace, check if user is a member
+        user_belongs_to_organization = OrganizationUser.objects.filter(
+            organization__shortcode=organization_shortcode,
+            user=request.user.id,
+        ).exists()
+        return user_belongs_to_organization
 
     def has_object_permission(self, request, view, obj):
         """

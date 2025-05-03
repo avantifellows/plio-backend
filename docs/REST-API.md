@@ -13,6 +13,22 @@ This guide aims to provide details on how Plio is using the REST framework and p
 2. Navigate to `0.0.0.0:8001/api/v1/docs` in your browser and you should see the Plio's detailed API documentation.
 
 ### Creating API credentials
+
+#### Automatic Method (Recommended)
+OAuth2 application creation can happen automatically during installation if configured in environment variables:
+
+1. Set the following environment variables in your `.env` file:
+   ```sh
+   DEFAULT_OAUTH2_CLIENT_SETUP=True
+   DEFAULT_OAUTH2_CLIENT_ID=your_desired_client_id
+   DEFAULT_OAUTH2_CLIENT_SECRET=your_desired_client_secret
+   ```
+2. When the application starts (through `docker-compose up -d --build`), the `createoauth2application` command will run automatically and create the OAuth2 application with the specified client ID and secret.
+3. Use the configured client ID and secret in your frontend application or Postman app to make API calls.
+
+#### Manual Method
+If you prefer to set up the OAuth2 application manually, follow these steps:
+
 1. Create a super user for your backend application. It will ask to set the super user credentials.
     ```sh
     docker-compose exec web python manage.py createsuperuser

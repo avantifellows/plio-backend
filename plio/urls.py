@@ -23,6 +23,7 @@ from tags.views import TagViewSet
 from users.views import (
     UserViewSet,
     OrganizationUserViewSet,
+    RoleViewSet,
     request_otp,
     verify_otp,
     get_by_access_token,
@@ -80,6 +81,7 @@ api_router.register(r"tags", TagViewSet, basename="tags")
 api_router.register(
     r"organization-users", OrganizationUserViewSet, basename="organization-users"
 )
+api_router.register(r"roles", RoleViewSet, basename="roles")
 api_router.register(r"images", ImageViewSet, basename="images")
 api_router.register(r"bigquery-jobs", BigqueryJobsViewSet, basename="bigquery-jobs")
 

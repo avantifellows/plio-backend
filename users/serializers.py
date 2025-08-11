@@ -63,6 +63,20 @@ class UserSerializer(serializers.ModelSerializer):
         return config
 
 
+class LightweightUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "mobile",
+            "avatar_url",
+            "status",
+        ]
+
+
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
@@ -87,10 +101,14 @@ class OtpSerializer(serializers.ModelSerializer):
 
 
 class OrganizationUserSerializer(serializers.ModelSerializer):
+    user_details = LightweightUserSerializer(source="user", read_only=True)
+
     class Meta:
         model = OrganizationUser
         fields = [
+            "id",
             "user",
+            "user_details",
             "organization",
             "is_owner",
             "role",

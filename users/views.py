@@ -19,7 +19,12 @@ from plio.settings import (
     SMS_DRIVER,
 )
 from users.models import User, OneTimePassword, OrganizationUser, Role
-from users.serializers import UserSerializer, OtpSerializer, OrganizationUserSerializer, RoleSerializer
+from users.serializers import (
+    UserSerializer,
+    OtpSerializer,
+    OrganizationUserSerializer,
+    RoleSerializer,
+)
 from users.permissions import UserPermission, OrganizationUserPermission
 from organizations.models import Organization
 from .services import SnsService
@@ -98,43 +103,62 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
     """
 
     permission_classes = [IsAuthenticated, OrganizationUserPermission]
-    queryset = OrganizationUser.objects.all()
+    queryset = OrganizationUser.objects.select_related("user", "organization", "role").all()
     serializer_class = OrganizationUserSerializer
 
     def get_queryset(self):
-        # get all organizations where the current user is a super-admin or org-admin
-        if not self.request.user:
+        request = self.request
+        if not request.user:
             return OrganizationUser.objects.none()
 
-        if self.request.user.is_superuser:
-            return OrganizationUser.objects.all()
+        base_qs = OrganizationUser.objects.select_related("user", "organization", "role")
 
+        # If superuser, honor filters when provided, else return all
+        requested_org = request.query_params.get("organization")
+        if request.user.is_superuser:
+            if requested_org is not None:
+                try:
+                    requested_org_id = int(requested_org)
+                except (TypeError, ValueError):
+                    return OrganizationUser.objects.none()
+                return base_qs.filter(organization_id=requested_org_id)
+
+            organization_shortcode = request.META.get("HTTP_ORGANIZATION", "")
+            if organization_shortcode:
+                try:
+                    org = Organization.objects.get(shortcode=organization_shortcode)
+                    return base_qs.filter(organization=org)
+                except Organization.DoesNotExist:
+                    return OrganizationUser.objects.none()
+
+            return base_qs
+
+        # Non-superuser: compute accessible orgs (where user is super-admin or org-admin)
         user_organizations = OrganizationUser.objects.filter(
-            user=self.request.user, role__name__in=["super-admin", "org-admin"]
+            user=request.user, role__name__in=["super-admin", "org-admin"]
         ).all()
+        organization_ids = [uo.organization_id for uo in user_organizations]
 
-        # get the array of organization ids
-        organization_ids = [
-            user_organization.organization_id
-            for user_organization in user_organizations
-        ]
-
-        # Optional: if a specific organization is requested, narrow down further
-        requested_org = self.request.query_params.get("organization")
         if requested_org is not None:
             try:
                 requested_org_id = int(requested_org)
             except (TypeError, ValueError):
                 return OrganizationUser.objects.none()
-
             if requested_org_id in organization_ids:
-                organization_ids = [requested_org_id]
-            else:
-                # user is not allowed to view the requested organization
+                return base_qs.filter(organization_id=requested_org_id)
+            return OrganizationUser.objects.none()
+
+        organization_shortcode = request.META.get("HTTP_ORGANIZATION", "")
+        if organization_shortcode:
+            try:
+                org = Organization.objects.get(shortcode=organization_shortcode)
+                if org.id in organization_ids:
+                    return base_qs.filter(organization=org)
+                return OrganizationUser.objects.none()
+            except Organization.DoesNotExist:
                 return OrganizationUser.objects.none()
 
-        # return instances that fall under the organization ids
-        return OrganizationUser.objects.filter(organization__in=organization_ids)
+        return base_qs.filter(organization__in=organization_ids)
 
 
 class RoleViewSet(viewsets.ModelViewSet):

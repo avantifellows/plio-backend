@@ -90,6 +90,7 @@ class OrganizationUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrganizationUser
         fields = [
+            "id",
             "user",
             "organization",
             "is_owner",

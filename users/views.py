@@ -48,6 +48,31 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        request = self.request
+
+        # Optional bulk filter: ids=1,2,3
+        ids_param = request.query_params.get("ids")
+        if ids_param:
+            try:
+                id_list = [int(x) for x in ids_param.split(",") if x.strip().isdigit()]
+                if id_list:
+                    qs = qs.filter(id__in=id_list)
+            except ValueError:
+                return User.objects.none()
+
+        # Optional organization filter: organization=<id>
+        org_param = request.query_params.get("organization")
+        if org_param:
+            try:
+                org_id = int(org_param)
+                qs = qs.filter(organizationuser__organization_id=org_id).distinct()
+            except (TypeError, ValueError):
+                return User.objects.none()
+
+        return qs
+
     @action(
         detail=True,
         permission_classes=[IsAuthenticated, UserPermission],

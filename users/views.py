@@ -71,6 +71,11 @@ class UserViewSet(viewsets.ModelViewSet):
             except (TypeError, ValueError):
                 return User.objects.none()
 
+        # Optional email filter: email=<email>
+        email_param = request.query_params.get("email")
+        if email_param:
+            qs = qs.filter(email=email_param)
+
         return qs
 
     @action(

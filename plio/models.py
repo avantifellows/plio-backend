@@ -8,7 +8,7 @@ from plio.config import plio_status_choices, item_type_choices, question_type_ch
 
 
 class Image(SafeDeleteModel):
-    _safedelte_policy = SOFT_DELETE
+    _safedelete_policy = SOFT_DELETE
 
     url = models.ImageField("Image", upload_to="images")
     alt_text = models.CharField(max_length=255, default="Image")

@@ -34,6 +34,7 @@ Before each commit, run:
 - `django-request-logging==0.7.2` is incompatible with Django 3.2 (uses `response._headers` removed in 3.2). Upgraded to 0.7.5.
 - `requirements-dev.txt` includes `-r requirements.txt` — do not re-pin packages at different versions in dev.
 - `entrypoint.sh` runs `makemigrations` on startup (not `--check`), so unexpected migrations are a deployment risk.
+- `social_django 5.1.0` has an internal migration inconsistency (AppConfig says AutoField, migration 0011 says BigAutoField). Run `makemigrations --check --dry-run plio organizations users entries experiments tags etl` to check only our apps.
 
 ## Key Directories
 - `plio/` — Core app (models, views, signals for Plio/Video/Item/Question/Image)

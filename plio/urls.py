@@ -14,8 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
-from django.conf.urls import url
+from django.urls import path, include, re_path
 from rest_framework import routers, permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -99,15 +98,15 @@ urlpatterns = [
     ),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
-    url(r"^auth/", include("rest_framework_social_oauth2.urls")),
-    url(
+    re_path(r"^auth/", include("rest_framework_social_oauth2.urls")),
+    re_path(
         r"^api/v1/docs/$",
         schema_view.with_ui("redoc", cache_timeout=0),
         name="schema-redoc",
     ),
 ]
 
-urlpatterns += [url(r"^silk/", include("silk.urls", namespace="silk"))]
+urlpatterns += [re_path(r"^silk/", include("silk.urls", namespace="silk"))]
 
 # ws/wss url patterns
 websocket_urlpatterns = [

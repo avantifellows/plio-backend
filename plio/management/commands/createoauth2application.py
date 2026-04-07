@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 import os
 from oauth2_provider.models import Application
+from plio.settings import API_APPLICATION_NAME
 
 
 class Command(BaseCommand):
@@ -35,7 +36,7 @@ class Command(BaseCommand):
             return
 
         Application.objects.create(
-            name="default",
+            name=API_APPLICATION_NAME,
             client_id=default_oauth2_client_id,
             client_secret=default_oauth2_client_secret,
             redirect_uris="",

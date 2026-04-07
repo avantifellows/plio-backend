@@ -5,7 +5,7 @@ from organizations.models import Organization
 
 
 @receiver([post_save, post_delete], sender=Organization)
-def organization_update_cache(sender, instance, created, raw, **kwargs):
+def organization_update_cache(sender, instance, **kwargs):
     # invalidate cache for users belonging to organization
     from users.models import User
 

@@ -485,10 +485,10 @@ class OrganizationUserTestCase(BaseTestCase):
         response = self.client.get(reverse("organization-users-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.json()), 2)
-        self.assertEqual(response.json()[0]["user"], self.user.id)
-        self.assertEqual(response.json()[0]["organization"], self.organization.id)
-        self.assertEqual(response.json()[1]["user"], self.user_2.id)
-        self.assertEqual(response.json()[1]["organization"], self.organization.id)
+        user_ids = sorted([entry["user"] for entry in response.json()])
+        org_ids = [entry["organization"] for entry in response.json()]
+        self.assertEqual(user_ids, sorted([self.user.id, self.user_2.id]))
+        self.assertTrue(all(org_id == self.organization.id for org_id in org_ids))
 
     def test_normal_user_cannot_create_org_user(self):
         # add organization_user to the organization

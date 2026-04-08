@@ -9,9 +9,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         default_oauth2_client_setup = os.environ.get(
-            "DEFAULT_OAUTH2_CLIENT_SETUP", False
+            "DEFAULT_OAUTH2_CLIENT_SETUP", ""
         )
-        if not default_oauth2_client_setup:
+        if default_oauth2_client_setup.lower() not in ("true", "1", "yes"):
             print("Default OAuth2 client setup is disabled. Skipping.")
             return
 

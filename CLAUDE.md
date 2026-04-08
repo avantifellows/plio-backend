@@ -38,6 +38,8 @@ Before each commit, run:
 - `social_django 5.1.0` has an internal migration inconsistency (AppConfig says AutoField, migration 0011 says BigAutoField). Run `makemigrations --check --dry-run plio organizations users entries experiments tags etl` to check only our apps.
 - Django 4.0 `MiddlewareMixin.__init__()` requires a `get_response` argument — instantiating middleware outside the request cycle (e.g., in views) needs `get_response=lambda r: None`.
 - `django-rest-framework-social-oauth2==1.2.0` sets `app_name='drfso2'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drfso2'` must be set in settings.py.
+- `drf-yasg==1.21.8` requires `pytz>=2021.1` — if upgrading drf-yasg, bump pytz too.
+- `requirements-dev.txt` uses `setoptconf-tmp` (not `setoptconf`) — prospector 1.7.7 renamed this dependency.
 
 ## Key Directories
 - `plio/` — Core app (models, views, signals for Plio/Video/Item/Question/Image)

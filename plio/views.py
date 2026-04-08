@@ -625,7 +625,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         os.makedirs(data_dump_dir)
 
         # schema name to query in
-        schema_name = OrganizationTenantMiddleware().get_schema(self.request)
+        schema_name = OrganizationTenantMiddleware(get_response=lambda r: None).get_schema(self.request)
 
         organization = Organization.objects.filter(
             shortcode=self.organization_shortcode,

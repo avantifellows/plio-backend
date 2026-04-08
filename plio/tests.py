@@ -34,6 +34,12 @@ class BaseTestCase(APITestCase):
 
     @classmethod
     def setUpTestData(self):
+        # Ensure we're on the public schema before creating tenants.
+        # Organization.save() switches the connection to the tenant schema,
+        # and this session-level search_path change survives transaction rollback
+        # between test classes.
+        connection.set_schema_to_public()
+
         self.client = APIClient()
 
         # User access and refresh tokens require an OAuth Provider application to be set up and use it as a foreign key.

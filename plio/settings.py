@@ -271,6 +271,10 @@ OAUTH2_PROVIDER = {
     "DEFAULT_SCOPES": ["read", "write"],
 }
 
+# django-rest-framework-social-oauth2 1.2.0 added app_name='drfso2' to its URL config.
+# The DjangoOAuth2 backend uses this namespace for reverse() calls.
+DRFSO2_URL_NAMESPACE = "drfso2"
+
 OTP_EXPIRE_SECONDS = 300  # 5 minutes
 
 CORS_ALLOW_HEADERS = list(default_headers) + [

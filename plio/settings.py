@@ -64,6 +64,7 @@ TENANT_APPS = (
 )
 
 INSTALLED_APPS = [
+    "daphne",
     "channels",
     "django_tenants",
     "corsheaders",
@@ -354,3 +355,8 @@ CACHES = {
         },
     }
 }
+
+# Django 4.0 defaults SECURE_CROSS_ORIGIN_OPENER_POLICY to "same-origin",
+# which breaks popup-based Google OAuth sign-in. Allow popups to communicate
+# with their opener.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"

@@ -4,12 +4,13 @@
 Django-based backend for the Plio interactive video platform. Multi-tenant architecture using django-tenants with PostgreSQL schema separation per organization.
 
 ## Tech Stack
-- **Framework:** Django 3.2.25
+- **Framework:** Django 4.0.10
 - **Language:** Python 3.8 (Docker/CI), Python 3.10.4 (local dev)
-- **Database:** PostgreSQL (via django-tenants for multi-tenancy)
-- **Cache/Channels:** Redis (django-redis, channels_redis)
-- **Auth:** django-rest-framework-social-oauth2 (Google OAuth2), django-oauth-toolkit, OTP
-- **API:** djangorestframework 3.12.2, drf-yasg 1.20.0
+- **Database:** PostgreSQL (via django-tenants 3.4.8 for multi-tenancy)
+- **Cache/Channels:** Redis (django-redis, channels 4.0.0, channels_redis 4.0.0)
+- **ASGI Server:** daphne 4.0.0
+- **Auth:** django-rest-framework-social-oauth2 1.2.0 (Google OAuth2), django-oauth-toolkit, OTP
+- **API:** djangorestframework 3.14.0, drf-yasg 1.21.8
 
 ## Commands
 ```bash
@@ -31,10 +32,12 @@ Before each commit, run:
 
 ## Known Gotchas
 - 9 tests (ImageTestCase, PlioTestCase copying/duplicate, QuestionTestCase delete-linked-image) require real AWS S3 credentials and will fail locally without them. CI provides these via GitHub secrets.
-- `django-request-logging==0.7.2` is incompatible with Django 3.2 (uses `response._headers` removed in 3.2). Upgraded to 0.7.5.
+- `django-request-logging==0.7.5` handles Django 3.2+ `response.headers` (vs deprecated `response._headers`).
 - `requirements-dev.txt` includes `-r requirements.txt` — do not re-pin packages at different versions in dev.
 - `entrypoint.sh` runs `makemigrations` on startup (not `--check`), so unexpected migrations are a deployment risk.
 - `social_django 5.1.0` has an internal migration inconsistency (AppConfig says AutoField, migration 0011 says BigAutoField). Run `makemigrations --check --dry-run plio organizations users entries experiments tags etl` to check only our apps.
+- Django 4.0 `MiddlewareMixin.__init__()` requires a `get_response` argument — instantiating middleware outside the request cycle (e.g., in views) needs `get_response=lambda r: None`.
+- `django-rest-framework-social-oauth2==1.2.0` sets `app_name='drfso2'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drfso2'` must be set in settings.py.
 
 ## Key Directories
 - `plio/` — Core app (models, views, signals for Plio/Video/Item/Question/Image)

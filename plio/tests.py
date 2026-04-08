@@ -33,18 +33,16 @@ class BaseTestCase(APITestCase):
     """Base class that sets up generic pre-requisites for all further test classes"""
 
     @classmethod
-    def setUpTestData(self):
+    def setUpTestData(cls):
         # Ensure we're on the public schema before creating tenants.
         # Organization.save() switches the connection to the tenant schema,
         # and this session-level search_path change survives transaction rollback
         # between test classes.
         connection.set_schema_to_public()
 
-        self.client = APIClient()
-
         # User access and refresh tokens require an OAuth Provider application to be set up and use it as a foreign key.
         # As the test database is empty, we create an application instance before running the test cases.
-        self.application = Application.objects.create(
+        cls.application = Application.objects.create(
             name=API_APPLICATION_NAME,
             redirect_uris="",
             client_type=Application.CLIENT_CONFIDENTIAL,
@@ -52,18 +50,20 @@ class BaseTestCase(APITestCase):
         )
 
         # create org
-        self.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
+        cls.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
 
         # get roles
-        self.org_view_role = Role.objects.filter(name="org-view").first()
-        self.org_admin_role = Role.objects.filter(name="org-admin").first()
-        self.super_admin_role = Role.objects.filter(name="super-admin").first()
+        cls.org_view_role = Role.objects.filter(name="org-view").first()
+        cls.org_admin_role = Role.objects.filter(name="org-admin").first()
+        cls.super_admin_role = Role.objects.filter(name="super-admin").first()
 
     def tearDown(self):
         # flush the cache
         get_redis_connection("default").flushall()
 
     def setUp(self):
+        self.client = APIClient()
+
         # create 2 users
         self.user = User.objects.create(mobile="+919876543210")
         self.user_2 = User.objects.create(mobile="+919988776655")

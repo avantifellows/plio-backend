@@ -6,7 +6,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "plio.settings")
 
 # Initialize Django ASGI application early to ensure the AppRegistry is
 # populated before importing Channels routing or any project modules.
-from django.core.asgi import get_asgi_application
+from django.core.asgi import get_asgi_application  # noqa: E402
 
 django_asgi_app = get_asgi_application()
 

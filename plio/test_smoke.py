@@ -16,9 +16,9 @@ from django.contrib.auth import get_user_model
 from django.db import connection
 from rest_framework import status
 
-from plio.tests import BaseTestCase, get_new_access_token
-from plio.models import Plio, Video, Item, Question
-from entries.models import Session, SessionAnswer
+from plio.tests import BaseTestCase
+from plio.models import Plio, Video, Item
+from entries.models import Session
 from users.models import OrganizationUser
 
 User = get_user_model()

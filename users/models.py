@@ -18,7 +18,8 @@ class UserManager(SafeDeleteManager):
         unique_id=None,
         auth_org=None,
     ):
-        print(f"""
+        print(
+            f"""
         Creating new user with details:
         - Email: {email}
         - Mobile: {mobile}
@@ -27,8 +28,9 @@ class UserManager(SafeDeleteManager):
         - Is Active: {is_active}
         - Unique ID: {unique_id}
         - Auth Org: {auth_org}
-        """)
-        
+        """
+        )
+
         user = self.model()
         if email:
             user.email = self.normalize_email(email)
@@ -42,13 +44,15 @@ class UserManager(SafeDeleteManager):
         return user
 
     def create_superuser(self, email, mobile=None, password=None, **extra_fields):
-        print(f"""
+        print(
+            f"""
         Creating new superuser with details:
         - Email: {email}
         - Mobile: {mobile}
         - Extra fields: {extra_fields}
-        """)
-        
+        """
+        )
+
         if not email:
             raise ValueError("User must have an email")
         if not password:

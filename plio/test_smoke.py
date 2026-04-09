@@ -141,9 +141,7 @@ class PlioListAnnotationSmokeTestCase(BaseTestCase):
     def test_video_url_annotation(self):
         response = self.client.get("/api/v1/plios/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            response.data["results"][0]["video_url"], self.video.url
-        )
+        self.assertEqual(response.data["results"][0]["video_url"], self.video.url)
 
 
 class SessionAnswerOrderingSmokeTestCase(BaseTestCase):
@@ -172,9 +170,7 @@ class SessionAnswerOrderingSmokeTestCase(BaseTestCase):
 
     def test_session_answers_ordered_by_item_time(self):
         """Session answers should be ordered by item__time (1, 3, 5)."""
-        response = self.client.post(
-            reverse("sessions-list"), {"plio": self.plio.id}
-        )
+        response = self.client.post(reverse("sessions-list"), {"plio": self.plio.id})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         answers = response.data["session_answers"]
         self.assertEqual(len(answers), 3)
@@ -225,9 +221,7 @@ class OrgWorkspaceSmokeTestCase(BaseTestCase):
             title="Org Video",
             url="https://www.youtube.com/watch?v=orgvideo",
         )
-        Plio.objects.create(
-            name="Org Plio", video=video_org, created_by=self.user
-        )
+        Plio.objects.create(name="Org Plio", video=video_org, created_by=self.user)
         connection.set_schema_to_public()
 
         # Request with org header
@@ -250,9 +244,7 @@ class OrgWorkspaceSmokeTestCase(BaseTestCase):
             title="Public Video",
             url="https://www.youtube.com/watch?v=pubvideo",
         )
-        Plio.objects.create(
-            name="Public Plio", video=video, created_by=self.user
-        )
+        Plio.objects.create(name="Public Plio", video=video, created_by=self.user)
 
         response = self.client.get("/api/v1/plios/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)

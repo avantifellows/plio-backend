@@ -133,7 +133,9 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
     """
 
     permission_classes = [IsAuthenticated, OrganizationUserPermission]
-    queryset = OrganizationUser.objects.select_related("user", "organization", "role").all()
+    queryset = OrganizationUser.objects.select_related(
+        "user", "organization", "role"
+    ).all()
     serializer_class = OrganizationUserSerializer
 
     def get_queryset(self):
@@ -141,7 +143,9 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
         if not request.user:
             return OrganizationUser.objects.none()
 
-        base_qs = OrganizationUser.objects.select_related("user", "organization", "role")
+        base_qs = OrganizationUser.objects.select_related(
+            "user", "organization", "role"
+        )
 
         # If superuser, honor filters when provided, else return all
         requested_org = request.query_params.get("organization")
@@ -194,44 +198,44 @@ class OrganizationUserViewSet(viewsets.ModelViewSet):
 class RoleViewSet(viewsets.ModelViewSet):
     """
     Role ViewSet description
-    
+
     list: List all roles
     retrieve: Retrieve a role
     """
+
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         # Only return roles that can be assigned based on user's permission level
         if self.request.user.is_superuser:
             return Role.objects.all()
-        
+
         # Get user's role in current organization
-        organization_shortcode = self.request.META.get('HTTP_ORGANIZATION', '')
+        organization_shortcode = self.request.META.get("HTTP_ORGANIZATION", "")
         if not organization_shortcode:
             return Role.objects.none()
-            
+
         try:
             organization = Organization.objects.get(shortcode=organization_shortcode)
             user_org = OrganizationUser.objects.filter(
-                user=self.request.user, 
-                organization=organization
+                user=self.request.user, organization=organization
             ).first()
-            
+
             if not user_org:
                 return Role.objects.none()
-                
+
             # Super-admins can see org-admin and org-view roles
             if user_org.role.name == "super-admin":
                 return Role.objects.filter(name__in=["org-admin", "org-view"])
             # Org-admins can only see org-view role
             elif user_org.role.name == "org-admin":
                 return Role.objects.filter(name="org-view")
-                
+
         except Organization.DoesNotExist:
             pass
-            
+
         return Role.objects.none()
 
 

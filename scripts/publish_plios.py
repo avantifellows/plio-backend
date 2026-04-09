@@ -14,10 +14,10 @@ AUTH_TOKEN = os.environ.get("PLIO_AUTH_TOKEN", "")
 ORGANIZATION = "scertH"
 
 # List of plio UUIDs to publish
-PLIO_UUIDS_TO_PUBLISH = [
-]
+PLIO_UUIDS_TO_PUBLISH = []
 
 # --- End of Configuration ---
+
 
 def publish_plio(plio_uuid: str) -> bool:
     """
@@ -30,10 +30,8 @@ def publish_plio(plio_uuid: str) -> bool:
         "organization": ORGANIZATION,
         "Content-Type": "application/json",
     }
-    data = {
-        "status": "published"
-    }
-    
+    data = {"status": "published"}
+
     print(f"Publishing plio: {plio_uuid}")
 
     try:
@@ -51,16 +49,21 @@ def publish_plio(plio_uuid: str) -> bool:
             print(f"Response text: {e.response.text}")
         return False
 
+
 def main():
     """
     Main function to publish plios.
     """
     if AUTH_TOKEN == "your_auth_token_here" or ORGANIZATION == "your_organization_here":
-        print("Please configure AUTH_TOKEN and ORGANIZATION in the script or as environment variables.")
+        print(
+            "Please configure AUTH_TOKEN and ORGANIZATION in the script or as environment variables."
+        )
         return
-        
+
     if not PLIO_UUIDS_TO_PUBLISH:
-        print("Please add the plio UUIDs you want to publish to the PLIO_UUIDS_TO_PUBLISH list.")
+        print(
+            "Please add the plio UUIDs you want to publish to the PLIO_UUIDS_TO_PUBLISH list."
+        )
         return
 
     published_count = 0
@@ -68,7 +71,10 @@ def main():
         if publish_plio(uuid):
             published_count += 1
 
-    print(f"\nFinished. {published_count}/{len(PLIO_UUIDS_TO_PUBLISH)} plios were published successfully.")
+    print(
+        f"\nFinished. {published_count}/{len(PLIO_UUIDS_TO_PUBLISH)} plios were published successfully."
+    )
+
 
 if __name__ == "__main__":
-    main() 
+    main()

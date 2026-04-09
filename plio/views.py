@@ -625,7 +625,9 @@ class PlioViewSet(viewsets.ModelViewSet):
         os.makedirs(data_dump_dir)
 
         # schema name to query in
-        schema_name = OrganizationTenantMiddleware(get_response=lambda r: None).get_schema(self.request)
+        schema_name = OrganizationTenantMiddleware(
+            get_response=lambda r: None
+        ).get_schema(self.request)
 
         organization = Organization.objects.filter(
             shortcode=self.organization_shortcode,
@@ -752,10 +754,10 @@ class PlioViewSet(viewsets.ModelViewSet):
         # Explicitly check permissions before creating a plio
         if not self.get_permissions()[1].has_permission(request, self):
             return Response(
-                {"detail": "You do not have permission to perform this action."}, 
-                status=status.HTTP_403_FORBIDDEN
+                {"detail": "You do not have permission to perform this action."},
+                status=status.HTTP_403_FORBIDDEN,
             )
-            
+
         return super().create(request, *args, **kwargs)
 
 

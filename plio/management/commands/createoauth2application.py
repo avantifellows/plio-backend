@@ -8,9 +8,7 @@ class Command(BaseCommand):
     help = "Creates OAuth2 client credentials from the default oauth2 environment variables"
 
     def handle(self, *args, **options):
-        default_oauth2_client_setup = os.environ.get(
-            "DEFAULT_OAUTH2_CLIENT_SETUP", ""
-        )
+        default_oauth2_client_setup = os.environ.get("DEFAULT_OAUTH2_CLIENT_SETUP", "")
         if default_oauth2_client_setup.lower() not in ("true", "1", "yes"):
             print("Default OAuth2 client setup is disabled. Skipping.")
             return

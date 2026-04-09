@@ -266,7 +266,7 @@ API_APPLICATION_NAME = "plio"
 
 OAUTH2_PROVIDER = {
     "ACCESS_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24,  # 1 day
-    "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 7, # 7 days
+    "REFRESH_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24 * 7,  # 7 days
     "ROTATE_REFRESH_TOKEN": True,
     "DEFAULT_SCOPES": ["read", "write"],
 }

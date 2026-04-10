@@ -1,5 +1,5 @@
 """
-Runtime smoke tests for Django 3.2 migration validation (US-010).
+Runtime smoke tests for Django 4.1 migration validation (US-010).
 
 Covers integration points not exercised by existing app-level tests:
 - Admin panel accessibility and login

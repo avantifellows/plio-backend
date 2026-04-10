@@ -4,7 +4,7 @@ channels==4.0.0
 channels_redis==4.0.0
 chardet==3.0.4
 device-detector==0.10
-Django==4.0.10
+Django==4.1.13
 django-cors-headers==3.7.0
 django-request-logging==0.7.5
 django-storages==1.11.1
@@ -26,7 +26,6 @@ urllib3==1.25.11
 Pillow==8.1.2
 django-tenants==3.4.8
 Markdown==3.3.4
-django-filter==2.4.0
 drf-yasg==1.21.8
 django-safedelete==1.0.0
 django-rest-framework-social-oauth2==1.2.0

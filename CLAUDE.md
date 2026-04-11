@@ -4,10 +4,10 @@
 Django-based backend for the Plio interactive video platform. Multi-tenant architecture using django-tenants with PostgreSQL schema separation per organization.
 
 ## Tech Stack
-- **Framework:** Django 4.1.13
+- **Framework:** Django 4.2.30
 - **Language:** Python 3.8 (Docker/CI), Python 3.10.4 (local dev)
-- **Database:** PostgreSQL (via django-tenants 3.4.8 for multi-tenancy)
-- **Cache/Channels:** Redis (django-redis, channels 4.0.0, channels_redis 4.0.0)
+- **Database:** PostgreSQL (via django-tenants 3.5.0 for multi-tenancy)
+- **Cache/Channels:** Redis (django-redis, channels 4.1.0, channels_redis 4.0.0)
 - **ASGI Server:** daphne 4.0.0
 - **Auth:** django-rest-framework-social-oauth2 1.2.0 (Google OAuth2), django-oauth-toolkit, OTP
 - **API:** djangorestframework 3.14.0, drf-yasg 1.21.8
@@ -39,6 +39,8 @@ Before each commit, run:
 - Django 4.0 `MiddlewareMixin.__init__()` requires a `get_response` argument — instantiating middleware outside the request cycle (e.g., in views) needs `get_response=lambda r: None`.
 - `django-rest-framework-social-oauth2==1.2.0` sets `app_name='drfso2'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drfso2'` must be set in settings.py.
 - `drf-yasg==1.21.8` requires `pytz>=2021.1` — if upgrading drf-yasg, bump pytz too.
+- `django-tenants==3.4.8` has `Django<=4.2` (i.e., `<=4.2.0`). Django 4.2.x patches require `django-tenants>=3.5.0`.
+- `channels==4.0.0` does not support Django 4.2. Must use `channels>=4.1.0` with Django 4.2+.
 - `requirements-dev.txt` uses `setoptconf-tmp` (not `setoptconf`) — prospector 1.7.7 renamed this dependency.
 
 ## Key Directories

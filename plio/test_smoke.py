@@ -81,7 +81,7 @@ class AuthRoutesSmokeTestCase(TestCase):
     """Verify /auth/ OAuth2 social auth routes resolve correctly."""
 
     def test_auth_token_url_resolves(self):
-        """The /auth/token route from rest_framework_social_oauth2 resolves."""
+        """The /auth/token route from drf_social_oauth2 resolves."""
         match = resolve("/auth/token")
         self.assertIsNotNone(match)
 

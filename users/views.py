@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from oauth2_provider.models import AccessToken, Application, RefreshToken
 
 from plio.settings import (
-    API_APPLICATION_NAME,
+    DEFAULT_OAUTH2_CLIENT_ID,
     OAUTH2_PROVIDER,
     OTP_EXPIRE_SECONDS,
     SMS_DRIVER,
@@ -245,7 +245,7 @@ def login_user_and_get_access_token(user, request):
     login(request, user)
 
     # define an application
-    application = Application.objects.get(name=API_APPLICATION_NAME)
+    application = Application.objects.get(client_id=DEFAULT_OAUTH2_CLIENT_ID)
     # get the newly generated access/refresh tokens for the user and application
     return get_new_access_token(user, application)
 

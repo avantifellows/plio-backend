@@ -49,7 +49,7 @@ SHARED_APPS = (
     "django.contrib.admin",
     "oauth2_provider",
     "social_django",
-    "rest_framework_social_oauth2",
+    "drf_social_oauth2",
     "silk",
     "etl",
 )
@@ -85,7 +85,7 @@ INSTALLED_APPS = [
     "entries",
     "oauth2_provider",
     "social_django",
-    "rest_framework_social_oauth2",
+    "drf_social_oauth2",
     "storages",
     "silk",
     "etl",
@@ -97,7 +97,7 @@ TENANT_DOMAIN_MODEL = "organizations.Domain"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
-        "rest_framework_social_oauth2.authentication.SocialAuthentication",
+        "drf_social_oauth2.authentication.SocialAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -107,7 +107,7 @@ REST_FRAMEWORK = {
 
 AUTHENTICATION_BACKENDS = (
     "social_core.backends.google.GoogleOAuth2",
-    "rest_framework_social_oauth2.backends.DjangoOAuth2",
+    "drf_social_oauth2.backends.DjangoOAuth2",
     "django.contrib.auth.backends.ModelBackend",
 )
 
@@ -262,6 +262,7 @@ AWS_REGION = os.environ.get("AWS_REGION", "")
 DEFAULT_TENANT_SHORTCODE = os.environ.get("DEFAULT_TENANT_SHORTCODE", "")
 
 API_APPLICATION_NAME = "plio"
+DEFAULT_OAUTH2_CLIENT_ID = os.environ.get("DEFAULT_OAUTH2_CLIENT_ID", "")
 
 OAUTH2_PROVIDER = {
     "ACCESS_TOKEN_EXPIRE_SECONDS": 60 * 60 * 24,  # 1 day
@@ -270,9 +271,9 @@ OAUTH2_PROVIDER = {
     "DEFAULT_SCOPES": ["read", "write"],
 }
 
-# django-rest-framework-social-oauth2 1.2.0 added app_name='drfso2' to its URL config.
+# drf-social-oauth2 uses app_name='drf' in its URL config.
 # The DjangoOAuth2 backend uses this namespace for reverse() calls.
-DRFSO2_URL_NAMESPACE = "drfso2"
+DRFSO2_URL_NAMESPACE = "drf"
 
 OTP_EXPIRE_SECONDS = 300  # 5 minutes
 

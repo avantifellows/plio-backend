@@ -1,4 +1,4 @@
-boto3==1.17.90
+boto3==1.35.99
 certifi==2020.12.5
 channels==4.2.0
 channels_redis==4.2.1
@@ -18,13 +18,13 @@ python-dateutil==2.9.0.post0
 PyYAML==6.0.2
 regex==2023.10.3
 requests==2.32.5
-six==1.15.0
+six==1.17.0
 sqlparse==0.4.1
 tqdm==4.51.0
 urllib3==1.26.20
 Pillow==10.1.0
 django-tenants==3.6.1
-Markdown==3.3.4
+Markdown==3.7
 drf-yasg==1.21.15
 django-safedelete==1.4.0
 drf-social-oauth2==3.2.0

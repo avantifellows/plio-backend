@@ -99,7 +99,7 @@ urlpatterns = [
     ),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
-    re_path(r"^auth/", include("rest_framework_social_oauth2.urls")),
+    re_path(r"^auth/", include("drf_social_oauth2.urls")),
     re_path(
         r"^api/v1/docs/$",
         schema_view.with_ui("redoc", cache_timeout=0),

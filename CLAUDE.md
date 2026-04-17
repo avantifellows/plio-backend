@@ -37,11 +37,17 @@ Before each commit, run:
 - `entrypoint.sh` runs `makemigrations --check --dry-run` scoped to project apps on startup — this catches model drift but does not auto-create migrations.
 - `social_django 5.1.0` has an internal migration inconsistency (AppConfig says AutoField, migration 0011 says BigAutoField). Run `makemigrations --check --dry-run plio organizations users entries experiments tags etl` to check only our apps.
 - Django 4.0 `MiddlewareMixin.__init__()` requires a `get_response` argument — instantiating middleware outside the request cycle (e.g., in views) needs `get_response=lambda r: None`.
-- `django-rest-framework-social-oauth2==1.2.0` sets `app_name='drfso2'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drfso2'` must be set in settings.py.
-- `drf-yasg==1.21.8` requires `pytz>=2021.1` — if upgrading drf-yasg, bump pytz too. drf-yasg 1.21.15+ requires Python 3.9+; keep at 1.21.8 while Python 3.8 is the CI baseline.
+- `drf-social-oauth2==3.2.0` sets `app_name='drf'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drf'` must be set in settings.py.
+- `drf-yasg==1.21.15` no longer requires pytz.
 - Django 4.2 `STORAGES` dict replaces `DEFAULT_FILE_STORAGE` and `STATICFILES_STORAGE`. Both `"default"` and `"staticfiles"` keys must be present in settings.
-- `django-tenants==3.4.8` has `Django<=4.2` (i.e., `<=4.2.0`). Django 4.2.x patches require `django-tenants>=3.5.0`.
-- `channels==4.0.0` does not support Django 4.2. Must use `channels>=4.1.0` with Django 4.2+.
+- `django-tenants==3.6.1` supports Django 5.0.
+- `channels==4.2.0` supports Django 5.0.
+- `django-safedelete==1.4.0` adds `deleted_by_cascade` field — migrations generated for all apps.
+- Runtime Application lookup uses `client_id=DEFAULT_OAUTH2_CLIENT_ID` (env var), not `name=API_APPLICATION_NAME`.
+- `boto3==1.35.99` required for Python 3.12 (old 1.17.90 had broken vendored six).
+- `Markdown==3.7` required for Python 3.12 (old 3.3.4 used removed importlib API).
+- `six==1.17.0` required for Python 3.12 (old 1.15.0 had broken six.moves).
+- `drf-social-oauth2==3.2.0` RevokeTokenView passes hashed `client_secret` from DB into OAuthLib, causing `invalid_client`. Token revocation returns 401; token and convert-token endpoints work fine.
 - `requirements-dev.txt` uses `setoptconf-tmp` (not `setoptconf`) — prospector 1.7.7 renamed this dependency.
 
 ## Key Directories

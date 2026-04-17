@@ -4,13 +4,14 @@
 Django-based backend for the Plio interactive video platform. Multi-tenant architecture using django-tenants with PostgreSQL schema separation per organization.
 
 ## Tech Stack
-- **Framework:** Django 4.2.30
-- **Language:** Python 3.8 (Docker/CI), Python 3.10.4 (local dev)
-- **Database:** PostgreSQL 12+ (via django-tenants 3.5.0 for multi-tenancy; docker-compose uses 14-alpine)
-- **Cache/Channels:** Redis (django-redis, channels 4.1.0, channels_redis 4.0.0)
-- **ASGI Server:** daphne 4.0.0
-- **Auth:** django-rest-framework-social-oauth2 1.2.0 (Google OAuth2), django-oauth-toolkit, OTP
-- **API:** djangorestframework 3.14.0, drf-yasg 1.21.8
+- **Framework:** Django 5.0.14
+- **Language:** Python 3.12 (Docker/CI/local dev)
+- **Database:** PostgreSQL 12+ (via django-tenants 3.6.1 for multi-tenancy; docker-compose uses 14-alpine)
+- **Cache/Channels:** Redis (django-redis 5.4.0, channels 4.2.0, channels_redis 4.2.1)
+- **ASGI Server:** daphne 4.1.2
+- **Auth:** drf-social-oauth2 3.2.0 (Google OAuth2), django-oauth-toolkit 3.2.0, OTP
+- **API:** djangorestframework 3.15.2, drf-yasg 1.21.15
+- **Monitoring:** sentry-sdk 2.19.2 (upgraded from 1.x — init API unchanged but internal transport differs)
 
 ## Commands
 ```bash
@@ -48,6 +49,8 @@ Before each commit, run:
 - `Markdown==3.7` required for Python 3.12 (old 3.3.4 used removed importlib API).
 - `six==1.17.0` required for Python 3.12 (old 1.15.0 had broken six.moves).
 - `drf-social-oauth2==3.2.0` RevokeTokenView passes hashed `client_secret` from DB into OAuthLib, causing `invalid_client`. Token revocation returns 401; token and convert-token endpoints work fine.
+- `pytz` removed from direct dependencies — still a transitive dep of pandas 2.1.1. Use `datetime.timezone.utc` instead of `pytz.UTC`.
+- `sentry-sdk==2.19.2` — init API is unchanged but `sentry_sdk.integrations.django.DjangoIntegration` import path is the same; no code changes needed.
 - `requirements-dev.txt` uses `setoptconf-tmp` (not `setoptconf`) — prospector 1.7.7 renamed this dependency.
 
 ## Key Directories

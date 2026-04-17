@@ -1,5 +1,5 @@
 ## Google OAuth2
-Plio backend uses [DRF Social OAuth2](https://github.com/RealmTeam/django-rest-framework-social-oauth2) package to support various social media sign in functionalities. This document covers step by step details on how to get the sign-in functionality running.
+Plio backend uses [drf-social-oauth2](https://github.com/wagber/drf-social-oauth2) package to support various social media sign in functionalities. This document covers step by step details on how to get the sign-in functionality running.
 
   - [Set up Google OAuth2 Credentials](#set-up-google-oauth2-credentials)
   - [Set up API client credentials](#set-up-api-client-credentials)

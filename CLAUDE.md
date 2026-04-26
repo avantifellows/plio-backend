@@ -52,6 +52,7 @@ Before each commit, run:
 - `pytz` removed from direct dependencies — still a transitive dep of pandas 2.1.1. Use `datetime.timezone.utc` instead of `pytz.UTC`.
 - `sentry-sdk==2.19.2` — init API is unchanged but `sentry_sdk.integrations.django.DjangoIntegration` import path is the same; no code changes needed.
 - `requirements-dev.txt` uses `setoptconf-tmp` (not `setoptconf`) — prospector 1.7.7 renamed this dependency.
+- The repo-local `.venv` may be stale (observed Python 3.10/Django 3.2). Use Python 3.12 with freshly installed `requirements.txt` when validating migration work.
 
 ## Key Directories
 - `plio/` — Core app (models, views, signals for Plio/Video/Item/Question/Image)

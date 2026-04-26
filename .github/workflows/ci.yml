@@ -30,7 +30,7 @@ jobs:
 
       # Creates a postgres docker where migrations will run.
       db:
-        image: postgres:12.3-alpine
+        image: postgres:14-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

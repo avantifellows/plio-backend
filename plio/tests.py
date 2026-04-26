@@ -2,6 +2,7 @@ import datetime
 import random
 import string
 import json
+import tempfile
 from django.utils import timezone
 from django.http import FileResponse
 
@@ -13,6 +14,7 @@ from oauth2_provider.models import AccessToken
 from django.urls import reverse
 from django.db import connection
 from django.core.cache import cache
+from django.test import override_settings
 from django_redis import get_redis_connection
 
 from users.models import User, Role, OrganizationUser
@@ -23,6 +25,36 @@ from entries.models import Session, SessionAnswer
 from plio.views import StandardResultsSetPagination
 from plio.cache import get_cache_key
 from plio.serializers import ImageSerializer
+
+
+LOCAL_FILE_STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
+
+class LocalImageStorageMixin:
+    @classmethod
+    def setUpClass(cls):
+        cls._media_root = tempfile.TemporaryDirectory()
+        cls._storage_override = override_settings(
+            MEDIA_ROOT=cls._media_root.name,
+            STORAGES=LOCAL_FILE_STORAGES,
+        )
+        cls._storage_override.enable()
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            super().tearDownClass()
+        finally:
+            cls._storage_override.disable()
+            cls._media_root.cleanup()
 
 
 def get_uuid_list(plio_list):
@@ -97,7 +129,7 @@ def get_new_access_token(user, application):
     )
 
 
-class PlioTestCase(BaseTestCase):
+class PlioTestCase(LocalImageStorageMixin, BaseTestCase):
     """Tests the Plio CRUD functionality."""
 
     def setUp(self):
@@ -1623,7 +1655,7 @@ class ItemTestCase(BaseTestCase):
             self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-class QuestionTestCase(BaseTestCase):
+class QuestionTestCase(LocalImageStorageMixin, BaseTestCase):
     def setUp(self):
         super().setUp()
 
@@ -1788,7 +1820,7 @@ class QuestionTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-class ImageTestCase(BaseTestCase):
+class ImageTestCase(LocalImageStorageMixin, BaseTestCase):
     """Tests the Image CRUD functionality."""
 
     def setUp(self):

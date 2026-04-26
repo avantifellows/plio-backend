@@ -28,13 +28,12 @@ SECRET_KEY="testsecretkey123" DB_HOST="127.0.0.1" DB_PORT="5432" DB_NAME="plio" 
 
 ## Quality Checks
 Before each commit, run:
-1. `python manage.py test` — all non-S3 tests must pass (9 S3 image tests require real AWS credentials)
+1. `SECRET_KEY="testsecretkey123" DB_HOST="127.0.0.1" DB_PORT="5432" DB_NAME="plio" DB_USER="postgres" DB_PASSWORD="" REDIS_HOSTNAME="127.0.0.1" REDIS_PORT="6379" python manage.py test` — full backend suite must pass locally
 2. `python manage.py check` — no errors
 3. `SECRET_KEY="testsecretkey123" DB_HOST="127.0.0.1" DB_PORT="5432" DB_NAME="plio" DB_USER="postgres" DB_PASSWORD="" REDIS_HOSTNAME="127.0.0.1" REDIS_PORT="6379" python manage.py makemigrations --check --dry-run plio organizations users entries experiments tags etl` — no unexpected migrations in project apps
 
 ## Known Gotchas
-- 9 tests (ImageTestCase, PlioTestCase copying/duplicate, QuestionTestCase delete-linked-image) require real AWS S3 credentials and will fail locally without them. CI provides these via GitHub secrets.
-- Image tests that save uploaded files locally should override `STORAGES["default"]` to `django.core.files.storage.FileSystemStorage` with a temporary `MEDIA_ROOT`; the project default storage is S3.
+- `plio.tests.LocalImageStorageMixin` overrides `STORAGES["default"]` to local `FileSystemStorage` with a temporary `MEDIA_ROOT`; add it to tests that upload image files so the suite does not require S3 credentials.
 - `django-request-logging==0.7.5` handles Django 3.2+ `response.headers` (vs deprecated `response._headers`).
 - `requirements-dev.txt` includes `-r requirements.txt` — do not re-pin packages at different versions in dev.
 - `entrypoint.sh` runs `makemigrations --check --dry-run` scoped to project apps on startup — this catches model drift but does not auto-create migrations.

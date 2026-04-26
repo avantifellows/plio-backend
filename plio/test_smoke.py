@@ -1,5 +1,5 @@
 """
-Runtime smoke tests for Django 5.0 migration validation.
+Runtime smoke tests for Django 5.1 migration validation.
 
 Covers integration points not exercised by existing app-level tests:
 - Admin panel accessibility and login
@@ -9,18 +9,25 @@ Covers integration points not exercised by existing app-level tests:
 - Plio list with unique_viewers annotation (with actual sessions)
 - Session create/retrieve with SessionAnswer reverse-relation ordering
 - Tenant routing negative regression (invalid HTTP_ORGANIZATION)
+- Django 5.1 migration-sensitive integration points
 """
 
-from django.test import TestCase, override_settings
+import tempfile
+
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse, resolve
 from django.contrib.auth import get_user_model
 from django.db import connection
+from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django_redis import get_redis_connection
 from rest_framework import status
 from rest_framework.test import APIClient
 from oauth2_provider.models import Application
 
+from organizations.middleware import OrganizationTenantMiddleware
 from plio.tests import BaseTestCase
-from plio.models import Plio, Video, Item
+from plio.models import Image, Plio, Video, Item
 from plio.settings import API_APPLICATION_NAME
 from entries.models import Session
 from users.models import OrganizationUser
@@ -275,6 +282,85 @@ class TenantRoutingNegativeTestCase(BaseTestCase):
         response = self.client.get("/api/v1/plios/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(connection.schema_name, "public")
+
+
+class Django51MigrationSensitiveSmokeTestCase(BaseTestCase):
+    """Direct checks for code paths called out during the Django 5.1 upgrade."""
+
+    LOCAL_STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
+    def setUp(self):
+        super().setUp()
+        self.request_factory = RequestFactory()
+
+    def _request(self, organization_shortcode=None):
+        extra = {}
+        if organization_shortcode is not None:
+            extra["HTTP_ORGANIZATION"] = organization_shortcode
+        return self.request_factory.get("/", **extra)
+
+    def test_direct_tenant_middleware_instantiation_get_schema(self):
+        middleware = OrganizationTenantMiddleware(get_response=lambda request: None)
+
+        tenant_request = self._request(self.organization.shortcode)
+        self.assertEqual(
+            middleware.get_schema(tenant_request), self.organization.schema_name
+        )
+
+        public_request = self._request("missing-org")
+        self.assertEqual(middleware.get_schema(public_request), "public")
+
+    def test_tenant_middleware_process_request_sets_tenant(self):
+        connection.set_schema_to_public()
+        middleware = OrganizationTenantMiddleware(get_response=lambda request: None)
+
+        middleware.process_request(self._request(self.organization.shortcode))
+
+        self.assertEqual(connection.schema_name, self.organization.schema_name)
+        connection.set_schema_to_public()
+
+    def test_image_save_generates_random_name_for_uploaded_file(self):
+        upload = SimpleUploadedFile(
+            "original.jpeg",
+            b"test image bytes",
+            content_type="image/jpeg",
+        )
+
+        with tempfile.TemporaryDirectory() as media_root:
+            with self.settings(MEDIA_ROOT=media_root, STORAGES=self.LOCAL_STORAGES):
+                image = Image.objects.create(url=upload)
+
+        self.assertRegex(image.url.name, r"^images/[a-z]{10}\.jpeg$")
+
+    def test_image_save_without_file_generates_name(self):
+        image = Image.objects.create()
+
+        self.assertRegex(image.url.name, r"^[a-z]{10}$")
+
+    def test_redis_connection_flushall_and_cache_operations(self):
+        cache.set("django-51-cache-smoke", "ok")
+        self.assertEqual(cache.get("django-51-cache-smoke"), "ok")
+
+        get_redis_connection("default").flushall()
+
+        self.assertIsNone(cache.get("django-51-cache-smoke"))
+
+    def test_user_manager_create_and_soft_delete(self):
+        user = User.objects.create_user(email="soft-delete@test.com")
+        user_id = user.id
+
+        user.delete()
+
+        self.assertFalse(User.objects.filter(id=user_id).exists())
+        deleted_user = User.all_objects.get(id=user_id)
+        self.assertIsNotNone(deleted_user.deleted)
 
 
 class PlioListAnnotationSmokeTestCase(BaseTestCase):

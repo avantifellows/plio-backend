@@ -34,6 +34,7 @@ Before each commit, run:
 
 ## Known Gotchas
 - 9 tests (ImageTestCase, PlioTestCase copying/duplicate, QuestionTestCase delete-linked-image) require real AWS S3 credentials and will fail locally without them. CI provides these via GitHub secrets.
+- Image tests that save uploaded files locally should override `STORAGES["default"]` to `django.core.files.storage.FileSystemStorage` with a temporary `MEDIA_ROOT`; the project default storage is S3.
 - `django-request-logging==0.7.5` handles Django 3.2+ `response.headers` (vs deprecated `response._headers`).
 - `requirements-dev.txt` includes `-r requirements.txt` — do not re-pin packages at different versions in dev.
 - `entrypoint.sh` runs `makemigrations --check --dry-run` scoped to project apps on startup — this catches model drift but does not auto-create migrations.

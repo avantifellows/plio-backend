@@ -4,12 +4,13 @@
 Django-based backend for the Plio interactive video platform. Multi-tenant architecture using django-tenants with PostgreSQL schema separation per organization.
 
 ## Tech Stack
-- **Framework:** Django 5.0.14
+- **Framework:** Django 5.1.15
 - **Language:** Python 3.12 (Docker/CI/local dev)
-- **Database:** PostgreSQL 12+ (via django-tenants 3.6.1 for multi-tenancy; docker-compose uses 14-alpine)
-- **Cache/Channels:** Redis (django-redis 5.4.0, channels 4.2.0, channels_redis 4.2.1)
+- **Database:** PostgreSQL 13+ (via django-tenants 3.10.1 for multi-tenancy; docker-compose uses 14-alpine)
+- **Cache/Channels:** Redis (django-redis 6.0.0, channels 4.2.0, channels_redis 4.2.1)
+- **Storage:** django-storages 1.14.6 with S3 backend
 - **ASGI Server:** daphne 4.1.2
-- **Auth:** drf-social-oauth2 3.2.0 (Google OAuth2), django-oauth-toolkit 3.2.0, OTP
+- **Auth:** drf-social-oauth2 3.2.0 (Google OAuth2), django-oauth-toolkit 3.2.0, social-auth-app-django 5.8.0, OTP
 - **API:** djangorestframework 3.15.2, drf-yasg 1.21.15
 - **Monitoring:** sentry-sdk 2.19.2 (upgraded from 1.x — init API unchanged but internal transport differs)
 
@@ -22,28 +23,29 @@ SECRET_KEY="testsecretkey123" DB_HOST="127.0.0.1" DB_PORT="5432" DB_NAME="plio" 
 python manage.py check
 
 # Migration check (no unexpected migrations)
-python manage.py makemigrations --check --dry-run
+SECRET_KEY="testsecretkey123" DB_HOST="127.0.0.1" DB_PORT="5432" DB_NAME="plio" DB_USER="postgres" DB_PASSWORD="" REDIS_HOSTNAME="127.0.0.1" REDIS_PORT="6379" python manage.py makemigrations --check --dry-run plio organizations users entries experiments tags etl
 ```
 
 ## Quality Checks
 Before each commit, run:
 1. `python manage.py test` — all non-S3 tests must pass (9 S3 image tests require real AWS credentials)
 2. `python manage.py check` — no errors
-3. `python manage.py makemigrations --check --dry-run` — no unexpected migrations
+3. `SECRET_KEY="testsecretkey123" DB_HOST="127.0.0.1" DB_PORT="5432" DB_NAME="plio" DB_USER="postgres" DB_PASSWORD="" REDIS_HOSTNAME="127.0.0.1" REDIS_PORT="6379" python manage.py makemigrations --check --dry-run plio organizations users entries experiments tags etl` — no unexpected migrations in project apps
 
 ## Known Gotchas
 - 9 tests (ImageTestCase, PlioTestCase copying/duplicate, QuestionTestCase delete-linked-image) require real AWS S3 credentials and will fail locally without them. CI provides these via GitHub secrets.
 - `django-request-logging==0.7.5` handles Django 3.2+ `response.headers` (vs deprecated `response._headers`).
 - `requirements-dev.txt` includes `-r requirements.txt` — do not re-pin packages at different versions in dev.
 - `entrypoint.sh` runs `makemigrations --check --dry-run` scoped to project apps on startup — this catches model drift but does not auto-create migrations.
-- `social_django 5.1.0` has an internal migration inconsistency (AppConfig says AutoField, migration 0011 says BigAutoField). Run `makemigrations --check --dry-run plio organizations users entries experiments tags etl` to check only our apps.
+- Run scoped migration checks with explicit local DB/Redis env. Without env vars, settings default to Docker host `db`, which emits a local connection warning outside Docker.
+- `social_django` has had internal migration inconsistencies across versions. Run `makemigrations --check --dry-run plio organizations users entries experiments tags etl` to check only our apps.
 - Django 4.0 `MiddlewareMixin.__init__()` requires a `get_response` argument — instantiating middleware outside the request cycle (e.g., in views) needs `get_response=lambda r: None`.
 - `drf-social-oauth2==3.2.0` sets `app_name='drf'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drf'` must be set in settings.py.
 - `drf-yasg==1.21.15` no longer requires pytz.
 - Django 4.2 `STORAGES` dict replaces `DEFAULT_FILE_STORAGE` and `STATICFILES_STORAGE`. Both `"default"` and `"staticfiles"` keys must be present in settings.
-- `django-tenants==3.6.1` supports Django 5.0.
+- `django-tenants==3.10.1` supports Django 5.1.
 - `channels==4.2.0` supports Django 5.0.
-- `django-safedelete==1.4.0` adds `deleted_by_cascade` field — migrations generated for all apps.
+- `django-safedelete==1.4.1` keeps the existing `deleted_by_cascade` fields — no new project migrations were generated during the Django 5.1 dependency bump.
 - Runtime Application lookup uses `client_id=DEFAULT_OAUTH2_CLIENT_ID` (env var), not `name=API_APPLICATION_NAME`.
 - `boto3==1.35.99` required for Python 3.12 (old 1.17.90 had broken vendored six).
 - `Markdown==3.7` required for Python 3.12 (old 3.3.4 used removed importlib API).

@@ -48,6 +48,7 @@ Before each commit, run:
 - Django 4.0 `MiddlewareMixin.__init__()` requires a `get_response` argument — instantiating middleware outside the request cycle (e.g., in views) needs `get_response=lambda r: None`.
 - `drf-social-oauth2==3.4.1` sets `app_name='drf'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drf'` must be set in settings.py.
 - `drf-yasg==1.21.15` no longer requires pytz.
+- With `PYTHONWARNINGS=default`, `drf-yasg==1.21.15` emits a compatibility renderer deprecation warning. Only set `SWAGGER_USE_COMPAT_RENDERERS = False` in a separate cleanup after verifying `/api/v1/docs/` and schema URLs still work.
 - `djangorestframework==3.16.1` works with `drf-yasg==1.21.15` in this project; `plio.test_smoke.DocsSmokeTestCase` verifies `/api/v1/docs/` schema generation.
 - `djangorestframework==3.16.1` reports duplicate nullable unique `User.email` API validation under the `email` field, not `non_field_errors`; `plio.test_smoke.UserEmailNullableUniqueValidationSmokeTestCase` covers this.
 - `plio.test_smoke.Django52MigrationSensitiveSmokeTestCase` covers direct `OrganizationTenantMiddleware(get_response=...)`, `get_schema()`, `process_request()`, `Image.save()` random filenames, Redis flush, and safedelete smoke paths.
@@ -64,6 +65,7 @@ Before each commit, run:
 - `Markdown==3.7` required for Python 3.12 (old 3.3.4 used removed importlib API).
 - `six==1.17.0` required for Python 3.12 (old 1.15.0 had broken six.moves).
 - `drf-social-oauth2==3.4.1` RevokeTokenView still passes hashed `client_secret` from DB into OAuthLib, causing `invalid_client`. Token revocation returns 401; token and convert-token endpoints work fine.
+- When manually probing `request_logging.middleware.LoggingMiddleware`, the `get_response` callable must return an `HttpResponse`; returning `None` raises `AttributeError` during response logging.
 - `pytz` removed from direct dependencies — still a transitive dep of pandas 2.1.1. Use `datetime.timezone.utc` instead of `pytz.UTC`.
 - `sentry-sdk==2.19.2` — init API is unchanged but `sentry_sdk.integrations.django.DjangoIntegration` import path is the same; no code changes needed.
 - `requirements-dev.txt` uses `setoptconf-tmp` (not `setoptconf`) — prospector 1.7.7 renamed this dependency.

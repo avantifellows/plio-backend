@@ -296,6 +296,22 @@ class UserEmailNullableUniqueValidationSmokeTestCase(TestCase):
         self.assertIn("email", duplicate_response.data)
         self.assertNotIn("non_field_errors", duplicate_response.data)
 
+    def test_two_null_emails_can_coexist(self):
+        """Nullable unique fields should allow multiple NULL values."""
+        first_null = self.client.post(
+            reverse("users-list"),
+            {"email": None, "mobile": "+910000000010"},
+            format="json",
+        )
+        self.assertEqual(first_null.status_code, status.HTTP_201_CREATED)
+
+        second_null = self.client.post(
+            reverse("users-list"),
+            {"email": None, "mobile": "+910000000011"},
+            format="json",
+        )
+        self.assertEqual(second_null.status_code, status.HTTP_201_CREATED)
+
 
 class TenantRoutingNegativeTestCase(BaseTestCase):
     """Negative regression: invalid HTTP_ORGANIZATION header must not crash

@@ -396,12 +396,12 @@ class Django52MigrationSensitiveSmokeTestCase(BaseTestCase):
         self.assertRegex(image.url.name, r"^[a-z]{10}$")
 
     def test_redis_connection_flushall_and_cache_operations(self):
-        cache.set("django-51-cache-smoke", "ok")
-        self.assertEqual(cache.get("django-51-cache-smoke"), "ok")
+        cache.set("django-52-cache-smoke", "ok")
+        self.assertEqual(cache.get("django-52-cache-smoke"), "ok")
 
         get_redis_connection("default").flushall()
 
-        self.assertIsNone(cache.get("django-51-cache-smoke"))
+        self.assertIsNone(cache.get("django-52-cache-smoke"))
 
     def test_user_manager_create_and_soft_delete(self):
         user = User.objects.create_user(email="soft-delete@test.com")
@@ -416,8 +416,8 @@ class Django52MigrationSensitiveSmokeTestCase(BaseTestCase):
 
 class PlioListAnnotationSmokeTestCase(BaseTestCase):
     """Verify the Plio list endpoint returns correct unique_viewers counts
-    when actual sessions exist. This exercises the Subquery/annotate query
-    that is sensitive to Django 4.2's stricter GROUP BY handling."""
+    when actual sessions exist. This exercises the Subquery/annotate and
+    QuerySet.values() paths that are sensitive to Django ORM changes."""
 
     def setUp(self):
         super().setUp()
@@ -461,12 +461,27 @@ class PlioListAnnotationSmokeTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["results"][0]["video_url"], self.video.url)
 
+    def test_values_payload_contains_expected_model_and_annotation_data(self):
+        response = self.client.get("/api/v1/plios/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result = response.data["results"][0]
+        self.assertEqual(result["id"], self.plio.id)
+        self.assertEqual(result["uuid"], self.plio.uuid)
+        self.assertEqual(result["name"], self.plio.name)
+        self.assertEqual(result["created_by_id"], self.user.id)
+        self.assertEqual(result["video_id"], self.video.id)
+        self.assertEqual(result["video_url"], self.video.url)
+        self.assertEqual(result["unique_viewers"], 0)
+        self.assertIn("created_at", result)
+        self.assertIn("updated_at", result)
+
 
 class SessionAnswerOrderingSmokeTestCase(BaseTestCase):
     """Verify that SessionAnswer reverse-relation ordering works correctly
-    after the Django 4.2 upgrade. SessionAnswer and Question both use
-    Meta.ordering = ['item__time'], and this cross-FK ordering is sensitive
-    to Django 4.2's stricter GROUP BY handling."""
+    after the Django 5.2 upgrade. SessionAnswer and Question both use
+    Meta.ordering = ['item__time'], and these QuerySet.values() payloads are
+    sensitive to Django ORM changes."""
 
     def setUp(self):
         super().setUp()
@@ -516,6 +531,51 @@ class SessionAnswerOrderingSmokeTestCase(BaseTestCase):
         self.assertEqual(answer_item_ids[0], self.item_1.id)  # time=1
         self.assertEqual(answer_item_ids[1], self.item_3.id)  # time=3
         self.assertEqual(answer_item_ids[2], self.item_2.id)  # time=5
+
+    def test_values_payload_and_last_session_copy_remain_stable(self):
+        first_response = self.client.post(
+            reverse("sessions-list"), {"plio": self.plio.id}
+        )
+        self.assertEqual(first_response.status_code, status.HTTP_201_CREATED)
+        first_session = first_response.data
+        first_answers = first_session["session_answers"]
+
+        self.assertEqual(
+            {answer["item_id"] for answer in first_answers},
+            {self.item_1.id, self.item_2.id, self.item_3.id},
+        )
+        for answer in first_answers:
+            self.assertEqual(answer["session_id"], first_session["id"])
+            self.assertIn("answer", answer)
+            self.assertIn("created_at", answer)
+            self.assertIn("updated_at", answer)
+
+        answer_to_update = first_answers[1]
+        update_response = self.client.put(
+            reverse("session-answers-detail", args=[answer_to_update["id"]]),
+            {
+                "id": answer_to_update["id"],
+                "item": answer_to_update["item_id"],
+                "session": first_session["id"],
+                "answer": {"choice": 2},
+            },
+            format="json",
+        )
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+
+        second_response = self.client.post(
+            reverse("sessions-list"), {"plio": self.plio.id}
+        )
+        self.assertEqual(second_response.status_code, status.HTTP_201_CREATED)
+        copied_answers_by_item = {
+            answer["item_id"]: answer
+            for answer in second_response.data["session_answers"]
+        }
+
+        self.assertEqual(
+            copied_answers_by_item[answer_to_update["item_id"]]["answer"],
+            {"choice": 2},
+        )
 
 
 class OrgWorkspaceSmokeTestCase(BaseTestCase):

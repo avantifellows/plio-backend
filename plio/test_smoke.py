@@ -6,6 +6,7 @@ Covers integration points not exercised by existing app-level tests:
 - /api/v1/docs/ schema generation (drf-yasg)
 - /silk/ route accessibility
 - /auth/ OAuth2 social auth routes (including POST-level regression)
+- User.email nullable unique validation response shape (DRF 3.16)
 - Plio list with unique_viewers annotation (with actual sessions)
 - Session create/retrieve with SessionAnswer reverse-relation ordering
 - Tenant routing negative regression (invalid HTTP_ORGANIZATION)
@@ -244,6 +245,56 @@ class AuthDefaultAppRegressionTestCase(TestCase):
             revoke_resp.status_code, [200, 204, 401],
             "Revoke endpoint should return an OAuth response, not 404/405",
         )
+
+
+class UserEmailNullableUniqueValidationSmokeTestCase(TestCase):
+    """Verify DRF 3.16 nullable unique validation for User.email."""
+
+    def setUp(self):
+        connection.set_schema_to_public()
+        self.client = APIClient()
+        self.superuser = User.objects.create_superuser(
+            email="user-email-smoke-admin@test.com",
+            password="testpassword123",
+        )
+        self.client.force_authenticate(user=self.superuser)
+
+    def test_nullable_unique_email_validation_response_shape(self):
+        null_email_response = self.client.post(
+            reverse("users-list"),
+            {
+                "email": None,
+                "mobile": "+910000000001",
+            },
+            format="json",
+        )
+        self.assertEqual(null_email_response.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(null_email_response.data["email"])
+
+        first_response = self.client.post(
+            reverse("users-list"),
+            {
+                "email": "duplicate-email-smoke@test.com",
+                "mobile": "+910000000002",
+            },
+            format="json",
+        )
+        self.assertEqual(first_response.status_code, status.HTTP_201_CREATED)
+
+        duplicate_response = self.client.post(
+            reverse("users-list"),
+            {
+                "email": "duplicate-email-smoke@test.com",
+                "mobile": "+910000000003",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            duplicate_response.status_code, status.HTTP_400_BAD_REQUEST
+        )
+        self.assertIn("email", duplicate_response.data)
+        self.assertNotIn("non_field_errors", duplicate_response.data)
 
 
 class TenantRoutingNegativeTestCase(BaseTestCase):

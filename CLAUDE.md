@@ -44,6 +44,7 @@ Before each commit, run:
 - `drf-social-oauth2==3.2.0` sets `app_name='drf'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drf'` must be set in settings.py.
 - `drf-yasg==1.21.15` no longer requires pytz.
 - `djangorestframework==3.16.1` works with `drf-yasg==1.21.15` in this project; `plio.test_smoke.DocsSmokeTestCase` verifies `/api/v1/docs/` schema generation.
+- `djangorestframework==3.16.1` reports duplicate nullable unique `User.email` API validation under the `email` field, not `non_field_errors`; `plio.test_smoke.UserEmailNullableUniqueValidationSmokeTestCase` covers this.
 - Django 4.2 `STORAGES` dict replaces `DEFAULT_FILE_STORAGE` and `STATICFILES_STORAGE`. Both `"default"` and `"staticfiles"` keys must be present in settings.
 - `django-tenants==3.10.1` supports Django 5.1.
 - `channels==4.3.2`, `channels_redis==4.3.0`, `django-cors-headers==4.9.0`, and `django-silk==5.5.0` are validated with Django 5.2 in this project.

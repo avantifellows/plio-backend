@@ -1,11 +1,11 @@
 boto3==1.35.99
 certifi==2020.12.5
-channels==4.2.0
-channels_redis==4.2.1
+channels==4.3.2
+channels_redis==4.3.0
 chardet==3.0.4
 device-detector==0.10
 Django==5.2.14
-django-cors-headers==4.6.0
+django-cors-headers==4.9.0
 django-request-logging==0.7.5
 django-storages==1.14.6
 djangorestframework==3.15.2
@@ -32,6 +32,6 @@ django-oauth-toolkit==3.2.0
 social-auth-app-django==5.8.0
 social-auth-core==4.8.5
 sentry-sdk==2.19.2
-django-silk==5.3.2
+django-silk==5.5.0
 daphne==4.1.2
 django-redis==6.0.0

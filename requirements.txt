@@ -27,7 +27,7 @@ django-tenants==3.10.1
 Markdown==3.7
 drf-yasg==1.21.15
 django-safedelete==1.4.1
-drf-social-oauth2==3.2.0
+drf-social-oauth2==3.4.1
 django-oauth-toolkit==3.2.0
 social-auth-app-django==5.8.0
 social-auth-core==4.8.5

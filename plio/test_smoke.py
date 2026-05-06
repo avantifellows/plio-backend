@@ -220,7 +220,7 @@ class AuthDefaultAppRegressionTestCase(TestCase):
     def test_revoke_token_endpoint_wired_with_default_app(self):
         """POST /auth/revoke-token/ with Bearer auth and default app client_id
         returns a valid OAuth response (not 404/405), confirming dispatch works.
-        NOTE: drf-social-oauth2 3.2.0 has a known bug where RevokeTokenView
+        NOTE: drf-social-oauth2 3.4.1 has a known bug where RevokeTokenView
         passes the hashed client_secret from the DB back into OAuthLib, causing
         invalid_client. This test accepts 401 as proof the endpoint is wired."""
         token_resp = self.client.post(

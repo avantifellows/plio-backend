@@ -11,7 +11,7 @@ Django-based backend for the Plio interactive video platform. Multi-tenant archi
 - **Middleware/Profiling:** django-cors-headers 4.9.0, django-silk 5.5.0
 - **Storage:** django-storages 1.14.6 with S3 backend
 - **ASGI Server:** daphne 4.1.2
-- **Auth:** drf-social-oauth2 3.2.0 (Google OAuth2), django-oauth-toolkit 3.2.0, social-auth-app-django 5.8.0 (includes GHSA-wv4w-6qv2-qqfg fix), OTP
+- **Auth:** drf-social-oauth2 3.4.1 (Google OAuth2), django-oauth-toolkit 3.2.0, social-auth-app-django 5.8.0 (includes GHSA-wv4w-6qv2-qqfg fix), OTP
 - **API:** djangorestframework 3.16.1, drf-yasg 1.21.15
 - **Monitoring:** sentry-sdk 2.19.2 (upgraded from 1.x — init API unchanged but internal transport differs)
 
@@ -41,7 +41,7 @@ Before each commit, run:
 - Run scoped migration checks with explicit local DB/Redis env. Without env vars, settings default to Docker host `db`, which emits a local connection warning outside Docker.
 - `social_django` has had internal migration inconsistencies across versions. Run `makemigrations --check --dry-run plio organizations users entries experiments tags etl` to check only our apps.
 - Django 4.0 `MiddlewareMixin.__init__()` requires a `get_response` argument — instantiating middleware outside the request cycle (e.g., in views) needs `get_response=lambda r: None`.
-- `drf-social-oauth2==3.2.0` sets `app_name='drf'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drf'` must be set in settings.py.
+- `drf-social-oauth2==3.4.1` sets `app_name='drf'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drf'` must be set in settings.py.
 - `drf-yasg==1.21.15` no longer requires pytz.
 - `djangorestframework==3.16.1` works with `drf-yasg==1.21.15` in this project; `plio.test_smoke.DocsSmokeTestCase` verifies `/api/v1/docs/` schema generation.
 - `djangorestframework==3.16.1` reports duplicate nullable unique `User.email` API validation under the `email` field, not `non_field_errors`; `plio.test_smoke.UserEmailNullableUniqueValidationSmokeTestCase` covers this.
@@ -56,7 +56,7 @@ Before each commit, run:
 - `boto3==1.35.99` required for Python 3.12 (old 1.17.90 had broken vendored six).
 - `Markdown==3.7` required for Python 3.12 (old 3.3.4 used removed importlib API).
 - `six==1.17.0` required for Python 3.12 (old 1.15.0 had broken six.moves).
-- `drf-social-oauth2==3.2.0` RevokeTokenView passes hashed `client_secret` from DB into OAuthLib, causing `invalid_client`. Token revocation returns 401; token and convert-token endpoints work fine.
+- `drf-social-oauth2==3.4.1` RevokeTokenView still passes hashed `client_secret` from DB into OAuthLib, causing `invalid_client`. Token revocation returns 401; token and convert-token endpoints work fine.
 - `pytz` removed from direct dependencies — still a transitive dep of pandas 2.1.1. Use `datetime.timezone.utc` instead of `pytz.UTC`.
 - `sentry-sdk==2.19.2` — init API is unchanged but `sentry_sdk.integrations.django.DjangoIntegration` import path is the same; no code changes needed.
 - `requirements-dev.txt` uses `setoptconf-tmp` (not `setoptconf`) — prospector 1.7.7 renamed this dependency.

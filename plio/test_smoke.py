@@ -1,5 +1,5 @@
 """
-Runtime smoke tests for Django 5.1 migration validation.
+Runtime smoke tests for Django migration validation.
 
 Covers integration points not exercised by existing app-level tests:
 - Admin panel accessibility and login
@@ -10,7 +10,7 @@ Covers integration points not exercised by existing app-level tests:
 - Plio list with unique_viewers annotation (with actual sessions)
 - Session create/retrieve with SessionAnswer reverse-relation ordering
 - Tenant routing negative regression (invalid HTTP_ORGANIZATION)
-- Django 5.1 migration-sensitive integration points
+- Django 5.2 migration-sensitive integration points
 """
 
 import tempfile
@@ -335,8 +335,8 @@ class TenantRoutingNegativeTestCase(BaseTestCase):
         self.assertEqual(connection.schema_name, "public")
 
 
-class Django51MigrationSensitiveSmokeTestCase(BaseTestCase):
-    """Direct checks for code paths called out during the Django 5.1 upgrade."""
+class Django52MigrationSensitiveSmokeTestCase(BaseTestCase):
+    """Direct checks for code paths called out during the Django 5.2 upgrade."""
 
     LOCAL_STORAGES = {
         "default": {

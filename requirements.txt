@@ -4,7 +4,7 @@ channels==4.2.0
 channels_redis==4.2.1
 chardet==3.0.4
 device-detector==0.10
-Django==5.1.15
+Django==5.2.14
 django-cors-headers==4.6.0
 django-request-logging==0.7.5
 django-storages==1.14.6

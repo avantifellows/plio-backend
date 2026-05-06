@@ -4,7 +4,7 @@
 Django-based backend for the Plio interactive video platform. Multi-tenant architecture using django-tenants with PostgreSQL schema separation per organization.
 
 ## Tech Stack
-- **Framework:** Django 5.1.15
+- **Framework:** Django 5.2.14 LTS (supported until April 2028)
 - **Language:** Python 3.12 (Docker/CI/local dev)
 - **Database:** PostgreSQL 13+ (via django-tenants 3.10.1 for multi-tenancy; docker-compose uses 14-alpine)
 - **Cache/Channels:** Redis (django-redis 6.0.0, channels 4.2.0, channels_redis 4.2.1)

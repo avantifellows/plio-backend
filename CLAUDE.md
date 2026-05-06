@@ -12,7 +12,7 @@ Django-based backend for the Plio interactive video platform. Multi-tenant archi
 - **Storage:** django-storages 1.14.6 with S3 backend
 - **ASGI Server:** daphne 4.1.2
 - **Auth:** drf-social-oauth2 3.2.0 (Google OAuth2), django-oauth-toolkit 3.2.0, social-auth-app-django 5.8.0 (includes GHSA-wv4w-6qv2-qqfg fix), OTP
-- **API:** djangorestframework 3.15.2, drf-yasg 1.21.15
+- **API:** djangorestframework 3.16.1, drf-yasg 1.21.15
 - **Monitoring:** sentry-sdk 2.19.2 (upgraded from 1.x — init API unchanged but internal transport differs)
 
 ## Commands
@@ -43,6 +43,7 @@ Before each commit, run:
 - Django 4.0 `MiddlewareMixin.__init__()` requires a `get_response` argument — instantiating middleware outside the request cycle (e.g., in views) needs `get_response=lambda r: None`.
 - `drf-social-oauth2==3.2.0` sets `app_name='drf'` in its URLs. `DRFSO2_URL_NAMESPACE = 'drf'` must be set in settings.py.
 - `drf-yasg==1.21.15` no longer requires pytz.
+- `djangorestframework==3.16.1` works with `drf-yasg==1.21.15` in this project; `plio.test_smoke.DocsSmokeTestCase` verifies `/api/v1/docs/` schema generation.
 - Django 4.2 `STORAGES` dict replaces `DEFAULT_FILE_STORAGE` and `STATICFILES_STORAGE`. Both `"default"` and `"staticfiles"` keys must be present in settings.
 - `django-tenants==3.10.1` supports Django 5.1.
 - `channels==4.3.2`, `channels_redis==4.3.0`, `django-cors-headers==4.9.0`, and `django-silk==5.5.0` are validated with Django 5.2 in this project.

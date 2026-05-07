@@ -17,7 +17,6 @@ class SessionSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "retention",
-            "has_video_played",
             "experiment",
             "watch_time",
             "plio",
@@ -81,7 +80,6 @@ class SessionSerializer(serializers.ModelSerializer):
             # add values for missing keys from the most recent session
             keys_to_check = [
                 "retention",
-                "has_video_played",
                 "experiment",
                 "watch_time",
             ]

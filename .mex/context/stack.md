@@ -19,7 +19,7 @@ last_updated: 2026-07-11
 
 ## Core Technologies
 
-- **Python 3.8** (CI target) with **Django 3.1.1** on master — a migration chain to Django 5.2.14 LTS exists as unmerged PRs #354–#360; don't use newer Django APIs on master
+- **Python 3.8** (CI target) with **Django 3.1.1** on main — a migration chain to Django 5.2.14 LTS exists as unmerged PRs #354–#360; don't use newer Django APIs on main
 - **Django REST Framework 3.12.2** — every endpoint is a DRF ViewSet routed under `/api/v1/`
 - **PostgreSQL 11** — schema-per-tenant via django-tenants
 - **Redis 5** — cache backend and channels layer
@@ -47,5 +47,5 @@ last_updated: 2026-07-11
 
 ## Version Constraints
 
-- Master is intentionally frozen on old pins (Django 3.1.1, DRF 3.12.2) until the migration PR chain (#354–#360) merges — the chain must merge in order, oldest first
+- Main is intentionally frozen on old pins (Django 3.1.1, DRF 3.12.2) until the migration PR chain (#354–#360) merges — the chain must merge in order, oldest first
 - django-request-logging 0.7.2 is abandoned upstream; keep it until its replacement PR (deferred, post-migration)

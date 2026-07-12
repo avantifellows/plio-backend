@@ -39,7 +39,7 @@ last_updated: 2026-07-11
 ### Upgrade Django via a chained, reviewable PR sequence
 **Date:** 2026-05-06
 **Status:** Active (chain unmerged as of 2026-07-11)
-**Decision:** Move master from Django 3.1.1 to 5.2.14 LTS through stepwise PRs (#354–#360), one Django version hop each (3.2 → 4.0 → 4.1 → 4.2 → 5.0 → 5.1 → 5.2), each validated by the full test suite plus added smoke tests.
+**Decision:** Move main from Django 3.1.1 to 5.2.14 LTS through stepwise PRs (#354–#360), one Django version hop each (3.2 → 4.0 → 4.1 → 4.2 → 5.0 → 5.1 → 5.2), each validated by the full test suite plus added smoke tests.
 **Reasoning:** A single mega-upgrade of a 4-major-version gap across tenants, soft delete, channels, and OAuth is unreviewable and undebuggable; per-version PRs isolate breakage.
 **Alternatives considered:** Direct 3.1 → 5.2 jump (rejected — too many interacting breaking changes).
-**Consequences:** PRs must merge in order, oldest first; master stays on old pins until then; sentry-sdk/daphne upgrades and the django-request-logging replacement are deliberately deferred to separate follow-up PRs.
+**Consequences:** PRs must merge in order, oldest first; main stays on old pins until then; sentry-sdk/daphne upgrades and the django-request-logging replacement are deliberately deferred to separate follow-up PRs.

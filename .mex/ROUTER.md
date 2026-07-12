@@ -32,12 +32,12 @@ Then read this file fully before doing anything else in this session.
 - ~260 unit tests across users, organizations, entries, and plio apps (CI: coverage + Codecov)
 
 **Not yet built:**
-- Django upgrade: master still runs Django 3.1.1 — an unmerged PR chain (#354–#360, branches ralph/django-*-migration) steps 3.1 → 5.2.14 LTS
+- Django upgrade: main still runs Django 3.1.1 — an unmerged PR chain (#354–#360, branches ralph/django-*-migration) steps 3.1 → 5.2.14 LTS
 - API/integration tests that follow real user journeys (creator: create→publish; learner: session→answers) — unit tests cover isolated CRUD only; a grilling/scoping session for this was started May 2026 but never finished
 - experiments and tags apps have placeholder tests; events, session-answers, images have minimal coverage
 
 **Known issues:**
-- Several dependencies are years behind (see requirements.txt pins) until the migration chain merges — don't add code relying on newer Django/DRF APIs on master
+- Several dependencies are years behind (see requirements.txt pins) until the migration chain merges — don't add code relying on newer Django/DRF APIs on main
 - django-request-logging is abandoned upstream; replacement deferred to its own PR (post-migration)
 
 ## Routing Table

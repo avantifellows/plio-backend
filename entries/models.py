@@ -22,6 +22,11 @@ class Session(SafeDeleteModel):
     class Meta:
         db_table = "session"
         ordering = ["-id"]
+    
+    def save(self, *args, **kwargs):
+        # Round the watch_time to 2 decimal places before saving
+        self.watch_time = round(self.watch_time, 2)
+        super(Session, self).save(*args, **kwargs)
 
     @property
     def last_session(self):

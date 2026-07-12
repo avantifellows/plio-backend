@@ -14,7 +14,7 @@ edges:
     condition: when setting up the dev environment or running the project for the first time
   - target: patterns/INDEX.md
     condition: when starting a task — check the pattern index for a matching pattern file
-last_updated: 2026-07-11
+last_updated: 2026-07-12
 ---
 
 # Session Bootstrap
@@ -33,7 +33,7 @@ Then read this file fully before doing anything else in this session.
 
 **Not yet built:**
 - Django upgrade: main still runs Django 3.1.1 — an unmerged PR chain (#354–#360, branches ralph/django-*-migration) steps 3.1 → 5.2.14 LTS
-- API/integration tests that follow real user journeys (creator: create→publish; learner: session→answers) — unit tests cover isolated CRUD only; a grilling/scoping session for this was started May 2026 but never finished
+- API/integration tests that follow real user journeys (creator: create→publish; learner: session→answers) — unit tests cover isolated CRUD only. Planning now lives on wayfinder map #362 ("green, comprehensive test wall for the Django upgrade", charted 2026-07-12): 8 tickets covering journey inventory, e2e stack, frontend jest revival, backend unit gaps, integration harness, coverage ratchet, and the per-PR Django-chain validation process
 - experiments and tags apps have placeholder tests; events, session-answers, images have minimal coverage
 
 **Known issues:**

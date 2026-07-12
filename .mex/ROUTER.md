@@ -14,7 +14,7 @@ edges:
     condition: when setting up the dev environment or running the project for the first time
   - target: patterns/INDEX.md
     condition: when starting a task — check the pattern index for a matching pattern file
-last_updated: 2026-07-12
+last_updated: 2026-07-13
 ---
 
 # Session Bootstrap
@@ -33,7 +33,7 @@ Then read this file fully before doing anything else in this session.
 
 **Not yet built:**
 - Django upgrade: main still runs Django 3.1.1 — an unmerged PR chain (#354–#360, branches ralph/django-*-migration) steps 3.1 → 5.2.14 LTS
-- API/integration tests that follow real user journeys (creator: create→publish; learner: session→answers) — unit tests cover isolated CRUD only. Planning now lives on wayfinder map #362 ("green, comprehensive test wall for the Django upgrade", charted 2026-07-12): 8 tickets covering journey inventory, e2e stack, frontend jest revival, backend unit gaps, integration harness, coverage ratchet, and the per-PR Django-chain validation process
+- API/integration tests that follow real user journeys (creator: create→publish; learner: session→answers) — unit tests cover isolated CRUD only. Planning lives on wayfinder map #362 ("green, comprehensive test wall for the Django upgrade", charted 2026-07-12). Resolved so far: journey inventory (#363 — 9 e2e journeys, integration carries depth), e2e stack survey (#364) and stack decision (#369) — **Playwright**, all 9 journeys sharded per PR, ephemeral in-workflow CI stack, local-first (every layer = one documented local command) as a binding acceptance criterion. New frontier: YouTube-playback spike (#371), test-account provisioning (#372); per-PR validation (#370) unblocked. Still open: jest revival (#365), backend unit gaps (#366), integration harness (#367), coverage ratchet (#368)
 - experiments and tags apps have placeholder tests; events, session-answers, images have minimal coverage
 
 **Known issues:**

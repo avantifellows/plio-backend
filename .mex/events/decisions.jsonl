@@ -1,0 +1,1 @@
+{"timestamp":"2026-07-11T17:00:51.094Z","kind":"decision","message":"mex scaffold created and populated (Claude + Codex configs; CLAUDE.md symlinks to AGENTS.md). Master is on Django 3.1.1 — migration chain PRs #354-#360 pending.","files":[],"cwd":"."}

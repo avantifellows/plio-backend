@@ -161,3 +161,4 @@ zappa_settings.json
 # Local tool repos
 pral/
 ralph/
+.ralph/

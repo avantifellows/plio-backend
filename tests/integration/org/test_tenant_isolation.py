@@ -62,6 +62,30 @@ def org_a_entities(creator, org_a):
     }
 
 
+def test_unknown_organization_header_falls_back_to_public_schema(
+    org_a_entities, creator, org_a
+):
+    """An unrecognized shortcode must land the request in the public schema --
+    not retain the previous request's tenant or resolve some other one. The
+    known-org request first matters: it routes the connection into org-a's
+    schema before the unknown header must reset it."""
+    plio_path = org_a_entities["plio"]
+    # seed the public-schema control row *before* any org-header request: the
+    # harness shares one connection, and an API call under org-a's header
+    # leaves the connection in org-a's schema for direct factory writes
+    personal = PlioFactory(created_by=creator.user)
+
+    assert creator.get(plio_path, organization=org_a).status_code == 200
+    # org-a's plio does not exist in the schema the unknown header lands in
+    assert creator.get(plio_path, HTTP_ORGANIZATION="ghost-org").status_code == 404
+
+    # positive control: the unknown header really is serving the public
+    # schema -- the personal-workspace plio is visible under it
+    listing = creator.get("/api/v1/plios/", HTTP_ORGANIZATION="ghost-org")
+    assert listing.status_code == 200
+    assert [row["uuid"] for row in listing.data["results"]] == [personal.uuid]
+
+
 @pytest.mark.parametrize("entity_type", ENTITY_TYPES, ids=ENTITY_TYPES)
 def test_org_a_entity_is_isolated_from_org_b_and_personal_workspace(
     entity_type, org_a_entities, creator, org_a, org_b

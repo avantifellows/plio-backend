@@ -6,14 +6,14 @@ tenancy is exercised only through the ``Organization`` header.
 """
 
 
-def _new_item(creator, organization=None):
+def _new_item(creator, organization=None, time=10):
     plio = creator.post(
         "/api/v1/plios/", {"name": "Host plio"}, organization=organization
     )
     assert plio.status_code == 201
     item = creator.post(
         "/api/v1/items/",
-        {"plio": plio.data["id"], "type": "question", "time": 10},
+        {"plio": plio.data["id"], "type": "question", "time": time},
         organization=organization,
     )
     assert item.status_code == 201
@@ -57,10 +57,21 @@ def test_question_crud_journey_in_personal_workspace(creator):
         "What is two plus two?"
     )
 
-    # list
+    # list: ordered by the item's marker time, not creation order -- a second
+    # question created later but on an *earlier* item must list first
+    early_item = _new_item(creator, time=5)
+    early_question = creator.post(
+        "/api/v1/questions/",
+        {"item": early_item["id"], "type": "mcq", "text": "Earlier question"},
+        format="json",
+    )
+    assert early_question.status_code == 201
     listing = creator.get("/api/v1/questions/")
     assert listing.status_code == 200
-    assert [row["id"] for row in listing.data] == [question_id]
+    assert [row["id"] for row in listing.data] == [
+        early_question.data["id"],
+        question_id,
+    ]
 
     # delete
     assert (

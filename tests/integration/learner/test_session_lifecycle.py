@@ -90,15 +90,28 @@ def test_a_first_session_does_not_inherit_another_learners_state(
         format="json",
     )
     assert updated.status_code == 200
+    # ...including a recorded event: last_event flows through its own
+    # per-learner lookup path, separate from the field carry-over
+    recorded = learner.post(
+        "/api/v1/events/",
+        {"session": a_first.data["id"], "type": "played", "player_time": 2},
+        format="json",
+    )
+    assert recorded.status_code == 201
 
     # learner B's first visit to the same plio: a fresh first session with
-    # none of A's watch time or retention
+    # none of A's watch time, retention, or events
     learner_b = authed_client()
     b_first = learner_b.post("/api/v1/sessions/", {"plio": plio.id}, format="json")
     assert b_first.status_code == 201
     assert b_first.data["is_first"] is True
     assert b_first.data["watch_time"] == 0
     assert b_first.data["retention"] == "0,0,0"
+    # no event identity leaked from A: a fresh session's last_event is an
+    # all-None husk (today's serializer shape), never A's recorded event
+    last_event = b_first.data["last_event"] or {}
+    assert last_event.get("id") is None
+    assert last_event.get("type") is None
 
 
 def test_a_session_does_not_inherit_from_a_different_plio(learner):

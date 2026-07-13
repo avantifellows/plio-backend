@@ -94,6 +94,10 @@ _Avoid_: suite (for the layer), stage
 The committed per-lane coverage minimum CI fails under; only moves up, bumped manually in the PR that adds tests.
 _Avoid_: threshold, target
 
+**Slow lane**:
+The `slow_lane` pytest marker for the rare integration test that needs *committed* rows (the websocket canary) and so uses truncation-based cleanup instead of the suite's transaction rollback. Still blocks PRs; `pytest -m "integration and not slow_lane"` excludes it.
+_Avoid_: nightly, commit test
+
 ## Relationships
 
 - A **Plio** wraps one **Video** and contains ordered **Items**; each **Item** carries one **Question**

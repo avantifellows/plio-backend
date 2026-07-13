@@ -1,7 +1,7 @@
 ---
 name: agents
 description: Always-loaded project anchor. Read this first. Contains project identity, non-negotiables, commands, and pointer to ROUTER.md for full context.
-last_updated: 2026-07-11
+last_updated: 2026-07-14
 ---
 
 # Plio Backend
@@ -18,9 +18,16 @@ Multi-tenant Django REST API powering Plio — interactive video lessons: creato
 
 ## Commands
 - Run (docker): `docker-compose up -d --build` — API at http://0.0.0.0:8001/api/v1, admin at /admin
-- Test: `docker-compose exec web python manage.py test` (CI runs `coverage run manage.py test`)
+- Test (pytest, one runner, two lanes): unit `docker-compose exec web pytest --ignore=tests/integration`; integration `docker-compose exec web pytest -m integration` (CI runs each lane under `coverage run -m pytest ...`)
 - Lint: `pre-commit run --all-files` (black + flake8)
 - Migrations: `docker-compose exec web python manage.py makemigrations` / `migrate`
+
+## Testing (backend test wall, #374)
+- One pytest runner, two lanes: the unit lane is everything outside `tests/integration/`; the integration lane is `pytest -m integration` (API journeys through the real app, tenant Postgres, and Redis). Legacy `APITestCase` tests run unchanged.
+- Integration specs never call `connection.set_schema()` — select the tenant via the `Organization` header (actor fixtures) and switch schemas only through the `in_workspace(...)` builder. Reuse `tests/factories.py`, `tests/builders.py`, and the `creator`/`learner` actor fixtures; keep slice-local helpers in the spec module, shared ones in the harness.
+- Redis cleanup is per-worker `flushdb`, never `flushall` (xdist workers each own a logical DB). Commit-requiring specs (the websocket canary) are marked `slow_lane` with truncation cleanup; `pytest -m "integration and not slow_lane"` excludes them.
+- Metrics, scorecard, watch-time, and CSV-cell expectations are hand-computed literals from a small constructed timeline — never recomputed by re-running the app's own aggregation.
+- Coverage: `.coveragerc` (branch-on, app-scoped); committed floors in `coverage_floors/<lane>` enforced by `scripts/check_coverage_floor.py` in CI. Floors only ratchet up — bump the floor in the same PR when the job summary nudges (measured >~2% above floor). Never lower a floor to make a build pass.
 
 ## After Every Task
 After meaningful work, run GROW:

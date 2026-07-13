@@ -73,17 +73,27 @@ def test_unknown_organization_header_falls_back_to_public_schema(
     # seed the public-schema control row *before* any org-header request: the
     # harness shares one connection, and an API call under org-a's header
     # leaves the connection in org-a's schema for direct factory writes
-    personal = PlioFactory(created_by=creator.user)
+    personal = PlioFactory(created_by=creator.user, is_public=True, published=True)
 
     assert creator.get(plio_path, organization=org_a).status_code == 200
     # org-a's plio does not exist in the schema the unknown header lands in
     assert creator.get(plio_path, HTTP_ORGANIZATION="ghost-org").status_code == 404
 
-    # positive control: the unknown header really is serving the public
-    # schema -- the personal-workspace plio is visible under it
+    # positive control that the unknown header landed in the *public schema*:
+    # play is open for public plios regardless of membership, so the personal
+    # public plio resolves -- it would 404 if the connection had stayed in
+    # org-a's schema (or resolved some other tenant)
+    played = creator.get(
+        "/api/v1/plios/{}/play/".format(personal.uuid), HTTP_ORGANIZATION="ghost-org"
+    )
+    assert played.status_code == 200
+    assert played.data["uuid"] == personal.uuid
+
+    # the list endpoint scopes by the *header* shortcode, not the schema: an
+    # unknown org the caller has no membership in yields no rows at all
     listing = creator.get("/api/v1/plios/", HTTP_ORGANIZATION="ghost-org")
     assert listing.status_code == 200
-    assert [row["uuid"] for row in listing.data["results"]] == [personal.uuid]
+    assert listing.data["results"] == []
 
 
 @pytest.mark.parametrize("entity_type", ENTITY_TYPES, ids=ENTITY_TYPES)

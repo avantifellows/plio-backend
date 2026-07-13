@@ -55,3 +55,10 @@ def test_org_membership_change_pushes_live_user_update(slow_lane_db, org_a):
     # the update carries the learner that was just added, observed at the wire
     assert message["user"]["id"] == learner.id
     assert message["user"]["email"] == learner.email
+    # ...and the payload reflects the membership change itself: org-a with the
+    # assigned role. A serializer that dropped memberships (or served a stale
+    # cached user) would still emit the id and email above.
+    memberships = {
+        org["shortcode"]: org["role"] for org in message["user"]["organizations"]
+    }
+    assert memberships.get("org-a") == "org-view"

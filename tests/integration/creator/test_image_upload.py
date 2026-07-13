@@ -6,6 +6,8 @@ journey asserts the Image record is created and its returned reference is usable
 by reading it back through the API.
 """
 
+from plio.models import Image
+
 TEST_IMAGE = "plio/static/plio/test_image.jpeg"
 
 
@@ -30,3 +32,12 @@ def test_creator_uploads_an_image(creator):
     assert fetched.status_code == 200
     assert fetched.data["url"] == reference
     assert fetched.data["alt_text"] == "A diagram"
+
+    # the uploaded bytes actually reached storage: a backend that returned a
+    # generated name without writing content would pass every check above
+    stored = Image.objects.get(id=image_id)
+    assert stored.url.storage.exists(stored.url.name)
+    with open(TEST_IMAGE, "rb") as image_file:
+        original_bytes = image_file.read()
+    with stored.url.open("rb") as stored_file:
+        assert stored_file.read() == original_bytes

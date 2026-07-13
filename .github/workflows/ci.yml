@@ -13,9 +13,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          # match the app's python -- the runner default (3.14+) crashes the
-          # pinned black 22.3.0
-          python-version: 3.8
+          # the hook pins need 3.9 <= python <= 3.11: flake8 7.3.0 requires
+          # >=3.9, and the runner default (3.14+) crashes black 22.3.0
+          python-version: "3.10"
       # run pre-commit directly instead of the archived pre-commit/action,
       # whose bundled cache client hard-fails the job whenever the GitHub
       # cache service has an outage

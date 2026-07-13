@@ -36,6 +36,11 @@ def test_copy_lands_in_target_workspace_and_spares_the_source(creator, org_a):
     assert in_target.data["name"] == "Source plio"
     assert len(in_target.data["items"]) == 1
     assert in_target.data["items"][0]["details"]["text"] == "Only question"
+    # the video is cloned into the target too, content intact -- a copy that
+    # saved the target plio with video=None passes every other check here
+    # (integer ids are schema-local and can collide, so content is the proof)
+    assert in_target.data["video"]["url"] == original.video.url
+    assert in_target.data["video"]["duration"] == original.video.duration
     assert creator.get("/api/v1/plios/", organization=org_a).data["count"] == 1
 
     # no side effects in the source: the copy's uuid is unknown in the personal

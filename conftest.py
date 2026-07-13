@@ -1,4 +1,5 @@
 import datetime
+import shutil
 import uuid
 
 import pytest
@@ -58,6 +59,16 @@ def django_db_setup(django_db_setup, django_db_blocker, request):
         ):
             ensure_api_application()
         connection.set_schema_to_public()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def clean_media_root():
+    """Storage writes survive the DB rollback and Redis flushes: wipe this
+    worker's MEDIA_ROOT (a fixed per-worker temp dir) so uploaded files do not
+    accumulate across repeated or interrupted runs in the same container."""
+    shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
+    yield
+    shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
 
 
 @pytest.fixture(autouse=True)

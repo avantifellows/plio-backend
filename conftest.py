@@ -44,6 +44,15 @@ def django_db_setup(django_db_setup, django_db_blocker, request):
         Organization.objects.get_or_create(
             shortcode="org-b", defaults={"name": "Org B", "schema_name": "org_b"}
         )
+        if settings.DEFAULT_TENANT_SHORTCODE:
+            # production maps the default shortcode to the public schema via
+            # `createtenant` (docs/ENV.md "default tenant"); mirror that row so
+            # no-header journeys resolve the configured default tenant instead
+            # of silently passing through the unknown-tenant fallback
+            Organization.objects.get_or_create(
+                shortcode=settings.DEFAULT_TENANT_SHORTCODE,
+                defaults={"name": "Personal workspace", "schema_name": "public"},
+            )
         if all(
             item.get_closest_marker("integration") for item in request.session.items
         ):

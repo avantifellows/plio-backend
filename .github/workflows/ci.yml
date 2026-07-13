@@ -69,6 +69,7 @@ jobs:
           AWS_STORAGE_BUCKET_NAME: ${{ secrets.AWS_STORAGE_BUCKET_NAME }}
           REDIS_HOSTNAME: 127.0.0.1
           REDIS_PORT: 6379
+          DEFAULT_TENANT_SHORTCODE: plio
         run: coverage run -m pytest --ignore=tests/integration
 
       - name: Run integration tests
@@ -82,6 +83,7 @@ jobs:
           SECRET_KEY: test-secret-key
           REDIS_HOSTNAME: 127.0.0.1
           REDIS_PORT: 6379
+          DEFAULT_TENANT_SHORTCODE: plio
         run: coverage run -m pytest -m integration
 
       - name: Generate coverage reports

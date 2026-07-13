@@ -51,6 +51,13 @@ def _rebuild_tenant_universe(organizations):
     connection.set_schema_to_public()
     for role in settings.DEFAULT_ROLES:
         Role.objects.get_or_create(name=role["name"])
+    if settings.DEFAULT_TENANT_SHORTCODE:
+        # the default-tenant row (shortcode -> public schema) is looked up by
+        # shortcode, so a fresh primary key is fine -- mirror the session seed
+        Organization.objects.get_or_create(
+            shortcode=settings.DEFAULT_TENANT_SHORTCODE,
+            defaults={"name": "Personal workspace", "schema_name": "public"},
+        )
     for organization in organizations:
         if not Organization.objects.filter(pk=organization.pk).exists():
             organization.save(force_insert=True)

@@ -97,6 +97,11 @@ def test_deleting_an_item_hides_it_but_keeps_the_row(creator, org_a):
     plio = _new_plio(creator, org_a)
     item = _new_item(creator, org_a, plio["id"])
     item_id = item["id"]
+    # the item carries a question so the delete must cascade to it -- an
+    # Item policy regression from SOFT_DELETE_CASCADE to plain SOFT_DELETE
+    # would otherwise leave an orphaned, still-visible question
+    question = _new_question(creator, org_a, item_id)
+    question_id = question["id"]
 
     assert (
         creator.delete(
@@ -117,6 +122,9 @@ def test_deleting_an_item_hides_it_but_keeps_the_row(creator, org_a):
     with in_workspace(org_a):
         assert not Item.objects.filter(id=item_id).exists()
         assert Item.deleted_objects.filter(id=item_id).exists()
+        # the cascade reached the question: hidden, but retained
+        assert not Question.objects.filter(id=question_id).exists()
+        assert Question.deleted_objects.filter(id=question_id).exists()
 
 
 def test_deleting_a_question_hides_it_but_keeps_the_row(creator, org_a):

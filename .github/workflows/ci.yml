@@ -82,8 +82,24 @@ jobs:
           SECRET_KEY: test-secret-key
           REDIS_HOSTNAME: 127.0.0.1
           REDIS_PORT: 6379
-        run: pytest -m integration
+        run: coverage run -m pytest -m integration
+
+      - name: Generate coverage reports
+        run: |
+          coverage xml
+          coverage json -o coverage.json
 
       - name: Upload coverage to Codecov
-        if: matrix.lane == 'unit'
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: ${{ matrix.lane }}
+          fail_ci_if_error: true
+
+      - name: Enforce coverage floor
+        run: >-
+          python scripts/check_coverage_floor.py
+          --lane ${{ matrix.lane }}
+          --coverage-json coverage.json
+          --floor-file coverage_floors/${{ matrix.lane }}

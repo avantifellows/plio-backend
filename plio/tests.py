@@ -55,7 +55,7 @@ class BaseTestCase(APITestCase):
 
     def tearDown(self):
         # flush the cache
-        get_redis_connection("default").flushall()
+        get_redis_connection("default").flushdb()
 
     def setUp(self):
         # create 2 users

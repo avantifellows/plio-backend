@@ -14,6 +14,13 @@ This repository is responsible for managing plio data, API support and database 
 ## Installation
 To set up this project, visit the [installation steps](docs/INSTALLATION.md).
 
+## Tests
+After starting the docker-compose stack, run the backend integration lane with:
+
+```bash
+docker-compose exec web pytest -m integration
+```
+
 ## Deployment
 Visit our [deployment guideline](docs/DEPLOYMENT.md) for setting up this repository on a production environment.
 

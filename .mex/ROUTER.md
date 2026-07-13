@@ -30,6 +30,7 @@ Then read this file fully before doing anything else in this session.
 - Three auth flows: Google OAuth (convert-token), OTP over SMS (AWS SNS), and third-party SSO (org api_key + unique_id)
 - Schema-per-workspace multi-tenancy, Redis caching with tenant-scoped keys, soft delete everywhere, live user updates over WebSocket (channels)
 - ~260 unit tests across users, organizations, entries, and plio apps (CI: coverage + Codecov)
+- Pytest backend harness on #374's feature branch: separate unit/integration lanes, xdist-safe tenant/Redis fixtures, shared factories/builders, and an HTTP tenant-isolation smoke journey
 
 **Not yet built:**
 - Django upgrade: main still runs Django 3.1.1 — an unmerged PR chain (#354–#360, branches ralph/django-*-migration) steps 3.1 → 5.2.14 LTS

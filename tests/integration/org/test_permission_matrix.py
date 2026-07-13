@@ -15,6 +15,9 @@ from collections import namedtuple
 
 import pytest
 
+from plio.models import Plio
+from tests.builders import in_workspace
+
 # workspace: "personal" (public schema, no header) or "org" (org-a header)
 # role:      "member" | "non_member" | "superuser"
 # visibility:"public" | "private"
@@ -133,3 +136,13 @@ def test_plio_mutate_access(cell, make_plio, matrix_actor, org_a):
     )
 
     assert response.status_code == cell.mutate
+
+    # outcome, not just status: permitted cells actually renamed the plio and
+    # denied cells left it untouched -- an update turned into a no-op that
+    # still returns 200 must fail here
+    expected_name = "renamed" if cell.mutate == 200 else plio.name
+    if cell.workspace == "org":
+        with in_workspace(org_a):
+            assert Plio.objects.get(uuid=plio.uuid).name == expected_name
+    else:
+        assert Plio.objects.get(uuid=plio.uuid).name == expected_name

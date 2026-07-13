@@ -72,6 +72,35 @@ def test_reopening_creates_a_new_session_carrying_over_state(learner):
     assert second.data["retention"] == "1,1,0"
 
 
+def test_a_first_session_does_not_inherit_another_learners_state(
+    learner, authed_client
+):
+    # carry-over is scoped per learner: A's progress on a plio must not bleed
+    # into B's *first* session on the same plio. Without this, carry-over that
+    # stopped filtering by user passes every learner spec (each one reuses a
+    # single actor).
+    plio = _published_plio(duration=3)
+
+    # learner A builds up state on the plio
+    a_first = learner.post("/api/v1/sessions/", {"plio": plio.id}, format="json")
+    assert a_first.status_code == 201
+    updated = learner.client.put(
+        "/api/v1/sessions/{}/".format(a_first.data["id"]),
+        {"plio": plio.id, "watch_time": 9.0, "retention": "1,1,1"},
+        format="json",
+    )
+    assert updated.status_code == 200
+
+    # learner B's first visit to the same plio: a fresh first session with
+    # none of A's watch time or retention
+    learner_b = authed_client()
+    b_first = learner_b.post("/api/v1/sessions/", {"plio": plio.id}, format="json")
+    assert b_first.status_code == 201
+    assert b_first.data["is_first"] is True
+    assert b_first.data["watch_time"] == 0
+    assert b_first.data["retention"] == "0,0,0"
+
+
 def test_a_session_does_not_inherit_from_a_different_plio(learner):
     # carry-over is scoped per plio: a prior session on plio A must not bleed
     # into the learner's first session on plio B.

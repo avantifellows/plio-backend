@@ -15,7 +15,8 @@ fixture also rebuilds the per-worker tenant universe its flush would otherwise
 wipe. See this package's ``conftest.py`` for the truncation approach.
 """
 import pytest
-from asgiref.sync import async_to_sync, sync_to_async
+from asgiref.sync import async_to_sync
+from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
 
 from plio.asgi import application
@@ -40,7 +41,10 @@ def test_org_membership_change_pushes_live_user_update(slow_lane_db, org_a):
         connected, _ = await communicator.connect()
         assert connected
 
-        await sync_to_async(add_learner_to_org)()
+        # database_sync_to_async (not plain sync_to_async) so the executor
+        # thread's ORM connection is closed afterwards -- a leaked connection
+        # makes postgres reject pytest-django's DROP DATABASE at teardown
+        await database_sync_to_async(add_learner_to_org)()
 
         message = await communicator.receive_json_from(timeout=5)
         await communicator.disconnect()

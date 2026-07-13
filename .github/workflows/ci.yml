@@ -12,7 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
-      - uses: pre-commit/action@v2.0.0
+      # run pre-commit directly instead of the archived pre-commit/action,
+      # whose bundled cache client hard-fails the job whenever the GitHub
+      # cache service has an outage
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure
 
   test:
     name: Test ${{ matrix.lane }}

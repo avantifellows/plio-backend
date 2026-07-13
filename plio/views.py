@@ -441,7 +441,7 @@ class PlioViewSet(viewsets.ModelViewSet):
         average_watch_time = df["watch_time"].mean()
 
         # retention at one minute
-        if plio.video.duration is None or plio.video.duration < 60:
+        if True:
             # the metric is not applicable in this case
             percent_one_minute_retention = None
         else:

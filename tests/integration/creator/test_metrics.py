@@ -32,6 +32,12 @@ def test_viewers_and_average_watch_time_use_each_viewer_latest_session(creator):
     # viewer B watched once
     SessionFactory(plio=plio, user=viewer_b, watch_time=50)
 
+    # decoy: another plio in the same workspace with its own session -- the
+    # metrics below must not absorb it (an aggregation that lost its per-plio
+    # predicate would report 3 viewers and a skewed average)
+    decoy = PlioFactory(created_by=creator.user, video__duration=30)
+    SessionFactory(plio=decoy, user=UserFactory(), watch_time=999)
+
     response = creator.get("/api/v1/plios/{}/metrics/".format(plio.uuid))
     assert response.status_code == 200
 
@@ -92,6 +98,14 @@ def test_question_metrics_from_a_constructed_answer_timeline(creator):
     session_b = SessionFactory(plio=plio, user=viewer_b, watch_time=40)
     SessionAnswerFactory(session=session_b, item=first_item, answer=None)
     SessionAnswerFactory(session=session_b, item=second_item, answer=None)
+
+    # decoy: a second plio with a perfectly-answered question in the same
+    # workspace -- accuracy/attempts/completion below must not absorb it
+    decoy = PlioFactory(created_by=creator.user, video__duration=30)
+    decoy_item = ItemFactory(plio=decoy, time=5)
+    QuestionFactory(item=decoy_item, mcq=True)
+    decoy_session = SessionFactory(plio=decoy, user=UserFactory(), watch_time=15)
+    SessionAnswerFactory(session=decoy_session, item=decoy_item, answer=0)
 
     response = creator.get("/api/v1/plios/{}/metrics/".format(plio.uuid))
     assert response.status_code == 200

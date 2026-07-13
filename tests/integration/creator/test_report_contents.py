@@ -11,7 +11,10 @@ by an org admin (admins see unmasked identifiers) so tenancy rides on the
 
 import csv
 import io
+import shutil
 import zipfile
+
+import pytest
 
 from tests.builders import in_workspace
 from tests.factories import (
@@ -31,7 +34,20 @@ def _read_csv(archive, name):
         return list(csv.DictReader(io.TextIOWrapper(handle, encoding="utf-8")))
 
 
-def test_downloaded_report_cells_match_the_constructed_scenario(authed_client, org_a):
+@pytest.fixture
+def report_dump_cleanup():
+    """download_data writes its dump under /tmp/plio-<uuid> and only cleans it
+    on the *next* download of the same plio -- remove what this test generated
+    so repeated runs don't accumulate archive trees in the container."""
+    uuids = []
+    yield uuids
+    for plio_uuid in uuids:
+        shutil.rmtree("/tmp/plio-{}".format(plio_uuid), ignore_errors=True)
+
+
+def test_downloaded_report_cells_match_the_constructed_scenario(
+    authed_client, org_a, report_dump_cleanup
+):
     admin = authed_client()
     OrganizationUser.objects.create(
         user=admin.user,
@@ -61,6 +77,17 @@ def test_downloaded_report_cells_match_the_constructed_scenario(authed_client, o
         SessionAnswerFactory(session=session, item=item, answer=1)
         EventFactory(session=session, type="played", player_time=7)
 
+        # decoy: a second plio in the same workspace with its own session,
+        # answer, and event -- every single-row assertion below doubles as
+        # proof that the dump queries keep their per-plio predicate
+        decoy = PlioFactory(created_by=admin.user, name="Decoy plio", published=True)
+        decoy_item = ItemFactory(plio=decoy, time=3)
+        QuestionFactory(item=decoy_item, mcq=True)
+        decoy_session = SessionFactory(plio=decoy, user=UserFactory(), watch_time=77.7)
+        SessionAnswerFactory(session=decoy_session, item=decoy_item, answer=0)
+        EventFactory(session=decoy_session, type="paused", player_time=99)
+
+    report_dump_cleanup.append(plio.uuid)
     response = admin.get(
         "/api/v1/plios/{}/download_data/".format(plio.uuid), organization=org_a
     )

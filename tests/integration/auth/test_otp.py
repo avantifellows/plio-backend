@@ -61,6 +61,34 @@ def test_otp_verify_fails_for_expired_otp(client, db):
     assert not User.objects.filter(mobile=mobile).exists()
 
 
+def test_otp_verify_rejects_wrong_code_while_otp_is_live(client, db):
+    mobile = "+919000000006"
+    client.post(REQUEST_URL, {"mobile": mobile})
+    live = latest_otp(mobile)
+    wrong_code = "000000" if live.otp != "000000" else "111111"
+
+    response = client.post(VERIFY_URL, {"mobile": mobile, "otp": wrong_code})
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    # no user is minted from a wrong code, and the live OTP is not consumed
+    # by the failed attempt
+    assert not User.objects.filter(mobile=mobile).exists()
+    assert latest_otp(mobile) is not None
+
+
+def test_otp_is_single_use(client, api_application):
+    mobile = "+919000000007"
+    client.post(REQUEST_URL, {"mobile": mobile})
+    otp = latest_otp(mobile)
+
+    first = client.post(VERIFY_URL, {"mobile": mobile, "otp": otp.otp})
+    assert first.status_code == status.HTTP_200_OK
+
+    # the code was consumed by the successful login: replaying it must fail
+    replay = client.post(VERIFY_URL, {"mobile": mobile, "otp": otp.otp})
+    assert replay.status_code == status.HTTP_401_UNAUTHORIZED
+
+
 def test_otp_re_request_issues_fresh_usable_otp(client, api_application):
     mobile = "+919000000003"
 

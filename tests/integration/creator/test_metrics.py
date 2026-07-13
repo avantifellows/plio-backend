@@ -4,9 +4,10 @@ The ``metrics`` endpoint reports usage numbers for a plio. Each spec constructs
 a deliberately tiny timeline of sessions and answers with factories, then asserts
 the API returns exactly the numbers worked out by hand from that timeline — the
 expected values are literals derived from the scenario, never recomputed by
-re-running the app's own aggregation. Video durations are kept under a minute so
-the one-minute-retention metric is intentionally not-applicable, keeping each
-scenario small enough to verify by hand.
+re-running the app's own aggregation. The viewer/answer scenarios keep video
+durations under a minute so the one-minute-retention metric is intentionally
+not-applicable; a dedicated scenario uses a 60-second video with hand-written
+retention strings to pin the metric itself.
 """
 
 from tests.factories import (
@@ -46,6 +47,29 @@ def test_viewers_and_average_watch_time_use_each_viewer_latest_session(creator):
     assert response.data["average_num_answered"] is None
     assert response.data["percent_completed"] is None
     assert response.data["has_survey_question"] is False
+
+
+def test_one_minute_retention_from_hand_written_retention_strings(creator):
+    # 60-second video: the metric is applicable, and second 60 is index 59
+    plio = PlioFactory(created_by=creator.user, video__duration=60)
+
+    # viewer A was watching at the one-minute mark: "1" at index 59 only
+    retained = ",".join(["0"] * 59 + ["1"])
+    SessionFactory(plio=plio, user=UserFactory(), watch_time=60, retention=retained)
+    # viewer B watched the first 30 seconds only: all zeros from index 30 on
+    not_retained = ",".join(["1"] * 30 + ["0"] * 30)
+    SessionFactory(plio=plio, user=UserFactory(), watch_time=30, retention=not_retained)
+    # viewer C has an empty retention string (never persisted, see #392):
+    # invalid for the metric, but still counted among unique viewers
+    SessionFactory(plio=plio, user=UserFactory(), watch_time=0, retention="")
+
+    response = creator.get("/api/v1/plios/{}/metrics/".format(plio.uuid))
+    assert response.status_code == 200
+
+    assert response.data["unique_viewers"] == 3
+    # retained at one minute: viewer A only, out of ALL 3 unique viewers
+    # (not just the 2 with valid strings): round(1/3 * 100, 2) = 33.33
+    assert response.data["percent_one_minute_retention"] == 33.33
 
 
 def test_question_metrics_from_a_constructed_answer_timeline(creator):

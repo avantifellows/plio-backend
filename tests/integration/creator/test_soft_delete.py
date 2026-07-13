@@ -68,6 +68,31 @@ def test_deleting_a_plio_hides_it_but_keeps_the_row(creator, org_a):
         assert Plio.deleted_objects.filter(uuid=uuid).exists()
 
 
+def test_deleting_a_plio_soft_deletes_its_whole_graph(creator, org_a):
+    """Plio's SOFT_DELETE_CASCADE must reach its items and questions: they
+    disappear from the visible managers but survive as soft-deleted rows.
+    Without descendants seeded, a policy downgrade to plain SOFT_DELETE would
+    leave every soft-delete spec green while the graph stayed live."""
+    plio = _new_plio(creator, org_a)
+    item = _new_item(creator, org_a, plio["id"])
+    question = _new_question(creator, org_a, item["id"])
+
+    assert (
+        creator.delete(
+            "/api/v1/plios/{}/".format(plio["uuid"]), organization=org_a
+        ).status_code
+        == 204
+    )
+
+    with in_workspace(org_a):
+        # hidden from the visible managers...
+        assert not Item.objects.filter(id=item["id"]).exists()
+        assert not Question.objects.filter(id=question["id"]).exists()
+        # ...but retained as soft-deleted rows
+        assert Item.deleted_objects.filter(id=item["id"]).exists()
+        assert Question.deleted_objects.filter(id=question["id"]).exists()
+
+
 def test_deleting_an_item_hides_it_but_keeps_the_row(creator, org_a):
     plio = _new_plio(creator, org_a)
     item = _new_item(creator, org_a, plio["id"])

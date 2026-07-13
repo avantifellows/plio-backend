@@ -83,6 +83,17 @@ def test_downloaded_report_cells_match_the_constructed_scenario(authed_client, o
     assert sessions[0]["user_identifier"] == "reporter-learner@example.com"
     assert sessions[0]["has_user_logged_in_via_sso"] == "false"
 
+    # user-level-metrics.csv: the per-user rollup, hand-computed from the one
+    # answer -- attempted the only question (so all questions attempted),
+    # got it wrong (0 correct)
+    user_metrics = _read_csv(archive, "user-level-metrics.csv")
+    assert len(user_metrics) == 1
+    assert user_metrics[0]["user_identifier"] == "reporter-learner@example.com"
+    assert user_metrics[0]["has_user_logged_in_via_sso"] == "false"
+    assert user_metrics[0]["num_questions_attempted"] == "1"
+    assert user_metrics[0]["num_questions_answered_correctly"] == "0"
+    assert user_metrics[0]["are_all_questions_attempted"] == "true"
+
     # responses.csv: submitted answer re-indexed 1-based (0-based 1 -> 2) and
     # graded incorrect (chose option 2, correct is option 1)
     responses = _read_csv(archive, "responses.csv")

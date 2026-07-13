@@ -62,6 +62,10 @@ def django_db_setup(django_db_setup, django_db_blocker, request):
 
 @pytest.fixture(autouse=True)
 def clean_redis():
+    # flush before the test too: a run interrupted before teardown leaves
+    # stale keys behind, and the recreated test database reuses low primary
+    # keys, so a stale tenant cache entry could serve the next run's first read
+    get_redis_connection("default").flushdb()
     yield
     get_redis_connection("default").flushdb()
     connection.set_schema_to_public()

@@ -22,12 +22,23 @@ from channels.testing import WebsocketCommunicator
 from plio.asgi import application
 from tests.factories import UserFactory
 from users.models import OrganizationUser, Role
+from users.serializers import UserSerializer
 
 
 @pytest.mark.slow_lane
 def test_org_membership_change_pushes_live_user_update(slow_lane_db, org_a):
     learner = UserFactory()
     role = Role.objects.get(name="org-view")
+
+    # prime the learner's cached serialized representation *before* the
+    # membership write: the push serializes the user, so a broken
+    # organization_user cache-invalidation receiver would make the payload
+    # reuse this stale pre-membership copy -- which the membership assertion
+    # below then catches. (Serializer prime, not an API call: the authed
+    # fixtures ride the rollback `db` fixture, which the slow lane's
+    # committed-rows requirement cannot mix with.)
+    primed = UserSerializer(learner).data
+    assert primed["organizations"] == []
 
     def add_learner_to_org():
         # the production trigger for a live-user update; its signal calls

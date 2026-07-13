@@ -40,6 +40,20 @@ def test_item_crud_journey_in_personal_workspace(creator):
     assert updated.status_code == 200
     assert creator.get("/api/v1/items/{}/".format(item_id)).data["time"] == 25
 
+    # cache invalidation: prime the *parent plio's* cached detail, mutate the
+    # item, and require the parent read to reflect it -- a disconnected
+    # invalidation signal serves the stale cached payload here
+    primed = creator.get("/api/v1/plios/{}/".format(plio["uuid"]))
+    assert primed.data["items"][0]["time"] == 25
+    assert (
+        creator.patch(
+            "/api/v1/items/{}/".format(item_id), {"time": 30, "plio": plio["id"]}
+        ).status_code
+        == 200
+    )
+    reread = creator.get("/api/v1/plios/{}/".format(plio["uuid"]))
+    assert reread.data["items"][0]["time"] == 30
+
     # list for this plio
     listing = creator.get("/api/v1/items/?plio={}".format(plio["uuid"]))
     assert listing.status_code == 200

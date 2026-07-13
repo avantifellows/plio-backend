@@ -15,6 +15,17 @@ from tests.factories import UserFactory
 from users.models import OrganizationUser, Role
 
 
+def ensure_api_application():
+    return Application.objects.get_or_create(
+        name=settings.API_APPLICATION_NAME,
+        defaults={
+            "redirect_uris": "",
+            "client_type": Application.CLIENT_CONFIDENTIAL,
+            "authorization_grant_type": Application.GRANT_AUTHORIZATION_CODE,
+        },
+    )[0]
+
+
 def pytest_collection_modifyitems(items):
     integration = pytest.mark.integration
     for item in items:
@@ -33,15 +44,10 @@ def django_db_setup(django_db_setup, django_db_blocker, request):
         Organization.objects.get_or_create(
             shortcode="org-b", defaults={"name": "Org B", "schema_name": "org_b"}
         )
-        if request.config.option.markexpr == "integration":
-            Application.objects.get_or_create(
-                name=settings.API_APPLICATION_NAME,
-                defaults={
-                    "redirect_uris": "",
-                    "client_type": Application.CLIENT_CONFIDENTIAL,
-                    "authorization_grant_type": Application.GRANT_AUTHORIZATION_CODE,
-                },
-            )
+        if all(
+            item.get_closest_marker("integration") for item in request.session.items
+        ):
+            ensure_api_application()
         connection.set_schema_to_public()
 
 
@@ -66,14 +72,7 @@ def org_b(django_db_setup, django_db_blocker):
 
 @pytest.fixture
 def authed_client(db):
-    application, _ = Application.objects.get_or_create(
-        name=settings.API_APPLICATION_NAME,
-        defaults={
-            "redirect_uris": "",
-            "client_type": Application.CLIENT_CONFIDENTIAL,
-            "authorization_grant_type": Application.GRANT_AUTHORIZATION_CODE,
-        },
-    )
+    application = ensure_api_application()
 
     def create(user=None):
         user = user or UserFactory()

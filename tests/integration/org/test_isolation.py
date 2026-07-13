@@ -1,11 +1,7 @@
-import pytest
 from django.db import transaction
 
 from tests.builders import in_workspace
 from tests.factories import PlioFactory
-
-
-pytestmark = pytest.mark.integration
 
 
 def test_writes_across_workspaces_roll_back_on_one_connection(creator, org_a, org_b):

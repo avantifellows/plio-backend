@@ -1,7 +1,9 @@
 import os
 import tempfile
 
-from plio.settings import *  # noqa: F401,F403
+os.environ.pop("SMS_DRIVER", None)
+
+from plio.settings import *  # noqa: E402,F401,F403
 
 
 worker = os.environ.get("PYTEST_XDIST_WORKER", "master")
@@ -16,5 +18,4 @@ CACHES["default"]["LOCATION"] = redis_url  # noqa: F405
 CHANNEL_LAYERS["default"]["CONFIG"]["hosts"] = [redis_url]  # noqa: F405
 DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 MEDIA_ROOT = os.path.join(tempfile.gettempdir(), "plio-tests-{}".format(worker))
-DEFAULT_TENANT_SHORTCODE = ""
 SMS_DRIVER = None

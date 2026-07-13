@@ -1,9 +1,3 @@
-import pytest
-
-
-pytestmark = pytest.mark.integration
-
-
 def test_creator_plio_is_isolated_between_workspaces(creator, org_a, org_b):
     create_response = creator.post(
         "/api/v1/plios/",

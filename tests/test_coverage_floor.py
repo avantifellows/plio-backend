@@ -140,3 +140,95 @@ def test_cli_exits_zero_when_above_floor(tmp_path):
 def test_cli_bootstrap_passes_when_floor_missing(tmp_path):
     proc, _ = _run_cli(tmp_path, measured=80.0, floor_value=None)
     assert proc.returncode == 0
+
+
+# --- upward-only ratchet against the base branch --------------------------
+
+
+def test_ratchet_passes_when_floor_unchanged():
+    assert floor_tool.check_ratchet(floor=95.0, base_floor=95.0) is None
+
+
+def test_ratchet_passes_when_floor_raised():
+    assert floor_tool.check_ratchet(floor=96.0, base_floor=95.0) is None
+
+
+def test_ratchet_fails_when_floor_lowered():
+    error = floor_tool.check_ratchet(floor=90.0, base_floor=95.0)
+    assert error is not None
+    assert "ratchet" in error or "lowered" in error
+
+
+def test_ratchet_fails_when_floor_deleted():
+    error = floor_tool.check_ratchet(floor=None, base_floor=95.0)
+    assert error is not None
+    assert "missing" in error
+
+
+def test_ratchet_skipped_when_base_has_no_floor():
+    assert floor_tool.check_ratchet(floor=95.0, base_floor=None) is None
+    assert floor_tool.check_ratchet(floor=None, base_floor=None) is None
+
+
+def _run_cli_with_base(tmp_path, measured, floor_value, base_floor_value):
+    coverage_json = tmp_path / "coverage.json"
+    _write_coverage_json(coverage_json, measured)
+    floor_file = tmp_path / "floor"
+    if floor_value is not None:
+        floor_file.write_text(str(floor_value))
+    base_floor_file = tmp_path / "base-floor"
+    if base_floor_value is not None:
+        base_floor_file.write_text(str(base_floor_value))
+    else:
+        # mirror CI: `git show ... > file || true` leaves an empty file when
+        # the base branch has no floor for this lane
+        base_floor_file.write_text("")
+    summary = tmp_path / "summary.md"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--lane",
+            "unit",
+            "--coverage-json",
+            str(coverage_json),
+            "--floor-file",
+            str(floor_file),
+            "--base-floor-file",
+            str(base_floor_file),
+        ],
+        capture_output=True,
+        text=True,
+        env={"GITHUB_STEP_SUMMARY": str(summary), "PATH": ""},
+    )
+    return proc, summary
+
+
+def test_cli_fails_when_pr_lowers_the_floor(tmp_path):
+    proc, summary = _run_cli_with_base(
+        tmp_path, measured=96.0, floor_value=90.0, base_floor_value=95.0
+    )
+    assert proc.returncode != 0
+    assert "ratchet violation" in summary.read_text()
+
+
+def test_cli_fails_when_pr_deletes_the_floor(tmp_path):
+    proc, summary = _run_cli_with_base(
+        tmp_path, measured=96.0, floor_value=None, base_floor_value=95.0
+    )
+    assert proc.returncode != 0
+    assert "ratchet violation" in summary.read_text()
+
+
+def test_cli_passes_when_pr_raises_the_floor(tmp_path):
+    proc, _ = _run_cli_with_base(
+        tmp_path, measured=96.0, floor_value=95.5, base_floor_value=95.0
+    )
+    assert proc.returncode == 0
+
+
+def test_cli_ratchet_skipped_when_base_floor_empty(tmp_path):
+    proc, _ = _run_cli_with_base(
+        tmp_path, measured=96.0, floor_value=95.0, base_floor_value=None
+    )
+    assert proc.returncode == 0

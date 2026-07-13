@@ -97,9 +97,17 @@ jobs:
           flags: ${{ matrix.lane }}
           fail_ci_if_error: true
 
+      - name: Fetch base branch coverage floor
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin ${{ github.base_ref }}
+          git show origin/${{ github.base_ref }}:coverage_floors/${{ matrix.lane }} \
+            > /tmp/base-floor-${{ matrix.lane }} || true
+
       - name: Enforce coverage floor
         run: >-
           python scripts/check_coverage_floor.py
           --lane ${{ matrix.lane }}
           --coverage-json coverage.json
           --floor-file coverage_floors/${{ matrix.lane }}
+          ${{ github.event_name == 'pull_request' && format('--base-floor-file /tmp/base-floor-{0}', matrix.lane) || '' }}

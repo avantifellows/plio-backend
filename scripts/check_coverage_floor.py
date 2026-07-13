@@ -73,6 +73,37 @@ def read_floor(floor_file_path):
     return float(raw)
 
 
+def check_ratchet(floor, base_floor):
+    """Enforce the upward-only ratchet against the base branch's floor.
+
+    Returns an error message when the PR deletes/empties the floor file or
+    lowers its value relative to the base branch, else ``None``. ``base_floor
+    is None`` (no committed floor on the base branch yet) skips the check.
+    """
+    if base_floor is None:
+        return None
+    if floor is None:
+        return (
+            "floor file is missing or empty but the base branch commits "
+            "{:.2f} -- floors only ratchet up; restore the file.".format(base_floor)
+        )
+    if floor + EPSILON < base_floor:
+        return (
+            "floor lowered from {:.2f} (base branch) to {:.2f} -- floors only "
+            "ratchet up; never lower a floor to make a build pass.".format(
+                base_floor, floor
+            )
+        )
+    return None
+
+
+def format_ratchet_failure(lane, error):
+    """Build the human-facing summary block for a ratchet violation."""
+    return (
+        "### Coverage floor: {lane}\n\n:x: **{lane}** ratchet violation: {error}\n"
+    ).format(lane=lane, error=error)
+
+
 def format_summary(lane, measured, floor, result):
     """Build the human-facing summary block for a lane."""
     if result.bootstrap:
@@ -131,10 +162,25 @@ def main(argv=None):
         required=True,
         help="path to the committed floor file for this lane",
     )
+    parser.add_argument(
+        "--base-floor-file",
+        help=(
+            "path to a copy of the base branch's floor file (e.g. from "
+            "`git show origin/main:coverage_floors/<lane>`); when present, "
+            "a missing or lowered floor relative to it fails the run"
+        ),
+    )
     args = parser.parse_args(argv)
 
     measured = read_measured(args.coverage_json)
     floor = read_floor(args.floor_file)
+
+    if args.base_floor_file:
+        ratchet_error = check_ratchet(floor, read_floor(args.base_floor_file))
+        if ratchet_error:
+            write_summary(format_ratchet_failure(args.lane, ratchet_error))
+            return 1
+
     result = evaluate(measured, floor)
     write_summary(format_summary(args.lane, measured, floor, result))
     return 0 if result.passed else 1

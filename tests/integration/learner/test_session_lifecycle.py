@@ -36,6 +36,15 @@ def test_first_visit_creates_a_first_session(learner):
     assert response.data["watch_time"] == 0
     assert response.data["retention"] == "0,0,0"
 
+    # the zeroed retention string is only assigned in memory after the row is
+    # created, so it is never persisted: a fresh read returns the model default
+    # "" (pre-existing bug, tracked in #392 -- update this literal to "0,0,0"
+    # when it is fixed)
+    fresh = learner.get("/api/v1/sessions/{}/".format(response.data["id"]))
+    assert fresh.status_code == 200, fresh.data
+    assert fresh.data["watch_time"] == 0
+    assert fresh.data["retention"] == ""
+
 
 def test_reopening_creates_a_new_session_carrying_over_state(learner):
     plio = _published_plio(duration=3)

@@ -43,6 +43,10 @@ def test_copy_lands_in_target_workspace_and_spares_the_source(creator, org_a):
     assert creator.get("/api/v1/plios/{}/".format(copy_uuid)).status_code == 404
     source_view = creator.get("/api/v1/plios/{}/".format(original.uuid))
     assert source_view.status_code == 200
+    # identity, not just shape: source and copy can share an integer PK in
+    # their separate schemas, so a cache key that lost its tenant scoping
+    # would serve the copy here -- and name/item-count would still match
+    assert source_view.data["uuid"] == original.uuid
     assert source_view.data["name"] == "Source plio"
     assert len(source_view.data["items"]) == 1
     assert creator.get("/api/v1/plios/").data["count"] == 1

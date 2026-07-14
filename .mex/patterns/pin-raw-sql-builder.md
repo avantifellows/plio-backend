@@ -1,0 +1,76 @@
+---
+name: pin-raw-sql-builder
+description: Pinning a raw-SQL query builder (plio/queries.py) with a direct result-set test that runs the built SQL on a raw cursor over factory data and asserts hand-computed literals.
+triggers:
+  - "query builder test"
+  - "raw SQL test"
+  - "plio/queries.py"
+  - "result-set assertion"
+  - "download_data query"
+edges:
+  - target: "patterns/tenancy-and-caching.md"
+    condition: "when the builder is schema-qualified and you need the tenancy mechanics"
+  - target: "patterns/run-tests-and-migrations.md"
+    condition: "to run the unit lane / pre-commit"
+last_updated: 2026-07-14
+---
+
+# Pin a Raw-SQL Query Builder
+
+## Context
+`plio/queries.py` hand-writes schema-qualified SQL (f-strings) that the plio
+viewset executes on a raw cursor for the metrics endpoint and the
+`download_data` CSV zip. Existing tests execute these builders but never assert
+their output, so a Django/psycopg bump can change a result set silently. The
+plio unit fill (#375) pins each builder with a direct result-set test. All
+builder tests live in one module: `tests/test_plio_queries.py` (unit lane —
+outside `tests/integration/`). Slices #400–#404 append to it.
+
+## Steps
+1. Build a deliberately tiny timeline with the shared factories
+   (`tests/factories.py`) **inside `in_workspace(org_a)`** (`tests/builders.py`).
+2. Seed a **decoy plio** in the same workspace with its own session/answers/items
+   so every assertion doubles as proof the per-plio predicate held.
+3. Call the builder from `plio.queries`, passing the workspace schema explicitly
+   (`org_a.schema_name`) — never `connection.set_schema()`.
+4. Execute the returned SQL on a raw cursor via the slice-local `_run(query)`
+   helper (`with connection.cursor() as cursor: cursor.execute(query); return
+   cursor.fetchall()`). The SQL is fully schema-qualified, so it runs correctly
+   even after the `in_workspace` block exits.
+5. Assert the exact rows against **hand-computed literals** from the timeline.
+   Builders with no `ORDER BY` → compare `set(rows)`; builders with `ORDER BY`
+   (user-level metrics) → assert the ordered list.
+
+## Gotchas
+- **jsonb reads back as its Postgres text form, not parsed Python.** A raw cursor
+  returns `answer`/`options`/`correct_answer` as strings: scalar `0` → `"0"`,
+  list `["A", "B"]` → `'["A", "B"]'` (note the space after the comma), stored
+  NULL → `None`. Derive these from the jsonb text spec, not by copying output.
+- `watch_time`/`item.time` are floats (`30.0`); `retention` is a str; `survey`
+  is a bool; ids are ints. Reference created objects' `.id` (structural, e.g.
+  rank-1 = the newer session) rather than hardcoding sequence values.
+- The latest-responses builder has **two branches**: one session id → `WHERE
+  session.id = <id>` (equality); many → `WHERE session.id IN (...)`. Discriminate
+  with the substring `"session.id IN"` (plain `"IN"` also matches `INNER JOIN`).
+- Masked identifier oracle (masking builders): Python `hashlib.md5` of the user
+  id as a string — independent of Postgres `MD5`. The unmasked identifier
+  coalesces email → mobile → unique_id.
+- Keep the `_run` helper **slice-local** in the spec module; do not add it to the
+  shared harness (`factories.py`, `builders.py`, `conftest.py`).
+
+## Verify
+- [ ] Every test seeds a decoy and asserts its rows are absent
+- [ ] Expected values are independent literals, never re-run through the app's own aggregation
+- [ ] No `connection.set_schema()`; tenancy via `in_workspace(...)` + explicit schema arg
+- [ ] `docker-compose exec web pytest --ignore=tests/integration` is green
+- [ ] `pre-commit run --files tests/test_plio_queries.py` passes
+
+## Debug
+- Empty result set → the schema arg didn't match the workspace where factories
+  wrote (must be `org_a.schema_name`), or the decoy filtering removed the target.
+- jsonb literal mismatch → you asserted a parsed value (`0`, `["A", "B"]`)
+  instead of the text form (`"0"`, `'["A", "B"]'`).
+
+## Update Scaffold
+- [ ] Bump `last_updated` here if the mechanics change
+- [ ] Add follow-up builders to `tests/test_plio_queries.py`, not a new module

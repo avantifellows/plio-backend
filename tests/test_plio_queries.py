@@ -108,7 +108,8 @@ def test_latest_responses_single_session_uses_equality_branch(db, org_a):
 
     # one row for the queried session; the decoy session's answer is excluded.
     # answer 0 and correct answer 0 read back as their jsonb text "0"; the
-    # learner did not log in via SSO, so the survey flag is boolean False.
+    # trailing False is question.survey (the factory default -- this is not a
+    # survey question).
     assert set(rows) == {
         (answer.id, learner.id, "0", "question", "mcq", "0", False),
     }

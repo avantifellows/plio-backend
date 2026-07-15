@@ -606,7 +606,6 @@ def _seed_metrics_timeline(org):
         alice=alice,
         bob=bob,
         carol=carol,
-        decoy_learner=decoy_learner,
     )
 
 

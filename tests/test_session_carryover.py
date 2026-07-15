@@ -36,6 +36,8 @@ the observed behaviour, quirks included, is pinned as-is.
 
 from types import SimpleNamespace
 
+import pytest
+
 from entries.serializers import SessionSerializer
 from tests.builders import in_workspace
 from tests.factories import (
@@ -333,14 +335,15 @@ def _create_session_via_serializer(plio, user):
 def test_create_carries_over_from_nearest_live_predecessor(db, org_a):
     """Session-create falls back to the nearest *live* predecessor.
 
-    Timeline: one learner on one published plio (two items). An older *live*
-    session holds distinctive retention, watch time and has-video-played, plus a
-    session answer per item; a newer session -- the immediate predecessor -- is
-    soft-deleted. The safedelete manager hides the deleted successor, so the
-    create path's own predecessor query resolves to the older live session: the
-    created session copies that session's three carryover fields and its answers,
-    and ``is_first`` is False. The soft-deleted successor's distinctive values and
-    answers must appear nowhere.
+    Timeline: one learner on one published plio (two items). *Two* live
+    sessions precede the deleted one, each with distinctive retention, watch
+    time, has-video-played, and a session answer per item; the immediate
+    predecessor is soft-deleted. The safedelete manager hides the deleted
+    successor, so the create path's own predecessor query must resolve to the
+    *newest live* session (not the oldest, not an arbitrary one): the created
+    session copies that session's three carryover fields and its answers, and
+    ``is_first`` is False. The soft-deleted successor's and the oldest live
+    session's distinctive values must appear nowhere.
 
     Experiment carryover is a pinned quirk, and it is why the live predecessor
     here owns no experiment. The create path copies the predecessor's fields from
@@ -367,7 +370,21 @@ def test_create_carries_over_from_nearest_live_predecessor(db, org_a):
         item_b = ItemFactory(plio=plio, time=2)
         learner = UserFactory()
 
-        # older LIVE predecessor: unmistakable, non-default carryover values and
+        # an even older live session with its own distinct state: among
+        # multiple live candidates the create path must pick the *newest*
+        # live one, so a query that picked the oldest (or an arbitrary) live
+        # session would carry these values and fail below
+        oldest_live = SessionFactory(
+            plio=plio,
+            user=learner,
+            retention="0,1,0,0",
+            watch_time=5.0,
+            has_video_played=False,
+        )
+        SessionAnswerFactory(session=oldest_live, item=item_a, answer=0)
+        SessionAnswerFactory(session=oldest_live, item=item_b, answer=1)
+
+        # newer LIVE predecessor: unmistakable, non-default carryover values and
         # one answer per item, no experiment (see the docstring quirk)
         live = SessionFactory(
             plio=plio,
@@ -396,8 +413,9 @@ def test_create_carries_over_from_nearest_live_predecessor(db, org_a):
         created = _create_session_via_serializer(plio, learner)
 
         # the deleted successor is the nearest predecessor by id; the live one is
-        # older -- so a pick that ignored the soft delete would take the successor
-        assert live.id < deleted.id < created.id
+        # older -- so a pick that ignored the soft delete would take the
+        # successor, and a pick that ignored recency would take oldest_live
+        assert oldest_live.id < live.id < deleted.id < created.id
 
         # the three carryover fields come from the live predecessor, as literals
         assert created.retention == "1,1,1,0"
@@ -422,6 +440,33 @@ def test_create_carries_over_from_nearest_live_predecessor(db, org_a):
         assert created.watch_time != 99.0
         assert 7 not in [answer for _item_id, answer in answers]
         assert 8 not in [answer for _item_id, answer in answers]
+
+
+def test_create_with_experiment_bearing_live_predecessor_raises(db, org_a):
+    """Bug #391 pinned at the serializer seam: an experiment-bearing *live*
+    predecessor makes session-create raise.
+
+    The carryover copies fields from ``SessionSerializer(last_session).data``,
+    where ``to_representation`` renders a non-null experiment as a serialized
+    *dict*; ``Session.objects.create`` then rejects that dict for the
+    ``experiment`` foreign key with ``ValueError``. Today that surfaces as a 500
+    on reopening any plio whose live predecessor carries an experiment --
+    tracked as #391, out of scope for this test-only fill. When #391 is fixed,
+    flip this to assert the carried-over experiment instead.
+    """
+    with in_workspace(org_a):
+        creator = UserFactory()
+        video = VideoFactory(duration=4)
+        plio = PlioFactory(published=True, video=video, created_by=creator)
+        learner = UserFactory()
+        SessionFactory(
+            plio=plio,
+            user=learner,
+            experiment=ExperimentFactory(created_by=creator),
+        )
+
+        with pytest.raises(ValueError, match="experiment"):
+            _create_session_via_serializer(plio, learner)
 
 
 def test_create_starts_fresh_when_all_predecessors_soft_deleted(db, org_a):

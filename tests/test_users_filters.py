@@ -252,6 +252,19 @@ def test_email_with_no_match_returns_empty(authed_client):
     assert _listed_ids(response) == set()
 
 
+def test_email_match_is_exact_not_case_normalized(authed_client):
+    # The email predicate is raw equality, not normalization: querying the
+    # stored address with different casing matches nothing. Pins the
+    # no-normalization quirk (a product change to ``email__iexact`` fails
+    # here). The same user is then found with the exact casing, proving the
+    # empty result comes from the case mismatch alone.
+    caller = _superuser(authed_client)
+    target = UserFactory(email="case-pin@example.com")
+
+    assert _listed_ids(_list(caller, email="Case-Pin@example.com")) == set()
+    assert _listed_ids(_list(caller, email="case-pin@example.com")) == {target.id}
+
+
 def test_combined_filters_are_conjunction_only_all_three_match(
     authed_client, org_a, org_b
 ):
@@ -289,6 +302,23 @@ def test_combined_filters_are_conjunction_only_all_three_match(
     )
 
     assert _listed_ids(response) == {winner.id}
+
+    # ...and the conjunction depends on *every* earlier predicate: the same
+    # unique email combined with ids/organization constraints it fails must
+    # return empty. An email predicate that restarted from User.objects
+    # (instead of narrowing the already-filtered queryset) would still find
+    # the winner here and fail this assertion.
+    assert (
+        _listed_ids(
+            _list(
+                caller,
+                ids=str(decoy_ids_org.id),  # winner's id absent from the CSV
+                organization=str(org_a.id),
+                email=winner_email,
+            )
+        )
+        == set()
+    )
 
 
 def test_ids_mixed_valid_and_invalid_tokens_applies_only_valid(authed_client):
@@ -507,13 +537,18 @@ def test_roles_workspace_super_admin_sees_org_admin_and_org_view(authed_client, 
     assert _listed_role_names(response) == ["org-admin", "org-view"]
 
 
-def test_roles_non_member_of_workspace_sees_nothing(authed_client, org_a):
+def test_roles_non_member_of_workspace_sees_nothing(authed_client, org_a, org_b):
     # Caller holds no membership row in org_a but calls with org_a's valid header:
     # the per-caller membership lookup returns nothing, so the view returns an empty
     # list. A decoy user *is* a super-admin member of org_a, so the empty result
     # proves the view keys off the caller's own (absent) membership, not on whether
-    # the workspace has any privileged members.
+    # the workspace has any privileged members. Crucially, the caller *is* a
+    # super-admin of org_b: the membership lookup must be scoped to the header's
+    # workspace, so privilege elsewhere grants nothing here -- a lookup that
+    # dropped the organization predicate would leak org_b's grantable roles
+    # across workspaces and fail this test.
     caller = authed_client()
+    _member(caller.user, org_b, role_name="super-admin")  # privileged elsewhere
     decoy = UserFactory()
     _member(
         decoy, org_a, role_name="super-admin"

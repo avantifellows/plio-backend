@@ -129,9 +129,10 @@ def _seed_report_scenario(owner):
     SessionAnswerFactory(session=skip_session, item=skipped_item, answer=None)
     EventFactory(session=skip_session, type="played", player_time=3)
 
+    decoy_question_text = "Decoy question"
     decoy = PlioFactory(created_by=owner.user, name="Decoy plio", published=True)
     decoy_item = ItemFactory(plio=decoy, time=7)
-    QuestionFactory(item=decoy_item, mcq=True, text="Decoy question")
+    QuestionFactory(item=decoy_item, mcq=True, text=decoy_question_text)
     decoy_learner = UserFactory()
     decoy_session = SessionFactory(plio=decoy, user=decoy_learner, watch_time=99)
     SessionAnswerFactory(session=decoy_session, item=decoy_item, answer=0)
@@ -142,7 +143,7 @@ def _seed_report_scenario(owner):
         checkbox_learner=checkbox_learner,
         skip_learner=skip_learner,
         decoy_learner=decoy_learner,
-        decoy_question_text="Decoy question",
+        decoy_question_text=decoy_question_text,
     )
 
 

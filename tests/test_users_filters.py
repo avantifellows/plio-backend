@@ -528,16 +528,18 @@ def test_roles_superuser_no_header_sees_all_seeded_roles(authed_client):
     assert _listed_role_names(response) == ["org-admin", "org-view", "super-admin"]
 
 
-def test_roles_non_superuser_no_header_sees_nothing(authed_client, org_a):
+def test_roles_non_superuser_no_header_sees_nothing(authed_client, org_a, org_b):
     # Non-superuser caller with no header: with no ``Organization`` header there is
     # no workspace to resolve, so the view returns ``Role.objects.none()`` -- an
     # empty list -- even though all three roles are seeded and a superuser would
     # see them all. The caller *is* a super-admin of org_a: a broken no-header
     # guard that silently defaulted to some workspace would surface their
-    # grantable roles and fail here. They are privileged in the configured
-    # default workspace too, so a fallback to the default tenant also leaks.
+    # grantable roles and fail here. They are privileged in *every* seeded
+    # workspace (org_a, org_b, and the configured default tenant), so a
+    # fallback to any of them leaks.
     caller = authed_client()
     _member(caller.user, org_a, role_name="super-admin")
+    _member(caller.user, org_b, role_name="super-admin")
     _privilege_in_default_workspace(caller.user)
 
     response = caller.get(ROLES_URL)
@@ -545,7 +547,7 @@ def test_roles_non_superuser_no_header_sees_nothing(authed_client, org_a):
     assert _listed_role_names(response) == []
 
 
-def test_roles_unknown_workspace_shortcode_sees_nothing(authed_client, org_a):
+def test_roles_unknown_workspace_shortcode_sees_nothing(authed_client, org_a, org_b):
     # Non-superuser caller sending a header whose shortcode matches no seeded
     # organization: the tenant middleware falls back to the public schema (so the
     # request still reaches the view), the ``Organization.objects.get`` lookup
@@ -553,13 +555,13 @@ def test_roles_unknown_workspace_shortcode_sees_nothing(authed_client, org_a):
     # a literal that collides with none of the seeded workspaces (``org-a``,
     # ``org-b``); it is sent as the raw ``Organization`` header because there is no
     # workspace object to hand the actor's ``organization=`` parameter. The caller
-    # *is* a super-admin of org_a: an implementation that ignored the unknown
-    # shortcode and fell back to a real workspace would surface their grantable
-    # roles and fail here. They are privileged in the configured default
-    # workspace too, so a DoesNotExist fallback to the default tenant also
-    # leaks.
+    # *is* a super-admin of *every* seeded workspace (org_a, org_b, and the
+    # configured default tenant): an implementation that ignored the unknown
+    # shortcode and fell back to any real workspace would surface their
+    # grantable roles and fail here.
     caller = authed_client()
     _member(caller.user, org_a, role_name="super-admin")
+    _member(caller.user, org_b, role_name="super-admin")
     _privilege_in_default_workspace(caller.user)
 
     response = caller.get(ROLES_URL, HTTP_ORGANIZATION="no-such-workspace-414")

@@ -98,16 +98,27 @@ def test_own_events_beat_a_predecessors_later_event(db, org_a):
 
 def test_one_hop_returns_predecessors_latest_event(db, org_a):
     # The current session has no events of its own, so the resume pointer comes
-    # from its immediate predecessor -- that predecessor's latest event.
+    # from its immediate predecessor -- that predecessor's latest event. A
+    # *farther* event-bearing predecessor exists too, and its event is touched
+    # last: the recursion must stop at the *nearer* event-bearing session, so a
+    # flat "latest event across all my sessions" lookup (which would pick the
+    # most recently updated event) fails here.
     with in_workspace(org_a):
         learner = UserFactory()
         plio = PlioFactory()
+        farther = SessionFactory(plio=plio, user=learner)
+        farther_event = EventFactory(session=farther)
         predecessor = SessionFactory(plio=plio, user=learner)
         older_event = EventFactory(session=predecessor)
         predecessor_latest = EventFactory(session=predecessor)
         current = SessionFactory(plio=plio, user=learner)
+        # touch the farther session's event so update-recency opposes
+        # session-chain nearness
+        farther_event.save()
+        farther_event.refresh_from_db()
 
         assert predecessor_latest.updated_at > older_event.updated_at
+        assert farther_event.updated_at > predecessor_latest.updated_at
         assert current.last_global_event.id == predecessor_latest.id
 
 
@@ -144,15 +155,20 @@ def test_all_event_less_chain_exhausts_to_none(db, org_a):
 def test_last_session_is_nearest_predecessor_by_pk(db, org_a):
     # Predecessor selection is PK-based: among three sessions built in PK order
     # for one learner-plio pair, the third's ``last_session`` is the second
-    # (the nearest earlier session by id), not the first.
+    # (the nearest earlier session by id), not the first. The first session is
+    # re-saved *after* everything else so its updated_at is the newest --
+    # timestamp-based ordering (-updated_at) would pick it and fail here.
     with in_workspace(org_a):
         learner = UserFactory()
         plio = PlioFactory()
         first = SessionFactory(plio=plio, user=learner)
         second = SessionFactory(plio=plio, user=learner)
         third = SessionFactory(plio=plio, user=learner)
+        first.save()
+        first.refresh_from_db()
 
         assert first.id < second.id < third.id
+        assert first.updated_at > second.updated_at
         assert third.last_session.id == second.id
 
 

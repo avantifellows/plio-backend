@@ -36,10 +36,30 @@ matching row drops out).
 
 This is the single shared home for the whole #377 users fill, mirroring the plio
 and entries fills' one-module pattern. It lives outside ``tests/integration/`` so
-the unit lane collects it. This slice (#412) pins only the happy-path filter
-branches; invalid/empty inputs, the de-duplication edge, soft-delete visibility,
-and the ``RoleViewSet`` visibility matrix are later slices. The module changes no
-product code.
+the unit lane collects it. #412 pinned the happy-path filter branches; #413 adds
+the invalid/empty-input quirks, the de-duplication edge, and soft-delete
+visibility; the ``RoleViewSet`` visibility matrix is a later slice. The module
+changes no product code.
+
+Filter quirks pinned as-is by #413 (documented here, not fixed):
+
+* Asymmetry -- the two numeric filters react to a malformed value of the same
+  class in opposite ways. An all-invalid ``ids`` value drops every token at the
+  ``.isdigit()`` gate, leaving an empty id list, so the ``if id_list:`` guard
+  *skips* the filter and the **full** list returns; a non-integer ``organization``
+  value instead fails ``int(...)`` and returns an **empty** list. Callers see
+  opposite failure modes for the same mistake. Pinned, not reconciled.
+* Empty string -- an empty-string value for ``ids`` / ``organization`` / ``email``
+  is falsy, so each guard treats it as filter-*absent* (full list), never as
+  "match nothing".
+* Raw exact match -- the ``email`` filter compares verbatim, with no
+  normalization.
+
+The ``ids`` handler's ``except ValueError`` conversion fallback is near-dead:
+tokens are ``.isdigit()``-gated before ``int(...)``, so it is reachable only by
+exotic Unicode digit-like characters (e.g. a superscript digit, which passes
+``.isdigit()`` yet fails ``int(...)``). Per the decided handling it is pinned here
+with such a token rather than documented away.
 """
 
 from urllib.parse import urlencode
@@ -88,6 +108,18 @@ def _listed_ids(response):
     unordered sets because neither the model nor the viewset declares an ordering."""
     assert response.status_code == 200, response.status_code
     return {row["id"] for row in response.data}
+
+
+def _listed_id_sequence(response):
+    """The user ``id``s in a list response as a *list*, duplicates preserved.
+
+    Used only by the de-duplication spec: an unordered-set comparison would silently
+    collapse a row that appeared twice, so that spec asserts against this ordering-
+    agnostic-but-duplicate-preserving list (a single-element list == a single
+    appearance) instead of ``_listed_ids``.
+    """
+    assert response.status_code == 200, response.status_code
+    return [row["id"] for row in response.data]
 
 
 def test_no_filter_params_returns_full_user_set(authed_client):
@@ -238,3 +270,147 @@ def test_combined_filters_are_conjunction_only_all_three_match(
     )
 
     assert _listed_ids(response) == {winner.id}
+
+
+def test_ids_mixed_valid_and_invalid_tokens_applies_only_valid(authed_client):
+    # ``ids=<valid id>,<non-digit token>`` drops the non-digit token at the
+    # ``.isdigit()`` gate and applies the surviving valid id: the result is exactly
+    # the one requested valid user. A decoy user is present but neither requested
+    # nor returned, so a handler that ignored the id list (and returned the full
+    # set) would fail this exact-set assertion.
+    caller = _superuser(authed_client)
+    target = UserFactory()
+    UserFactory()  # decoy: not named by any token
+
+    response = _list(caller, ids="{},notanid".format(target.id))
+
+    assert _listed_ids(response) == {target.id}
+
+
+def test_ids_unicode_digit_like_token_triggers_conversion_fallback_empty(authed_client):
+    # Near-dead branch pinned: the ``ids`` handler digit-gates every token with
+    # ``str.isdigit()`` before calling ``int(...)``, so ordinary input never reaches
+    # the ``except ValueError`` fallback. A superscript digit (``"²"``, i.e.
+    # ``"2"`` superscript) is the exotic exception -- it satisfies ``.isdigit()`` yet
+    # raises ``ValueError`` inside ``int(...)`` -- so it drives the fallback, which
+    # returns an empty list. A decoy user is present: were the token instead merely
+    # skipped by the digit gate, the id list would be empty, the filter would be
+    # skipped, and the decoy (plus the caller) would come back -- so the empty
+    # result proves the conversion fallback fired, not the digit gate.
+    caller = _superuser(authed_client)
+    UserFactory()  # decoy: would appear if the fallback did not fire
+
+    response = _list(caller, ids="²")
+
+    assert _listed_ids(response) == set()
+
+
+def test_ids_all_invalid_tokens_skips_filter_and_returns_full_list(authed_client):
+    # Quirk pinned as-is: when *every* ``ids`` token fails the ``.isdigit()`` gate,
+    # the parsed id list is empty, the ``if id_list:`` guard skips the filter
+    # entirely, and the *full* user list returns. This is the opposite failure mode
+    # from a non-integer ``organization`` value, which returns an *empty* list --
+    # the asymmetry is documented in the module docstring and pinned, not fixed.
+    # The expected set hand-lists every constructed user plus the caller, so an
+    # accidental partial filter (returning fewer) cannot pass by luck.
+    caller = _superuser(authed_client)
+    alice = UserFactory()
+    bob = UserFactory()
+
+    response = _list(caller, ids="not,an,id")
+
+    assert _listed_ids(response) == {caller.user.id, alice.id, bob.id}
+
+
+def test_organization_non_integer_value_returns_empty(authed_client, org_a):
+    # Quirk pinned as-is: a non-integer ``organization`` value fails ``int(...)`` and
+    # the handler returns an *empty* list -- the opposite failure mode from an
+    # all-invalid ``ids`` value, which skips its filter and returns the full list
+    # (the asymmetry is documented in the module docstring, pinned not fixed). A
+    # decoy member of org_a exists, so the empty result is the conversion fallback
+    # firing, not an empty membership table.
+    caller = _superuser(authed_client)
+    decoy = UserFactory()
+    _member(decoy, org_a)
+
+    response = _list(caller, organization="notanumber")
+
+    assert _listed_ids(response) == set()
+
+
+def test_empty_string_ids_is_filter_absent_returns_full_list(authed_client):
+    # Pinned as-is: an empty-string ``ids`` value is falsy, so the ``if ids_param:``
+    # guard treats it as filter-absent and the full user list returns -- empty
+    # string means "no filter", not "match nothing". Two decoys plus the caller are
+    # hand-listed so a handler that mistakenly narrowed on the empty value fails.
+    caller = _superuser(authed_client)
+    alice = UserFactory()
+    bob = UserFactory()
+
+    response = _list(caller, ids="")
+
+    assert _listed_ids(response) == {caller.user.id, alice.id, bob.id}
+
+
+def test_empty_string_organization_is_filter_absent_returns_full_list(authed_client):
+    # Pinned as-is: an empty-string ``organization`` value is falsy, so the
+    # ``if org_param:`` guard treats it as filter-absent and the full user list
+    # returns -- it does not reach the ``int(...)`` conversion (contrast the
+    # non-integer value, which does and returns empty). Decoys plus the caller are
+    # hand-listed so a narrowing regression fails.
+    caller = _superuser(authed_client)
+    alice = UserFactory()
+    bob = UserFactory()
+
+    response = _list(caller, organization="")
+
+    assert _listed_ids(response) == {caller.user.id, alice.id, bob.id}
+
+
+def test_empty_string_email_is_filter_absent_returns_full_list(authed_client):
+    # Pinned as-is: an empty-string ``email`` value is falsy, so the
+    # ``if email_param:`` guard treats it as filter-absent and the full user list
+    # returns -- it does not run an ``email=""`` exact match (which would return
+    # empty). Decoys plus the caller are hand-listed so a narrowing regression fails.
+    caller = _superuser(authed_client)
+    alice = UserFactory()
+    bob = UserFactory()
+
+    response = _list(caller, email="")
+
+    assert _listed_ids(response) == {caller.user.id, alice.id, bob.id}
+
+
+def test_organization_filter_deduplicates_multiple_memberships(authed_client, org_a):
+    # A user holding two membership rows in the *same* workspace appears exactly
+    # once: the ``organization`` filter joins across the membership relation (which
+    # would surface the user once per matching row) and applies ``.distinct()`` to
+    # collapse the duplicates. Asserted against the response as a *list* rather than
+    # a set, so a regressed ``.distinct()`` -- which would list the user twice --
+    # goes red; an unordered-set comparison would mask the duplicate. Two membership
+    # rows are created for the one user in org_a (distinct roles, same workspace).
+    caller = _superuser(authed_client)
+    member = UserFactory()
+    _member(member, org_a, role_name="org-admin")
+    _member(member, org_a, role_name="org-view")
+
+    response = _list(caller, organization=str(org_a.id))
+
+    assert _listed_id_sequence(response) == [member.id]
+
+
+def test_soft_deleted_user_absent_from_ids_and_email_filters(authed_client):
+    # A soft-deleted user never resurfaces through the filters: their base queryset
+    # is ``User.objects`` (the django-safedelete manager), which excludes
+    # soft-deleted rows. The user is built, its id and email captured, then deleted
+    # via the model instance's own ``delete()`` (a soft delete -- no raw SQL, no
+    # ``all_objects`` shortcut); an ``ids`` request and an ``email`` request that
+    # each explicitly target the captured identifiers both come back empty.
+    caller = _superuser(authed_client)
+    doomed = UserFactory(email="soft-deleted-target@example.com")
+    doomed_id = doomed.id
+    doomed_email = doomed.email
+    doomed.delete()
+
+    assert _listed_ids(_list(caller, ids=str(doomed_id))) == set()
+    assert _listed_ids(_list(caller, email=doomed_email)) == set()

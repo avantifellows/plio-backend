@@ -38,8 +38,8 @@ This is the single shared home for the whole #377 users fill, mirroring the plio
 and entries fills' one-module pattern. It lives outside ``tests/integration/`` so
 the unit lane collects it. #412 pinned the happy-path filter branches; #413 adds
 the invalid/empty-input quirks, the de-duplication edge, and soft-delete
-visibility; the ``RoleViewSet`` visibility matrix is a later slice. The module
-changes no product code.
+visibility; #414 adds the ``RoleViewSet`` per-caller-class visibility matrix. The
+module changes no product code.
 
 Filter quirks pinned as-is by #413 (documented here, not fixed):
 
@@ -60,6 +60,25 @@ tokens are ``.isdigit()``-gated before ``int(...)``, so it is reachable only by
 exotic Unicode digit-like characters (e.g. a superscript digit, which passes
 ``.isdigit()`` yet fails ``int(...)``). Per the decided handling it is pinned here
 with such a token rather than documented away.
+
+``RoleViewSet`` visibility matrix (``GET /api/v1/roles/``, added by #414): the
+endpoint returns only the roles a caller is allowed to grant, so each of the seven
+caller classes is pinned as its own branch, named for the caller class. Org
+context is selected only via the ``Organization`` request header on the actor call
+(``organization=`` for a seeded workspace, or a raw ``HTTP_ORGANIZATION`` for the
+unknown shortcode) -- never ``set_schema()`` or ``in_workspace(...)``; an unknown
+shortcode falls through the tenant middleware to the public schema, which is
+exactly what makes the unknown-workspace branch reachable at this seam. Callers:
+the superuser is a ``_superuser`` actor sending *no* header (it pins the superuser
+short-circuit, which never reads the header, not header handling); members are
+plain authed actors with a membership row created directly via ``_member``
+carrying a seeded ``DEFAULT_ROLES`` role fetched by name; the non-member and
+no-header callers are plain authed actors. Expected values are literal role-name
+lists (from the seeded role names), compared sorted. Accepted overlap, deliberate:
+the integration membership journey asserts two of these outcomes (org-view -> none,
+org-admin -> org-view) as access probes inside a lifecycle flow; re-pinning them
+here as direct per-branch specs means a red probe names a broken journey while a
+red matrix spec names the broken branch.
 """
 
 from urllib.parse import urlencode
@@ -414,3 +433,118 @@ def test_soft_deleted_user_absent_from_ids_and_email_filters(authed_client):
 
     assert _listed_ids(_list(caller, ids=str(doomed_id))) == set()
     assert _listed_ids(_list(caller, email=doomed_email)) == set()
+
+
+# --- RoleViewSet visibility matrix (GET /api/v1/roles/) -------------------------
+#
+# One branch per named spec, named for the caller class it pins. Org context is
+# selected only via the ``Organization`` request header on the actor call; expected
+# values are literal role-name lists (from the seeded ``DEFAULT_ROLES`` names),
+# compared sorted. See the module docstring for the full rationale.
+
+ROLES_URL = "/api/v1/roles/"
+
+
+def _listed_role_names(response):
+    """The role ``name``s in a list response, sorted -- role-list responses are
+    compared as sorted name lists because neither the model nor the viewset
+    declares an ordering, so an ordered assertion would be brittle."""
+    assert response.status_code == 200, response.status_code
+    return sorted(row["name"] for row in response.data)
+
+
+def test_roles_superuser_no_header_sees_all_seeded_roles(authed_client):
+    # Superuser caller, no header: the ``is_superuser`` short-circuit returns
+    # ``Role.objects.all()`` without ever reading the ``Organization`` header, so
+    # every seeded role is visible. The expected list is the three seeded
+    # ``DEFAULT_ROLES`` names, hand-written and sorted (no header is sent -- this
+    # spec pins the superuser short-circuit, not header handling).
+    caller = _superuser(authed_client)
+
+    response = caller.get(ROLES_URL)
+
+    assert _listed_role_names(response) == ["org-admin", "org-view", "super-admin"]
+
+
+def test_roles_non_superuser_no_header_sees_nothing(authed_client):
+    # Non-superuser caller with no header: with no ``Organization`` header there is
+    # no workspace to resolve, so the view returns ``Role.objects.none()`` -- an
+    # empty list -- even though all three roles are seeded and a superuser would
+    # see them all. A plain authed actor is a non-superuser by default.
+    caller = authed_client()
+
+    response = caller.get(ROLES_URL)
+
+    assert _listed_role_names(response) == []
+
+
+def test_roles_unknown_workspace_shortcode_sees_nothing(authed_client):
+    # Non-superuser caller sending a header whose shortcode matches no seeded
+    # organization: the tenant middleware falls back to the public schema (so the
+    # request still reaches the view), the ``Organization.objects.get`` lookup
+    # raises ``DoesNotExist``, and the view returns an empty list. The shortcode is
+    # a literal that collides with none of the seeded workspaces (``org-a``,
+    # ``org-b``); it is sent as the raw ``Organization`` header because there is no
+    # workspace object to hand the actor's ``organization=`` parameter.
+    caller = authed_client()
+
+    response = caller.get(ROLES_URL, HTTP_ORGANIZATION="no-such-workspace-414")
+
+    assert _listed_role_names(response) == []
+
+
+def test_roles_workspace_super_admin_sees_org_admin_and_org_view(authed_client, org_a):
+    # Caller is a ``super-admin`` member of org_a and calls with org_a's header: a
+    # workspace super-admin may grant the org-admin and org-view roles, so the view
+    # returns exactly those two (never ``super-admin`` itself, guarding against a
+    # privilege-escalation widening). Expected list is the two literal grantable
+    # role names, sorted.
+    caller = authed_client()
+    _member(caller.user, org_a, role_name="super-admin")
+
+    response = caller.get(ROLES_URL, organization=org_a)
+
+    assert _listed_role_names(response) == ["org-admin", "org-view"]
+
+
+def test_roles_non_member_of_workspace_sees_nothing(authed_client, org_a):
+    # Caller holds no membership row in org_a but calls with org_a's valid header:
+    # the per-caller membership lookup returns nothing, so the view returns an empty
+    # list. A decoy user *is* a super-admin member of org_a, so the empty result
+    # proves the view keys off the caller's own (absent) membership, not on whether
+    # the workspace has any privileged members.
+    caller = authed_client()
+    decoy = UserFactory()
+    _member(
+        decoy, org_a, role_name="super-admin"
+    )  # member of org_a, but not the caller
+
+    response = caller.get(ROLES_URL, organization=org_a)
+
+    assert _listed_role_names(response) == []
+
+
+def test_roles_workspace_org_admin_sees_only_org_view(authed_client, org_a):
+    # Caller is an ``org-admin`` member of org_a and calls with org_a's header: an
+    # org-admin may grant only the org-view role, so the view returns exactly that
+    # one role -- never org-admin or super-admin (which would let it escalate a
+    # grantee past its own rights). Expected list is the single literal role name.
+    caller = authed_client()
+    _member(caller.user, org_a, role_name="org-admin")
+
+    response = caller.get(ROLES_URL, organization=org_a)
+
+    assert _listed_role_names(response) == ["org-view"]
+
+
+def test_roles_workspace_org_view_member_sees_nothing(authed_client, org_a):
+    # Caller is an ``org-view`` member of org_a and calls with org_a's header: an
+    # org-view member has no grantable roles, so it falls through the super-admin
+    # and org-admin branches to the empty-list fall-through. Expected list is empty
+    # even though the caller is a genuine member of the workspace.
+    caller = authed_client()
+    _member(caller.user, org_a, role_name="org-view")
+
+    response = caller.get(ROLES_URL, organization=org_a)
+
+    assert _listed_role_names(response) == []

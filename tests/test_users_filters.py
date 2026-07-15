@@ -83,6 +83,9 @@ red matrix spec names the broken branch.
 
 from urllib.parse import urlencode
 
+from django.conf import settings
+
+from organizations.models import Organization
 from tests.factories import UserFactory
 from users.models import OrganizationUser, Role
 
@@ -105,6 +108,21 @@ def _member(user, organization, role_name="org-view"):
     return OrganizationUser.objects.create(
         user=user, organization=organization, role=role
     )
+
+
+def _privilege_in_default_workspace(user):
+    """Make ``user`` a super-admin of the configured default workspace too.
+
+    The negative role-header specs seed this so a guard that silently fell back
+    to the default tenant (``DEFAULT_TENANT_SHORTCODE``'s public-schema row,
+    seeded by the harness) would surface grantable roles and fail. Skipped when
+    no default tenant is configured -- there is then no fallback row to leak.
+    """
+    if settings.DEFAULT_TENANT_SHORTCODE:
+        default_org = Organization.objects.get(
+            shortcode=settings.DEFAULT_TENANT_SHORTCODE
+        )
+        _member(user, default_org, role_name="super-admin")
 
 
 def _list(caller, **params):
@@ -516,9 +534,11 @@ def test_roles_non_superuser_no_header_sees_nothing(authed_client, org_a):
     # empty list -- even though all three roles are seeded and a superuser would
     # see them all. The caller *is* a super-admin of org_a: a broken no-header
     # guard that silently defaulted to some workspace would surface their
-    # grantable roles and fail here.
+    # grantable roles and fail here. They are privileged in the configured
+    # default workspace too, so a fallback to the default tenant also leaks.
     caller = authed_client()
     _member(caller.user, org_a, role_name="super-admin")
+    _privilege_in_default_workspace(caller.user)
 
     response = caller.get(ROLES_URL)
 
@@ -535,9 +555,12 @@ def test_roles_unknown_workspace_shortcode_sees_nothing(authed_client, org_a):
     # workspace object to hand the actor's ``organization=`` parameter. The caller
     # *is* a super-admin of org_a: an implementation that ignored the unknown
     # shortcode and fell back to a real workspace would surface their grantable
-    # roles and fail here.
+    # roles and fail here. They are privileged in the configured default
+    # workspace too, so a DoesNotExist fallback to the default tenant also
+    # leaks.
     caller = authed_client()
     _member(caller.user, org_a, role_name="super-admin")
+    _privilege_in_default_workspace(caller.user)
 
     response = caller.get(ROLES_URL, HTTP_ORGANIZATION="no-such-workspace-414")
 

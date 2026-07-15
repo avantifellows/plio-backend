@@ -25,6 +25,7 @@ user-level-metrics "grading" builders (#403). It lives outside
 
 import datetime
 import hashlib
+from collections import Counter
 from types import SimpleNamespace
 
 from django.db import connection
@@ -74,11 +75,11 @@ def _masked_identifier(user_id):
 
 
 def _seed_identity_learners(org):
-    """Create the three-learner identity matrix shared by the masking specs.
+    """Create the four-learner identity matrix shared by the masking specs.
 
     Each learner exercises one branch of the unmasked ``user_identifier``
-    coalesce (email -> mobile -> unique_id) and, together, both sides of the SSO
-    flag:
+    coalesce (email -> mobile -> unique_id) and, together, the SSO CASE's full
+    truth table (the flag requires unique_id AND auth_org):
 
     - ``email`` learner: has an email (and a mobile) but no unique_id -> SSO
       flag ``'false'``.
@@ -86,14 +87,19 @@ def _seed_identity_learners(org):
       carries both a unique_id and an ``auth_org`` -> SSO flag ``'true'`` (and
       proves the mobile wins over the unique_id in the coalesce).
     - ``unique`` learner: no email and no mobile, so the identifier falls back to
-      the unique_id; has a unique_id but no ``auth_org`` -> SSO flag ``'false'``.
+      the unique_id; has a unique_id but no ``auth_org`` -> SSO flag ``'false'``
+      (pins the auth_org half of the AND).
+    - ``authorg`` learner: has an email and an ``auth_org`` but *no* unique_id ->
+      SSO flag ``'false'`` (pins the unique_id half of the AND -- a predicate
+      that dropped the unique_id requirement would flag this learner 'true').
     """
     learner_email = UserFactory()
     learner_mobile = UserFactory(email=None, unique_id="sso-mobile", auth_org=org)
     learner_unique = UserFactory(
         email=None, mobile=None, unique_id="sso-unique", auth_org=None
     )
-    return learner_email, learner_mobile, learner_unique
+    learner_authorg = UserFactory(unique_id=None, auth_org=org)
+    return learner_email, learner_mobile, learner_unique, learner_authorg
 
 
 def test_latest_sessions_returns_one_row_per_learner_newest_session(db, org_a):
@@ -111,22 +117,27 @@ def test_latest_sessions_returns_one_row_per_learner_newest_session(db, org_a):
         session_b = SessionFactory(
             plio=plio, user=learner_b, watch_time=50, retention="only-b"
         )
-        # decoy plio in the same workspace with its own session -- a lost
-        # per-plio predicate would pull this row into the result set
+        # decoy plio watched by *learner A* (not a fresh user), created after
+        # A's target sessions so it holds A's globally-highest session id: the
+        # ranking window partitions by (user_id, plio_id), and dropping the
+        # plio_id from the partition would let this decoy session take A's
+        # rank 1 and evict A's target row -- a fresh-user decoy cannot catch
+        # that mutation
         decoy = PlioFactory()
-        SessionFactory(
-            plio=decoy, user=UserFactory(), watch_time=999, retention="decoy"
-        )
+        SessionFactory(plio=decoy, user=learner_a, watch_time=999, retention="decoy")
 
     rows = _run(get_plio_latest_sessions_query(plio.uuid, org_a.schema_name))
 
     # exactly one row per learner: A's earlier 10s session is superseded by the
     # newer 30s one; learner B's single session stands; the decoy is absent.
-    # No ORDER BY in this builder -> compare order-insensitively.
-    assert set(rows) == {
-        (newer_a.id, 30.0, "late-a"),
-        (session_b.id, 50.0, "only-b"),
-    }
+    # No ORDER BY in this builder -> compare order-insensitively but preserve
+    # row multiplicity (a set would hide join fan-out duplicates).
+    assert Counter(rows) == Counter(
+        [
+            (newer_a.id, 30.0, "late-a"),
+            (session_b.id, 50.0, "only-b"),
+        ]
+    )
 
 
 def test_latest_responses_single_session_uses_equality_branch(db, org_a):
@@ -155,10 +166,12 @@ def test_latest_responses_single_session_uses_equality_branch(db, org_a):
     # one row for the queried session; the decoy session's answer is excluded.
     # answer 0 and correct answer 0 read back as their jsonb text "0"; the
     # trailing False is question.survey (the factory default -- this is not a
-    # survey question).
-    assert set(rows) == {
-        (answer.id, learner.id, "0", "question", "mcq", "0", False),
-    }
+    # survey question). Multiset comparison preserves row multiplicity.
+    assert Counter(rows) == Counter(
+        [
+            (answer.id, learner.id, "0", "question", "mcq", "0", False),
+        ]
+    )
 
 
 def test_latest_responses_multiple_sessions_use_in_tuple_branch(db, org_a):
@@ -189,10 +202,12 @@ def test_latest_responses_multiple_sessions_use_in_tuple_branch(db, org_a):
 
     # one row per queried session; the decoy session's answer is excluded.
     # answers 0 and 1 read back as their jsonb text; the correct answer is "0".
-    assert set(rows) == {
-        (answer_a.id, learner_a.id, "0", "question", "mcq", "0", False),
-        (answer_b.id, learner_b.id, "1", "question", "mcq", "0", False),
-    }
+    assert Counter(rows) == Counter(
+        [
+            (answer_a.id, learner_a.id, "0", "question", "mcq", "0", False),
+            (answer_b.id, learner_b.id, "1", "question", "mcq", "0", False),
+        ]
+    )
 
 
 def test_plio_details_returns_item_and_question_rows(db, org_a):
@@ -224,23 +239,39 @@ def test_plio_details_returns_item_and_question_rows(db, org_a):
 
     # exact detail row per item; times are floats, options/correct answer read
     # back as their jsonb text ("0", '["A", "B"]') with NULLs as None; the decoy
-    # item is absent. No ORDER BY -> compare order-insensitively.
-    assert set(rows) == {
-        (mcq_item.id, "question", 10.0, "mcq", "Pick one", '["A", "B"]', "0"),
-        (subjective_item.id, "question", 20.0, "subjective", "Explain", None, None),
-    }
+    # item is absent. No ORDER BY -> compare order-insensitively, multiset.
+    assert Counter(rows) == Counter(
+        [
+            (mcq_item.id, "question", 10.0, "mcq", "Pick one", '["A", "B"]', "0"),
+            (
+                subjective_item.id,
+                "question",
+                20.0,
+                "subjective",
+                "Explain",
+                None,
+                None,
+            ),
+        ]
+    )
 
 
 def test_sessions_dump_unmasked_identifier_fallback_and_sso_flag(db, org_a):
     with in_workspace(org_a):
         plio = PlioFactory()
-        learner_email, learner_mobile, learner_unique = _seed_identity_learners(org_a)
+        (
+            learner_email,
+            learner_mobile,
+            learner_unique,
+            learner_authorg,
+        ) = _seed_identity_learners(org_a)
         # the email learner rewatched: two sessions on the same plio. The
         # sessions dump has no latest-only filter, so both rows must appear.
         email_s1 = SessionFactory(plio=plio, user=learner_email, watch_time=10)
         email_s2 = SessionFactory(plio=plio, user=learner_email, watch_time=25)
         mobile_s = SessionFactory(plio=plio, user=learner_mobile, watch_time=40)
         unique_s = SessionFactory(plio=plio, user=learner_unique, watch_time=55)
+        authorg_s = SessionFactory(plio=plio, user=learner_authorg, watch_time=70)
         # decoy plio in the same workspace with its own session -- a lost
         # per-plio predicate would pull this row into the result set
         decoy = PlioFactory()
@@ -254,16 +285,20 @@ def test_sessions_dump_unmasked_identifier_fallback_and_sso_flag(db, org_a):
 
     # (session_id, watch_time, user_identifier, sso_flag) per row. The unmasked
     # identifier coalesces email -> mobile -> unique_id; the mobile learner
-    # carries an auth_org so its SSO flag is 'true'. Both of the email learner's
-    # sessions appear (no latest-only filter); the decoy session is absent. No
-    # ORDER BY in this builder -> compare order-insensitively.
-    projected = {(row[0], row[1], row[2], row[3]) for row in rows}
-    assert projected == {
-        (email_s1.id, 10.0, learner_email.email, "false"),
-        (email_s2.id, 25.0, learner_email.email, "false"),
-        (mobile_s.id, 40.0, learner_mobile.mobile, "true"),
-        (unique_s.id, 55.0, learner_unique.unique_id, "false"),
-    }
+    # carries unique_id+auth_org so its SSO flag is 'true', while the authorg
+    # learner (auth_org without unique_id) stays 'false'. Both of the email
+    # learner's sessions appear (no latest-only filter); the decoy session is
+    # absent. No ORDER BY -> order-insensitive, multiset.
+    projected = [(row[0], row[1], row[2], row[3]) for row in rows]
+    assert Counter(projected) == Counter(
+        [
+            (email_s1.id, 10.0, learner_email.email, "false"),
+            (email_s2.id, 25.0, learner_email.email, "false"),
+            (mobile_s.id, 40.0, learner_mobile.mobile, "true"),
+            (unique_s.id, 55.0, learner_unique.unique_id, "false"),
+            (authorg_s.id, 70.0, learner_authorg.email, "false"),
+        ]
+    )
     # created_at and last-updated timestamps come through on every row
     for row in rows:
         assert isinstance(row[4], datetime.datetime)
@@ -273,10 +308,16 @@ def test_sessions_dump_unmasked_identifier_fallback_and_sso_flag(db, org_a):
 def test_sessions_dump_masked_identifier_is_md5_of_user_id(db, org_a):
     with in_workspace(org_a):
         plio = PlioFactory()
-        learner_email, learner_mobile, learner_unique = _seed_identity_learners(org_a)
+        (
+            learner_email,
+            learner_mobile,
+            learner_unique,
+            learner_authorg,
+        ) = _seed_identity_learners(org_a)
         email_s = SessionFactory(plio=plio, user=learner_email, watch_time=10)
         mobile_s = SessionFactory(plio=plio, user=learner_mobile, watch_time=40)
         unique_s = SessionFactory(plio=plio, user=learner_unique, watch_time=55)
+        authorg_s = SessionFactory(plio=plio, user=learner_authorg, watch_time=70)
         # decoy plio in the same workspace with its own session
         decoy = PlioFactory()
         SessionFactory(plio=decoy, user=UserFactory(), watch_time=999)
@@ -289,23 +330,35 @@ def test_sessions_dump_masked_identifier_is_md5_of_user_id(db, org_a):
 
     # with masking on, user_identifier is the MD5 of the (stringified) user id,
     # checked against the independent Python hashlib oracle. The SSO flag is
-    # unaffected by masking. Decoy absent; order-insensitive.
-    projected = {(row[0], row[1], row[2], row[3]) for row in rows}
-    assert projected == {
-        (email_s.id, 10.0, _masked_identifier(learner_email.id), "false"),
-        (mobile_s.id, 40.0, _masked_identifier(learner_mobile.id), "true"),
-        (unique_s.id, 55.0, _masked_identifier(learner_unique.id), "false"),
-    }
+    # unaffected by masking. Decoy absent; order-insensitive, multiset.
+    projected = [(row[0], row[1], row[2], row[3]) for row in rows]
+    assert Counter(projected) == Counter(
+        [
+            (email_s.id, 10.0, _masked_identifier(learner_email.id), "false"),
+            (mobile_s.id, 40.0, _masked_identifier(learner_mobile.id), "true"),
+            (unique_s.id, 55.0, _masked_identifier(learner_unique.id), "false"),
+            (authorg_s.id, 70.0, _masked_identifier(learner_authorg.id), "false"),
+        ]
+    )
 
 
 def test_events_unmasked_identifier_fallback_sso_flag_and_content(db, org_a):
     with in_workspace(org_a):
         plio = PlioFactory()
-        learner_email, learner_mobile, learner_unique = _seed_identity_learners(org_a)
+        (
+            learner_email,
+            learner_mobile,
+            learner_unique,
+            learner_authorg,
+        ) = _seed_identity_learners(org_a)
         email_s = SessionFactory(plio=plio, user=learner_email)
         mobile_s = SessionFactory(plio=plio, user=learner_mobile)
         unique_s = SessionFactory(plio=plio, user=learner_unique)
+        # the email learner's session records *two* events: the builder must
+        # return every event of a session, so a regression that collapses to
+        # one row per session (e.g. DISTINCT ON) fails here
         EventFactory(session=email_s, type="played", player_time=5, details={})
+        EventFactory(session=email_s, type="paused", player_time=8, details={})
         EventFactory(
             session=mobile_s,
             type="paused",
@@ -315,6 +368,8 @@ def test_events_unmasked_identifier_fallback_sso_flag_and_content(db, org_a):
         EventFactory(
             session=unique_s, type="question_answered", player_time=20, details={}
         )
+        authorg_s = SessionFactory(plio=plio, user=learner_authorg)
+        EventFactory(session=authorg_s, type="played", player_time=30, details={})
         # decoy plio in the same workspace with its own session + event
         decoy = PlioFactory()
         decoy_s = SessionFactory(plio=decoy, user=UserFactory())
@@ -326,29 +381,34 @@ def test_events_unmasked_identifier_fallback_sso_flag_and_content(db, org_a):
 
     # (session_id, user_identifier, sso_flag, event_type, player_time, details).
     # The unmasked identifier coalesces email -> mobile -> unique_id; the mobile
-    # learner's auth_org makes its SSO flag 'true'. details is jsonb, read back
-    # as its Postgres text form ('{}' or '{"reason": "buffering"}'). The decoy
-    # event is absent. No ORDER BY -> order-insensitive.
-    projected = {(row[0], row[1], row[2], row[3], row[4], row[5]) for row in rows}
-    assert projected == {
-        (email_s.id, learner_email.email, "false", "played", 5.0, "{}"),
-        (
-            mobile_s.id,
-            learner_mobile.mobile,
-            "true",
-            "paused",
-            12.5,
-            '{"reason": "buffering"}',
-        ),
-        (
-            unique_s.id,
-            learner_unique.unique_id,
-            "false",
-            "question_answered",
-            20.0,
-            "{}",
-        ),
-    }
+    # learner's unique_id+auth_org make its SSO flag 'true'. details is jsonb,
+    # read back as its Postgres text form ('{}' or '{"reason": "buffering"}').
+    # Both of the email session's events appear. The decoy event is absent. No
+    # ORDER BY -> order-insensitive, multiset.
+    projected = [(row[0], row[1], row[2], row[3], row[4], row[5]) for row in rows]
+    assert Counter(projected) == Counter(
+        [
+            (email_s.id, learner_email.email, "false", "played", 5.0, "{}"),
+            (email_s.id, learner_email.email, "false", "paused", 8.0, "{}"),
+            (
+                mobile_s.id,
+                learner_mobile.mobile,
+                "true",
+                "paused",
+                12.5,
+                '{"reason": "buffering"}',
+            ),
+            (
+                unique_s.id,
+                learner_unique.unique_id,
+                "false",
+                "question_answered",
+                20.0,
+                "{}",
+            ),
+            (authorg_s.id, learner_authorg.email, "false", "played", 30.0, "{}"),
+        ]
+    )
     # the event's global time comes through as a timestamp on every row
     for row in rows:
         assert isinstance(row[6], datetime.datetime)
@@ -357,15 +417,22 @@ def test_events_unmasked_identifier_fallback_sso_flag_and_content(db, org_a):
 def test_events_masked_identifier_is_md5_of_user_id(db, org_a):
     with in_workspace(org_a):
         plio = PlioFactory()
-        learner_email, learner_mobile, learner_unique = _seed_identity_learners(org_a)
+        (
+            learner_email,
+            learner_mobile,
+            learner_unique,
+            learner_authorg,
+        ) = _seed_identity_learners(org_a)
         email_s = SessionFactory(plio=plio, user=learner_email)
         mobile_s = SessionFactory(plio=plio, user=learner_mobile)
         unique_s = SessionFactory(plio=plio, user=learner_unique)
+        authorg_s = SessionFactory(plio=plio, user=learner_authorg)
         EventFactory(session=email_s, type="played", player_time=5, details={})
         EventFactory(session=mobile_s, type="paused", player_time=12.5, details={})
         EventFactory(
             session=unique_s, type="question_answered", player_time=20, details={}
         )
+        EventFactory(session=authorg_s, type="played", player_time=30, details={})
         # decoy plio in the same workspace with its own session + event
         decoy = PlioFactory()
         decoy_s = SessionFactory(plio=decoy, user=UserFactory())
@@ -377,14 +444,18 @@ def test_events_masked_identifier_is_md5_of_user_id(db, org_a):
 
     # with masking on, each event row's user_identifier is the MD5 of the
     # (stringified) user id, checked against the independent Python hashlib
-    # oracle. The SSO flag is unaffected by masking. Decoy absent;
-    # order-insensitive.
-    projected = {(row[0], row[1], row[2]) for row in rows}
-    assert projected == {
-        (email_s.id, _masked_identifier(learner_email.id), "false"),
-        (mobile_s.id, _masked_identifier(learner_mobile.id), "true"),
-        (unique_s.id, _masked_identifier(learner_unique.id), "false"),
-    }
+    # oracle. The SSO flag is unaffected by masking (the authorg learner's
+    # auth_org-without-unique_id stays 'false'). Decoy absent;
+    # order-insensitive, multiset.
+    projected = [(row[0], row[1], row[2]) for row in rows]
+    assert Counter(projected) == Counter(
+        [
+            (email_s.id, _masked_identifier(learner_email.id), "false"),
+            (mobile_s.id, _masked_identifier(learner_mobile.id), "true"),
+            (unique_s.id, _masked_identifier(learner_unique.id), "false"),
+            (authorg_s.id, _masked_identifier(learner_authorg.id), "false"),
+        ]
+    )
 
 
 def _seed_responses_grading(org):
@@ -399,6 +470,13 @@ def _seed_responses_grading(org):
     - ``match_item`` -- mcq, answer ``0`` equals correct answer ``0`` -> 'true'
     - ``mismatch_item`` -- mcq, answer ``1`` differs from correct ``0`` -> 'false'
     - ``skip_item``  -- mcq, null (skipped) answer -> 'false'
+
+    The grading learner is a *mobile-fallback SSO learner* (no email, unique_id +
+    auth_org): this builder carries its own copies of the identifier-coalesce and
+    SSO CASE expressions, so they are pinned here independently of the
+    sessions/events specs. A second, email/no-SSO learner answers the match item
+    to pin the coalesce's email branch and the SSO 'false' side in this builder
+    too.
 
     A decoy plio in the same workspace carries its own session + answer; the
     builder filters on ``plio.uuid``, so a lost per-plio predicate would pull the
@@ -419,12 +497,16 @@ def _seed_responses_grading(org):
     skip_item = ItemFactory(plio=plio, time=40)
     QuestionFactory(item=skip_item, type="mcq", options=["A", "B"], correct_answer=0)
 
-    learner = UserFactory()
+    learner = UserFactory(email=None, unique_id="sso-responses", auth_org=org)
     session = SessionFactory(plio=plio, user=learner)
     SessionAnswerFactory(session=session, item=subj_item, answer="essay")
     SessionAnswerFactory(session=session, item=match_item, answer=0)
     SessionAnswerFactory(session=session, item=mismatch_item, answer=1)
     SessionAnswerFactory(session=session, item=skip_item, answer=None)
+
+    email_learner = UserFactory()
+    email_session = SessionFactory(plio=plio, user=email_learner)
+    SessionAnswerFactory(session=email_session, item=match_item, answer=0)
 
     decoy = PlioFactory()
     decoy_item = ItemFactory(plio=decoy, time=5)
@@ -436,6 +518,8 @@ def _seed_responses_grading(org):
         plio=plio,
         learner=learner,
         session=session,
+        email_learner=email_learner,
+        email_session=email_session,
         subj_item=subj_item,
         match_item=match_item,
         mismatch_item=mismatch_item,
@@ -454,59 +538,73 @@ def test_responses_dump_grading_matrix_and_unmasked_identifier(db, org_a):
     )
 
     # (session_id, user_identifier, sso_flag, answer, item_id, question_type,
-    # correct_answer, is_answer_correct) per row. The unmasked identifier
-    # coalesces email -> mobile -> unique_id (this learner has an email); the
-    # sso flag is 'false' (no unique_id/auth_org). Answers and correct answers
+    # correct_answer, is_answer_correct) per row. This builder has its own
+    # copies of the identity expressions: the grading learner has no email, so
+    # the unmasked identifier falls back to the mobile, and their
+    # unique_id+auth_org drive the sso flag 'true'; the email learner pins the
+    # coalesce's email branch with sso 'false'. Answers and correct answers
     # come back in their raw jsonb text form -- the scalar ``0``/``1`` read as
     # "0"/"1", the subjective string ``"essay"`` keeps its json quotes, the
     # skipped (null) answer and the subjective (null) correct answer are None.
     # The 1-based re-indexing is a later pandas step pinned at the HTTP seam
     # (#401), not here. The four grading outcomes: subjective-non-null 'true',
     # mcq-match 'true', mcq-mismatch 'false', skipped 'false'. Decoy absent; no
-    # ORDER BY -> compare order-insensitively.
-    projected = {row[:8] for row in rows}
-    assert projected == {
-        (
-            s.session.id,
-            s.learner.email,
-            "false",
-            '"essay"',
-            s.subj_item.id,
-            "subjective",
-            None,
-            "true",
-        ),
-        (
-            s.session.id,
-            s.learner.email,
-            "false",
-            "0",
-            s.match_item.id,
-            "mcq",
-            "0",
-            "true",
-        ),
-        (
-            s.session.id,
-            s.learner.email,
-            "false",
-            "1",
-            s.mismatch_item.id,
-            "mcq",
-            "0",
-            "false",
-        ),
-        (
-            s.session.id,
-            s.learner.email,
-            "false",
-            None,
-            s.skip_item.id,
-            "mcq",
-            "0",
-            "false",
-        ),
-    }
+    # ORDER BY -> order-insensitive, multiset.
+    projected = [row[:8] for row in rows]
+    assert Counter(projected) == Counter(
+        [
+            (
+                s.session.id,
+                s.learner.mobile,
+                "true",
+                '"essay"',
+                s.subj_item.id,
+                "subjective",
+                None,
+                "true",
+            ),
+            (
+                s.session.id,
+                s.learner.mobile,
+                "true",
+                "0",
+                s.match_item.id,
+                "mcq",
+                "0",
+                "true",
+            ),
+            (
+                s.session.id,
+                s.learner.mobile,
+                "true",
+                "1",
+                s.mismatch_item.id,
+                "mcq",
+                "0",
+                "false",
+            ),
+            (
+                s.session.id,
+                s.learner.mobile,
+                "true",
+                None,
+                s.skip_item.id,
+                "mcq",
+                "0",
+                "false",
+            ),
+            (
+                s.email_session.id,
+                s.email_learner.email,
+                "false",
+                "0",
+                s.match_item.id,
+                "mcq",
+                "0",
+                "true",
+            ),
+        ]
+    )
     # the answered-at timestamp comes through on every row
     for row in rows:
         assert isinstance(row[8], datetime.datetime)
@@ -524,17 +622,21 @@ def test_responses_dump_masked_identifier_is_md5_of_user_id(db, org_a):
 
     # with masking on, every row's user_identifier is the MD5 of the
     # (stringified) user id, checked against the independent Python hashlib
-    # oracle. Masking touches only the identifier: the four grading outcomes are
+    # oracle. Masking touches only the identifier: the grading outcomes are
     # unchanged. Projecting (user_identifier, item_id, is_answer_correct) pins
-    # all three at once and proves the decoy row is absent; order-insensitive.
+    # all three at once and proves the decoy row is absent; order-insensitive,
+    # multiset.
     masked = _masked_identifier(s.learner.id)
-    projected = {(row[1], row[4], row[7]) for row in rows}
-    assert projected == {
-        (masked, s.subj_item.id, "true"),
-        (masked, s.match_item.id, "true"),
-        (masked, s.mismatch_item.id, "false"),
-        (masked, s.skip_item.id, "false"),
-    }
+    projected = [(row[1], row[4], row[7]) for row in rows]
+    assert Counter(projected) == Counter(
+        [
+            (masked, s.subj_item.id, "true"),
+            (masked, s.match_item.id, "true"),
+            (masked, s.mismatch_item.id, "false"),
+            (masked, s.skip_item.id, "false"),
+            (_masked_identifier(s.email_learner.id), s.match_item.id, "true"),
+        ]
+    )
 
 
 def _seed_metrics_timeline(org):
@@ -550,11 +652,15 @@ def _seed_metrics_timeline(org):
       globally-max session (its documented max-session-id assumption), fixing
       ``total_questions`` at 3.
     - ``bob`` -- answers Q1 correctly, Q2 wrong, and skips Q3 (null answer):
-      two attempted, one correct, not all attempted.
+      two attempted, one correct, not all attempted. Carries an ``auth_org``
+      but *no* unique_id, so his sso flag stays 'false' -- pinning the
+      unique_id half of this builder's own SSO AND-predicate.
     - ``carol`` -- a rewatcher and SSO learner (unique_id + auth_org, so her sso
       flag is 'true'). Her older session answered Q1; her newer session answers
       Q2 and Q3 correctly. The rollup must reflect only the newer session (two
       attempted, two correct), never both.
+    - ``dave`` -- no email, so this builder's own identifier coalesce falls back
+      to his mobile; answers Q1 correctly only.
 
     A decoy plio in the same workspace carries its own learner/session/answer;
     the builder filters on ``plio.uuid``, so a lost per-plio predicate would pull
@@ -570,8 +676,9 @@ def _seed_metrics_timeline(org):
     QuestionFactory(item=q3, type="mcq", options=["A", "B"], correct_answer=0)
 
     alice = UserFactory(email="alice@example.com")
-    bob = UserFactory(email="bob@example.com")
+    bob = UserFactory(email="bob@example.com", unique_id=None, auth_org=org)
     carol = UserFactory(email="carol@example.com", unique_id="sso-carol", auth_org=org)
+    dave = UserFactory(email=None)
 
     # carol rewatch: older session (Q1 only), then newer session (Q2 + Q3). The
     # newer session has the higher id, so it is carol's latest.
@@ -586,6 +693,10 @@ def _seed_metrics_timeline(org):
     SessionAnswerFactory(session=bob_s, item=q1, answer=0)
     SessionAnswerFactory(session=bob_s, item=q2, answer=1)
     SessionAnswerFactory(session=bob_s, item=q3, answer=None)
+
+    # dave: Q1 correct only, before alice so hers stays the highest session id
+    dave_s = SessionFactory(plio=plio, user=dave)
+    SessionAnswerFactory(session=dave_s, item=q1, answer=0)
 
     # alice full completion, created last so hers is the globally-highest
     # session id for this plio (drives totalQuestions = 3)
@@ -606,6 +717,7 @@ def _seed_metrics_timeline(org):
         alice=alice,
         bob=bob,
         carol=carol,
+        dave=dave,
     )
 
 
@@ -622,13 +734,17 @@ def test_user_level_metrics_rollup_unmasked_ordered_by_identifier(db, org_a):
     # (user_identifier, sso_flag, num_questions_attempted,
     # num_questions_answered_correctly, are_all_questions_attempted). Rows are
     # hand-computed from the timeline against total_questions = 3:
+    #   dave  -- Q1 correct only (identifier = mobile)          -> 1, 1, 'false'
     #   alice -- all three attempted and correct                -> 3, 3, 'true'
     #   bob   -- Q1 correct, Q2 wrong, Q3 skipped               -> 2, 1, 'false'
     #   carol -- rewatcher; only her newer session (Q2, Q3)     -> 2, 2, 'false'
-    # carol's sso flag is 'true' (unique_id + auth_org); alice/bob 'false'. This
-    # builder ends with ORDER BY user_identifier, so assert the row *order*: the
-    # emails sort alice < bob < carol. The decoy learner is absent.
+    # carol's sso flag is 'true' (unique_id + auth_org); bob's auth_org without
+    # a unique_id stays 'false' (this builder's own AND-predicate); dave's
+    # missing email exercises this builder's own mobile fallback. This builder
+    # ends with ORDER BY user_identifier: dave's "+9100..." mobile sorts before
+    # the emails, which sort alice < bob < carol. The decoy learner is absent.
     assert rows == [
+        (s.dave.mobile, "false", 1, 1, "false"),
         ("alice@example.com", "false", 3, 3, "true"),
         ("bob@example.com", "false", 2, 1, "false"),
         ("carol@example.com", "true", 2, 2, "false"),
@@ -652,10 +768,13 @@ def test_user_level_metrics_masked_identifier_is_md5_of_user_id(db, org_a):
     # per-learner (carol's two sessions share one masked id, so her rollup still
     # reflects only the newer session). ORDER BY runs on the masked identifier,
     # whose lexicographic order is hash-dependent; the row *order* is pinned by
-    # the unmasked spec, so here compare the set. Decoy learner absent.
-    projected = {row for row in rows}
-    assert projected == {
-        (_masked_identifier(s.alice.id), "false", 3, 3, "true"),
-        (_masked_identifier(s.bob.id), "false", 2, 1, "false"),
-        (_masked_identifier(s.carol.id), "true", 2, 2, "false"),
-    }
+    # the unmasked spec, so here compare order-insensitively (multiset). Decoy
+    # learner absent.
+    assert Counter(rows) == Counter(
+        [
+            (_masked_identifier(s.alice.id), "false", 3, 3, "true"),
+            (_masked_identifier(s.bob.id), "false", 2, 1, "false"),
+            (_masked_identifier(s.carol.id), "true", 2, 2, "false"),
+            (_masked_identifier(s.dave.id), "false", 1, 1, "false"),
+        ]
+    )

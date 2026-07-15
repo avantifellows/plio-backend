@@ -17,12 +17,15 @@ string ``"0"``, a list ``["A", "B"]`` as ``'["A", "B"]'``, and a stored NULL as
 ``None``. The expected literals below use that documented text form.
 
 This module is the shared home for every query-builder test in the plio unit
-fill; the follow-up slices append the masking-carrying builders here. It lives
-outside ``tests/integration/`` so the unit lane collects it.
+fill: the latest-sessions, latest-responses and plio-details builders (#400), the
+sessions-dump and events builders (#402), and the responses-dump and
+user-level-metrics "grading" builders (#403). It lives outside
+``tests/integration/`` so the unit lane collects it.
 """
 
 import datetime
 import hashlib
+from types import SimpleNamespace
 
 from django.db import connection
 
@@ -31,7 +34,9 @@ from plio.queries import (
     get_plio_details_query,
     get_plio_latest_responses_query,
     get_plio_latest_sessions_query,
+    get_responses_dump_query,
     get_sessions_dump_query,
+    get_user_level_metrics_query,
 )
 from tests.builders import in_workspace
 from tests.factories import (
@@ -379,4 +384,279 @@ def test_events_masked_identifier_is_md5_of_user_id(db, org_a):
         (email_s.id, _masked_identifier(learner_email.id), "false"),
         (mobile_s.id, _masked_identifier(learner_mobile.id), "true"),
         (unique_s.id, _masked_identifier(learner_unique.id), "false"),
+    }
+
+
+def _seed_responses_grading(org):
+    """Seed one learner answering four questions, one per grading outcome.
+
+    The responses-dump builder's ``is_answer_correct`` CASE grades a row 'true'
+    when the answer is non-null AND (the question is subjective OR the answer
+    equals the correct answer); everything else is 'false'. Each of the four
+    items below drives one branch:
+
+    - ``subj_item``  -- subjective question, non-null answer ``"essay"`` -> 'true'
+    - ``match_item`` -- mcq, answer ``0`` equals correct answer ``0`` -> 'true'
+    - ``mismatch_item`` -- mcq, answer ``1`` differs from correct ``0`` -> 'false'
+    - ``skip_item``  -- mcq, null (skipped) answer -> 'false'
+
+    A decoy plio in the same workspace carries its own session + answer; the
+    builder filters on ``plio.uuid``, so a lost per-plio predicate would pull the
+    decoy row into the result set. Slice-local: shared by the two responses-dump
+    specs, kept out of the harness until a second module needs it.
+    """
+    plio = PlioFactory()
+    subj_item = ItemFactory(plio=plio, time=10)
+    QuestionFactory(
+        item=subj_item, type="subjective", options=None, correct_answer=None
+    )
+    match_item = ItemFactory(plio=plio, time=20)
+    QuestionFactory(item=match_item, type="mcq", options=["A", "B"], correct_answer=0)
+    mismatch_item = ItemFactory(plio=plio, time=30)
+    QuestionFactory(
+        item=mismatch_item, type="mcq", options=["A", "B"], correct_answer=0
+    )
+    skip_item = ItemFactory(plio=plio, time=40)
+    QuestionFactory(item=skip_item, type="mcq", options=["A", "B"], correct_answer=0)
+
+    learner = UserFactory()
+    session = SessionFactory(plio=plio, user=learner)
+    SessionAnswerFactory(session=session, item=subj_item, answer="essay")
+    SessionAnswerFactory(session=session, item=match_item, answer=0)
+    SessionAnswerFactory(session=session, item=mismatch_item, answer=1)
+    SessionAnswerFactory(session=session, item=skip_item, answer=None)
+
+    decoy = PlioFactory()
+    decoy_item = ItemFactory(plio=decoy, time=5)
+    QuestionFactory(item=decoy_item, mcq=True)
+    decoy_session = SessionFactory(plio=decoy, user=UserFactory())
+    SessionAnswerFactory(session=decoy_session, item=decoy_item, answer=0)
+
+    return SimpleNamespace(
+        plio=plio,
+        learner=learner,
+        session=session,
+        subj_item=subj_item,
+        match_item=match_item,
+        mismatch_item=mismatch_item,
+        skip_item=skip_item,
+    )
+
+
+def test_responses_dump_grading_matrix_and_unmasked_identifier(db, org_a):
+    with in_workspace(org_a):
+        s = _seed_responses_grading(org_a)
+
+    rows = _run(
+        get_responses_dump_query(
+            s.plio.uuid, org_a.schema_name, show_unmasked_user_id=True
+        )
+    )
+
+    # (session_id, user_identifier, sso_flag, answer, item_id, question_type,
+    # correct_answer, is_answer_correct) per row. The unmasked identifier
+    # coalesces email -> mobile -> unique_id (this learner has an email); the
+    # sso flag is 'false' (no unique_id/auth_org). Answers and correct answers
+    # come back in their raw jsonb text form -- the scalar ``0``/``1`` read as
+    # "0"/"1", the subjective string ``"essay"`` keeps its json quotes, the
+    # skipped (null) answer and the subjective (null) correct answer are None.
+    # The 1-based re-indexing is a later pandas step pinned at the HTTP seam
+    # (#401), not here. The four grading outcomes: subjective-non-null 'true',
+    # mcq-match 'true', mcq-mismatch 'false', skipped 'false'. Decoy absent; no
+    # ORDER BY -> compare order-insensitively.
+    projected = {row[:8] for row in rows}
+    assert projected == {
+        (
+            s.session.id,
+            s.learner.email,
+            "false",
+            '"essay"',
+            s.subj_item.id,
+            "subjective",
+            None,
+            "true",
+        ),
+        (
+            s.session.id,
+            s.learner.email,
+            "false",
+            "0",
+            s.match_item.id,
+            "mcq",
+            "0",
+            "true",
+        ),
+        (
+            s.session.id,
+            s.learner.email,
+            "false",
+            "1",
+            s.mismatch_item.id,
+            "mcq",
+            "0",
+            "false",
+        ),
+        (
+            s.session.id,
+            s.learner.email,
+            "false",
+            None,
+            s.skip_item.id,
+            "mcq",
+            "0",
+            "false",
+        ),
+    }
+    # the answered-at timestamp comes through on every row
+    for row in rows:
+        assert isinstance(row[8], datetime.datetime)
+
+
+def test_responses_dump_masked_identifier_is_md5_of_user_id(db, org_a):
+    with in_workspace(org_a):
+        s = _seed_responses_grading(org_a)
+
+    rows = _run(
+        get_responses_dump_query(
+            s.plio.uuid, org_a.schema_name, show_unmasked_user_id=False
+        )
+    )
+
+    # with masking on, every row's user_identifier is the MD5 of the
+    # (stringified) user id, checked against the independent Python hashlib
+    # oracle. Masking touches only the identifier: the four grading outcomes are
+    # unchanged. Projecting (user_identifier, item_id, is_answer_correct) pins
+    # all three at once and proves the decoy row is absent; order-insensitive.
+    masked = _masked_identifier(s.learner.id)
+    projected = {(row[1], row[4], row[7]) for row in rows}
+    assert projected == {
+        (masked, s.subj_item.id, "true"),
+        (masked, s.match_item.id, "true"),
+        (masked, s.mismatch_item.id, "false"),
+        (masked, s.skip_item.id, "false"),
+    }
+
+
+def _seed_metrics_timeline(org):
+    """Seed a three-learner rollup timeline with three questions and a decoy.
+
+    The plio has three mcq questions, each with correct answer ``0``. Three
+    learners with lexicographically unambiguous emails cover distinct completion
+    levels, and one is an SSO learner so the rollup carries both flag states:
+
+    - ``alice`` -- answers all three correctly. Her session is created *last*
+      among this plio's sessions, so it holds the highest session id; the
+      builder's ``totalQuestions`` CTE derives the question count from that
+      globally-max session (its documented max-session-id assumption), fixing
+      ``total_questions`` at 3.
+    - ``bob`` -- answers Q1 correctly, Q2 wrong, and skips Q3 (null answer):
+      two attempted, one correct, not all attempted.
+    - ``carol`` -- a rewatcher and SSO learner (unique_id + auth_org, so her sso
+      flag is 'true'). Her older session answered Q1; her newer session answers
+      Q2 and Q3 correctly. The rollup must reflect only the newer session (two
+      attempted, two correct), never both.
+
+    A decoy plio in the same workspace carries its own learner/session/answer;
+    the builder filters on ``plio.uuid``, so a lost per-plio predicate would pull
+    the decoy learner into the result set. Slice-local: shared by the two
+    user-level-metrics specs.
+    """
+    plio = PlioFactory()
+    q1 = ItemFactory(plio=plio, time=10)
+    QuestionFactory(item=q1, type="mcq", options=["A", "B"], correct_answer=0)
+    q2 = ItemFactory(plio=plio, time=20)
+    QuestionFactory(item=q2, type="mcq", options=["A", "B"], correct_answer=0)
+    q3 = ItemFactory(plio=plio, time=30)
+    QuestionFactory(item=q3, type="mcq", options=["A", "B"], correct_answer=0)
+
+    alice = UserFactory(email="alice@example.com")
+    bob = UserFactory(email="bob@example.com")
+    carol = UserFactory(email="carol@example.com", unique_id="sso-carol", auth_org=org)
+
+    # carol rewatch: older session (Q1 only), then newer session (Q2 + Q3). The
+    # newer session has the higher id, so it is carol's latest.
+    carol_old = SessionFactory(plio=plio, user=carol)
+    SessionAnswerFactory(session=carol_old, item=q1, answer=0)
+    carol_new = SessionFactory(plio=plio, user=carol)
+    SessionAnswerFactory(session=carol_new, item=q2, answer=0)
+    SessionAnswerFactory(session=carol_new, item=q3, answer=0)
+
+    # bob partial: Q1 right, Q2 wrong, Q3 skipped (explicit null-answer row)
+    bob_s = SessionFactory(plio=plio, user=bob)
+    SessionAnswerFactory(session=bob_s, item=q1, answer=0)
+    SessionAnswerFactory(session=bob_s, item=q2, answer=1)
+    SessionAnswerFactory(session=bob_s, item=q3, answer=None)
+
+    # alice full completion, created last so hers is the globally-highest
+    # session id for this plio (drives totalQuestions = 3)
+    alice_s = SessionFactory(plio=plio, user=alice)
+    SessionAnswerFactory(session=alice_s, item=q1, answer=0)
+    SessionAnswerFactory(session=alice_s, item=q2, answer=0)
+    SessionAnswerFactory(session=alice_s, item=q3, answer=0)
+
+    decoy = PlioFactory()
+    decoy_item = ItemFactory(plio=decoy, time=5)
+    QuestionFactory(item=decoy_item, mcq=True)
+    decoy_learner = UserFactory(email="zzz-decoy@example.com")
+    decoy_session = SessionFactory(plio=decoy, user=decoy_learner)
+    SessionAnswerFactory(session=decoy_session, item=decoy_item, answer=0)
+
+    return SimpleNamespace(
+        plio=plio,
+        alice=alice,
+        bob=bob,
+        carol=carol,
+        decoy_learner=decoy_learner,
+    )
+
+
+def test_user_level_metrics_rollup_unmasked_ordered_by_identifier(db, org_a):
+    with in_workspace(org_a):
+        s = _seed_metrics_timeline(org_a)
+
+    rows = _run(
+        get_user_level_metrics_query(
+            s.plio.uuid, org_a.schema_name, show_unmasked_user_id=True
+        )
+    )
+
+    # (user_identifier, sso_flag, num_questions_attempted,
+    # num_questions_answered_correctly, are_all_questions_attempted). Rows are
+    # hand-computed from the timeline against total_questions = 3:
+    #   alice -- all three attempted and correct                -> 3, 3, 'true'
+    #   bob   -- Q1 correct, Q2 wrong, Q3 skipped               -> 2, 1, 'false'
+    #   carol -- rewatcher; only her newer session (Q2, Q3)     -> 2, 2, 'false'
+    # carol's sso flag is 'true' (unique_id + auth_org); alice/bob 'false'. This
+    # builder ends with ORDER BY user_identifier, so assert the row *order*: the
+    # emails sort alice < bob < carol. The decoy learner is absent.
+    assert rows == [
+        ("alice@example.com", "false", 3, 3, "true"),
+        ("bob@example.com", "false", 2, 1, "false"),
+        ("carol@example.com", "true", 2, 2, "false"),
+    ]
+
+
+def test_user_level_metrics_masked_identifier_is_md5_of_user_id(db, org_a):
+    with in_workspace(org_a):
+        s = _seed_metrics_timeline(org_a)
+
+    rows = _run(
+        get_user_level_metrics_query(
+            s.plio.uuid, org_a.schema_name, show_unmasked_user_id=False
+        )
+    )
+
+    # with masking on, each learner's user_identifier is the MD5 of their user
+    # id (independent Python hashlib oracle). Masking touches only the
+    # identifier: the rollup counts, the all-attempted flag, and the sso flag are
+    # the same hand-computed literals as the unmasked rollup, and grouping stays
+    # per-learner (carol's two sessions share one masked id, so her rollup still
+    # reflects only the newer session). ORDER BY runs on the masked identifier,
+    # whose lexicographic order is hash-dependent; the row *order* is pinned by
+    # the unmasked spec, so here compare the set. Decoy learner absent.
+    projected = {row for row in rows}
+    assert projected == {
+        (_masked_identifier(s.alice.id), "false", 3, 3, "true"),
+        (_masked_identifier(s.bob.id), "false", 2, 1, "false"),
+        (_masked_identifier(s.carol.id), "true", 2, 2, "false"),
     }

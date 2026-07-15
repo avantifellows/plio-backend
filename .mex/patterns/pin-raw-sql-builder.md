@@ -12,7 +12,7 @@ edges:
     condition: "when the builder is schema-qualified and you need the tenancy mechanics"
   - target: "patterns/run-tests-and-migrations.md"
     condition: "to run the unit lane / pre-commit"
-last_updated: 2026-07-14
+last_updated: 2026-07-15
 ---
 
 # Pin a Raw-SQL Query Builder
@@ -55,6 +55,13 @@ outside `tests/integration/`). Slices #400–#404 append to it.
 - Masked identifier oracle (masking builders): Python `hashlib.md5` of the user
   id as a string — independent of Postgres `MD5`. The unmasked identifier
   coalesces email → mobile → unique_id.
+- **Masking builders join `public.user`** (sessions dump, events, responses dump,
+  user-level metrics), not just the tenant schema. Configure the identity matrix
+  on the `UserFactory`: `UserFactory(email=None, ...)` drops down the coalesce;
+  the `has_user_logged_in_via_sso` flag is `'true'` only when the user has **both**
+  a `unique_id` *and* an `auth_org` (an Organization FK — pass `auth_org=org_a`),
+  and `'false'` otherwise. One mobile-only learner with `unique_id`+`auth_org` set
+  covers the coalesce-fallback and the SSO-`'true'` side at once.
 - Keep the `_run` helper **slice-local** in the spec module; do not add it to the
   shared harness (`factories.py`, `builders.py`, `conftest.py`).
 

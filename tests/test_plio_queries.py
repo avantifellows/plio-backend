@@ -407,6 +407,13 @@ def test_events_unmasked_identifier_fallback_sso_flag_and_content(db, org_a):
         authorg_e = EventFactory(
             session=authorg_s, type="played", player_time=30, details={}
         )
+        # the email learner rewatched: events come from *all* of a learner's
+        # sessions, so a builder restricted to the latest session loses the
+        # older session's events and fails
+        email_s2 = SessionFactory(plio=plio, user=learner_email)
+        rewatch_e = EventFactory(
+            session=email_s2, type="played", player_time=50, details={}
+        )
         # decoy plio in the same workspace with its own session + event
         decoy = PlioFactory()
         decoy_s = SessionFactory(plio=decoy, user=UserFactory())
@@ -444,13 +451,21 @@ def test_events_unmasked_identifier_fallback_sso_flag_and_content(db, org_a):
                 "{}",
             ),
             (authorg_s.id, learner_authorg.email, "false", "played", 30.0, "{}"),
+            (email_s2.id, learner_email.email, "false", "played", 50.0, "{}"),
         ]
     )
     # the event's global time is the *event row's own* created_at -- a builder
     # sourcing it from the session (or any other timestamp) fails these
     # equality checks against the model field
     by_key = {(row[0], row[3]): row for row in rows}
-    for event in (played_e, paused_email_e, paused_mobile_e, answered_e, authorg_e):
+    for event in (
+        played_e,
+        paused_email_e,
+        paused_mobile_e,
+        answered_e,
+        authorg_e,
+        rewatch_e,
+    ):
         assert by_key[(event.session_id, event.type)][6] == event.created_at
 
 
@@ -576,6 +591,13 @@ def _seed_responses_grading(org):
     answers.append(
         SessionAnswerFactory(session=email_session, item=match_item, answer=0)
     )
+    # the email learner rewatched: the dump covers *all* sessions, so a builder
+    # restricted to each learner's latest session loses this older row and
+    # fails (their second attempt answers the same item wrong)
+    email_session_2 = SessionFactory(plio=plio, user=email_learner)
+    answers.append(
+        SessionAnswerFactory(session=email_session_2, item=match_item, answer=1)
+    )
 
     authorg_learner = UserFactory(unique_id=None, auth_org=org)
     authorg_session = SessionFactory(plio=plio, user=authorg_learner)
@@ -603,6 +625,7 @@ def _seed_responses_grading(org):
         session=session,
         email_learner=email_learner,
         email_session=email_session,
+        email_session_2=email_session_2,
         authorg_learner=authorg_learner,
         authorg_session=authorg_session,
         unique_learner=unique_learner,
@@ -714,6 +737,16 @@ def test_responses_dump_grading_matrix_and_unmasked_identifier(db, org_a):
                 "true",
             ),
             (
+                s.email_session_2.id,
+                s.email_learner.email,
+                "false",
+                "1",
+                s.match_item.id,
+                "mcq",
+                "0",
+                "false",
+            ),
+            (
                 s.authorg_session.id,
                 s.authorg_learner.email,
                 "false",
@@ -770,6 +803,7 @@ def test_responses_dump_masked_identifier_is_md5_of_user_id(db, org_a):
             (masked, s.subj_skip_item.id, "false"),
             (masked, s.checkbox_item.id, "false"),
             (_masked_identifier(s.email_learner.id), s.match_item.id, "true"),
+            (_masked_identifier(s.email_learner.id), s.match_item.id, "false"),
             (_masked_identifier(s.authorg_learner.id), s.match_item.id, "true"),
             (_masked_identifier(s.unique_learner.id), s.match_item.id, "true"),
         ]

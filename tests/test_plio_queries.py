@@ -146,6 +146,10 @@ def test_latest_sessions_returns_one_row_per_learner_newest_session(db, org_a):
 def test_latest_responses_single_session_uses_equality_branch(db, org_a):
     with in_workspace(org_a):
         plio = PlioFactory()
+        # a question-less item first: it offsets the item/question id sequences
+        # so a join degraded to question.id = item.id stops matching (with
+        # lockstep ids that mutation is invisible)
+        ItemFactory(plio=plio, time=1)
         item = ItemFactory(plio=plio, time=10)
         QuestionFactory(item=item, type="mcq", options=["A", "B"], correct_answer=0)
         # a second item so the queried session holds *two* answers: a builder
@@ -187,6 +191,9 @@ def test_latest_responses_single_session_uses_equality_branch(db, org_a):
 def test_latest_responses_multiple_sessions_use_in_tuple_branch(db, org_a):
     with in_workspace(org_a):
         plio = PlioFactory()
+        # question-less item: offsets item/question ids (see the single-session
+        # spec) so question.id = item.id join mutations fail
+        ItemFactory(plio=plio, time=1)
         item = ItemFactory(plio=plio, time=10)
         QuestionFactory(item=item, type="mcq", options=["A", "B"], correct_answer=0)
         learner_a = UserFactory()
@@ -223,6 +230,11 @@ def test_latest_responses_multiple_sessions_use_in_tuple_branch(db, org_a):
 def test_plio_details_returns_item_and_question_rows(db, org_a):
     with in_workspace(org_a):
         plio = PlioFactory()
+        # question-less decoy item on another plio: offsets item/question ids
+        # so question.id = item.id join mutations fail (the details builder
+        # inner-joins questions, so an unquestioned item on the target plio
+        # would change this builder's contract -- keep it off-plio)
+        ItemFactory(plio=PlioFactory(), time=1)
         mcq_item = ItemFactory(plio=plio, time=10)
         QuestionFactory(
             item=mcq_item,
@@ -498,6 +510,11 @@ def _seed_responses_grading(org):
     - ``match_item`` -- mcq, answer ``0`` equals correct answer ``0`` -> 'true'
     - ``mismatch_item`` -- mcq, answer ``1`` differs from correct ``0`` -> 'false'
     - ``skip_item``  -- mcq, null (skipped) answer -> 'false'
+    - ``subj_skip_item`` -- subjective question, *null* answer -> 'false' (pins
+      the non-null guard on the subjective branch)
+    - ``checkbox_item`` -- checkbox, answer ``[0, 2]`` differs from correct
+      ``[0, 1]`` -> 'false' (a grading CASE that marked every checkbox correct
+      would fail here; the correct-checkbox positive lives at the CSV seam)
 
     The grading learner is a *mobile-fallback SSO learner* (no email, unique_id +
     auth_org): this builder carries its own copies of the identifier-coalesce and
@@ -516,6 +533,9 @@ def _seed_responses_grading(org):
     specs, kept out of the harness until a second module needs it.
     """
     plio = PlioFactory()
+    # question-less item: offsets item/question ids so question.id = item.id
+    # join mutations fail
+    ItemFactory(plio=plio, time=1)
     subj_item = ItemFactory(plio=plio, time=10)
     QuestionFactory(
         item=subj_item, type="subjective", options=None, correct_answer=None
@@ -528,6 +548,17 @@ def _seed_responses_grading(org):
     )
     skip_item = ItemFactory(plio=plio, time=40)
     QuestionFactory(item=skip_item, type="mcq", options=["A", "B"], correct_answer=0)
+    subj_skip_item = ItemFactory(plio=plio, time=50)
+    QuestionFactory(
+        item=subj_skip_item, type="subjective", options=None, correct_answer=None
+    )
+    checkbox_item = ItemFactory(plio=plio, time=60)
+    QuestionFactory(
+        item=checkbox_item,
+        type="checkbox",
+        options=["A", "B", "C"],
+        correct_answer=[0, 1],
+    )
 
     learner = UserFactory(email=None, unique_id="sso-responses", auth_org=org)
     session = SessionFactory(plio=plio, user=learner)
@@ -536,6 +567,8 @@ def _seed_responses_grading(org):
         SessionAnswerFactory(session=session, item=match_item, answer=0),
         SessionAnswerFactory(session=session, item=mismatch_item, answer=1),
         SessionAnswerFactory(session=session, item=skip_item, answer=None),
+        SessionAnswerFactory(session=session, item=subj_skip_item, answer=None),
+        SessionAnswerFactory(session=session, item=checkbox_item, answer=[0, 2]),
     ]
 
     email_learner = UserFactory()
@@ -579,6 +612,8 @@ def _seed_responses_grading(org):
         match_item=match_item,
         mismatch_item=mismatch_item,
         skip_item=skip_item,
+        subj_skip_item=subj_skip_item,
+        checkbox_item=checkbox_item,
     )
 
 
@@ -649,6 +684,26 @@ def test_responses_dump_grading_matrix_and_unmasked_identifier(db, org_a):
                 "false",
             ),
             (
+                s.session.id,
+                s.learner.mobile,
+                "true",
+                None,
+                s.subj_skip_item.id,
+                "subjective",
+                None,
+                "false",
+            ),
+            (
+                s.session.id,
+                s.learner.mobile,
+                "true",
+                "[0, 2]",
+                s.checkbox_item.id,
+                "checkbox",
+                "[0, 1]",
+                "false",
+            ),
+            (
                 s.email_session.id,
                 s.email_learner.email,
                 "false",
@@ -712,6 +767,8 @@ def test_responses_dump_masked_identifier_is_md5_of_user_id(db, org_a):
             (masked, s.match_item.id, "true"),
             (masked, s.mismatch_item.id, "false"),
             (masked, s.skip_item.id, "false"),
+            (masked, s.subj_skip_item.id, "false"),
+            (masked, s.checkbox_item.id, "false"),
             (_masked_identifier(s.email_learner.id), s.match_item.id, "true"),
             (_masked_identifier(s.authorg_learner.id), s.match_item.id, "true"),
             (_masked_identifier(s.unique_learner.id), s.match_item.id, "true"),
@@ -760,12 +817,22 @@ def _seed_metrics_timeline(org):
     # against some question's correct value and the DISTINCT aggregates hide
     # the fan-out -- distinct values make cross-question matches count wrong
     plio = PlioFactory()
+    # question-less item: offsets item/question ids so question.id = item.id
+    # join mutations fail
+    ItemFactory(plio=plio, time=1)
     q1 = ItemFactory(plio=plio, time=10)
     QuestionFactory(item=q1, type="mcq", options=["A", "B", "C"], correct_answer=0)
     q2 = ItemFactory(plio=plio, time=20)
     QuestionFactory(item=q2, type="mcq", options=["A", "B", "C"], correct_answer=1)
     q3 = ItemFactory(plio=plio, time=30)
     QuestionFactory(item=q3, type="mcq", options=["A", "B", "C"], correct_answer=2)
+    # a checkbox question so the correct-count aggregate is pinned across
+    # question types -- an aggregate restricted to mcq would report alice's
+    # correct checkbox as zero
+    q4 = ItemFactory(plio=plio, time=40)
+    QuestionFactory(
+        item=q4, type="checkbox", options=["A", "B", "C"], correct_answer=[0, 2]
+    )
 
     alice = UserFactory(email="alice@example.com")
     bob = UserFactory(email="bob@example.com", unique_id=None, auth_org=org)
@@ -798,12 +865,13 @@ def _seed_metrics_timeline(org):
     erin_s = SessionFactory(plio=plio, user=erin)
     SessionAnswerFactory(session=erin_s, item=q1, answer=0)
 
-    # alice full completion, created last so hers is the globally-highest
-    # session id for this plio (drives totalQuestions = 3)
+    # alice full completion (incl. the checkbox), created last so hers is the
+    # globally-highest session id for this plio (drives totalQuestions = 4)
     alice_s = SessionFactory(plio=plio, user=alice)
     SessionAnswerFactory(session=alice_s, item=q1, answer=0)
     SessionAnswerFactory(session=alice_s, item=q2, answer=1)
     SessionAnswerFactory(session=alice_s, item=q3, answer=2)
+    SessionAnswerFactory(session=alice_s, item=q4, answer=[0, 2])
 
     decoy = PlioFactory()
     decoy_item = ItemFactory(plio=decoy, time=5)
@@ -834,9 +902,10 @@ def test_user_level_metrics_rollup_unmasked_ordered_by_identifier(db, org_a):
 
     # (user_identifier, sso_flag, num_questions_attempted,
     # num_questions_answered_correctly, are_all_questions_attempted). Rows are
-    # hand-computed from the timeline against total_questions = 3:
+    # hand-computed from the timeline against total_questions = 4:
     #   dave  -- Q1 correct only (identifier = mobile)          -> 1, 1, 'false'
-    #   alice -- all three attempted and correct                -> 3, 3, 'true'
+    #   alice -- all four attempted and correct (incl. the
+    #            checkbox Q4)                                   -> 4, 4, 'true'
     #   bob   -- Q1 correct (recorded twice, counted once via the
     #            DISTINCT rollup), Q2 wrong, Q3 skipped         -> 2, 1, 'false'
     #   carol -- rewatcher; only her newer session (Q2, Q3)     -> 2, 2, 'false'
@@ -850,7 +919,7 @@ def test_user_level_metrics_rollup_unmasked_ordered_by_identifier(db, org_a):
     # sort alice < bob < carol < sso-erin. The decoy learner is absent.
     assert rows == [
         (s.dave.mobile, "false", 1, 1, "false"),
-        ("alice@example.com", "false", 3, 3, "true"),
+        ("alice@example.com", "false", 4, 4, "true"),
         ("bob@example.com", "false", 2, 1, "false"),
         ("carol@example.com", "true", 2, 2, "false"),
         ("sso-erin", "false", 1, 1, "false"),
@@ -878,7 +947,7 @@ def test_user_level_metrics_masked_identifier_is_md5_of_user_id(db, org_a):
     # learner absent.
     assert Counter(rows) == Counter(
         [
-            (_masked_identifier(s.alice.id), "false", 3, 3, "true"),
+            (_masked_identifier(s.alice.id), "false", 4, 4, "true"),
             (_masked_identifier(s.bob.id), "false", 2, 1, "false"),
             (_masked_identifier(s.carol.id), "true", 2, 2, "false"),
             (_masked_identifier(s.dave.id), "false", 1, 1, "false"),

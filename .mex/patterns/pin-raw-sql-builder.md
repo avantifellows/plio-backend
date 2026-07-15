@@ -38,8 +38,10 @@ outside `tests/integration/`). Slices #400–#404 append to it.
    cursor.fetchall()`). The SQL is fully schema-qualified, so it runs correctly
    even after the `in_workspace` block exits.
 5. Assert the exact rows against **hand-computed literals** from the timeline.
-   Builders with no `ORDER BY` → compare `set(rows)`; builders with `ORDER BY`
-   (user-level metrics) → assert the ordered list.
+   Builders with no `ORDER BY` → compare multisets (`Counter(rows) ==
+   Counter([...])` — a `set` discards duplicates and hides join fan-out /
+   `UNION ALL` regressions); builders with `ORDER BY` (user-level metrics) →
+   assert the ordered list.
 
 ## Gotchas
 - **jsonb reads back as its Postgres text form, not parsed Python.** A raw cursor
@@ -73,8 +75,8 @@ outside `tests/integration/`). Slices #400–#404 append to it.
   rewatcher's *older* and *newer* sessions different items (older Q1; newer Q2+Q3)
   so a "counts both sessions" regression shows up as different attempted/correct
   numbers. This builder is the only one with an `ORDER BY` → assert the ordered
-  list unmasked (emails sort predictably); for the masked run compare a `set`
-  since MD5 order is hash-dependent.
+  list unmasked (emails sort predictably); for the masked run compare a multiset
+  (`Counter`) since MD5 order is hash-dependent.
 - **Subjective grading is safe at the builder seam.** `get_responses_dump_query`'s
   `is_answer_correct` CASE returns `'true'` for a non-null subjective answer with
   no problem — the `json.loads(None)` bug that 500s `download_data` for subjective

@@ -180,10 +180,11 @@ def test_email_exact_match_returns_that_user(authed_client):
     # ``email=<exact address>`` returns the single user with that address. A decoy
     # user with a different address is present and must be excluded.
     caller = _superuser(authed_client)
-    target = UserFactory(email="filter-target@example.com")
+    target_email = "filter-target@example.com"
+    target = UserFactory(email=target_email)
     UserFactory(email="filter-decoy@example.com")  # decoy: different email
 
-    response = _list(caller, email="filter-target@example.com")
+    response = _list(caller, email=target_email)
 
     assert _listed_ids(response) == {target.id}
 
@@ -210,7 +211,8 @@ def test_combined_filters_are_conjunction_only_all_three_match(
     # per user, so each decoy necessarily carries its own address.
     caller = _superuser(authed_client)
 
-    winner = UserFactory(email="combined-winner@example.com")
+    winner_email = "combined-winner@example.com"
+    winner = UserFactory(email=winner_email)
     _member(winner, org_a)
 
     # satisfies {ids, organization} but not email -> excluded (and would leak if
@@ -232,7 +234,7 @@ def test_combined_filters_are_conjunction_only_all_three_match(
         caller,
         ids="{},{},{}".format(winner.id, decoy_ids_org.id, decoy_ids_only.id),
         organization=str(org_a.id),
-        email="combined-winner@example.com",
+        email=winner_email,
     )
 
     assert _listed_ids(response) == {winner.id}

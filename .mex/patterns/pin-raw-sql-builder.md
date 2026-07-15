@@ -64,6 +64,23 @@ outside `tests/integration/`). Slices #400–#404 append to it.
   covers the coalesce-fallback and the SSO-`'true'` side at once.
 - Keep the `_run` helper **slice-local** in the spec module; do not add it to the
   shared harness (`factories.py`, `builders.py`, `conftest.py`).
+- **User-level-metrics `totalQuestions` reads the globally-max session id.** The
+  builder derives the plio's question count from the single highest-id session
+  (its documented "latest session for any user has the highest session_id"
+  assumption), *not* a distinct count over the whole plio. So make the
+  full-completion learner's session the **last-created** for that plio to fix
+  `total_questions` at the full count, and drive the rewatch check by giving the
+  rewatcher's *older* and *newer* sessions different items (older Q1; newer Q2+Q3)
+  so a "counts both sessions" regression shows up as different attempted/correct
+  numbers. This builder is the only one with an `ORDER BY` → assert the ordered
+  list unmasked (emails sort predictably); for the masked run compare a `set`
+  since MD5 order is hash-dependent.
+- **Subjective grading is safe at the builder seam.** `get_responses_dump_query`'s
+  `is_answer_correct` CASE returns `'true'` for a non-null subjective answer with
+  no problem — the `json.loads(None)` bug that 500s `download_data` for subjective
+  questions lives in the pandas *interaction-details* step (pinned as a strict
+  xfail at the HTTP seam by #401), not in the raw SQL. Pin the subjective grading
+  outcome directly here.
 
 ## Verify
 - [ ] Every test seeds a decoy and asserts its rows are absent

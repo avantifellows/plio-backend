@@ -23,7 +23,6 @@ user-level-metrics "grading" builders (#403). It lives outside
 ``tests/integration/`` so the unit lane collects it.
 """
 
-import datetime
 import hashlib
 from collections import Counter
 from types import SimpleNamespace
@@ -109,9 +108,12 @@ def test_latest_sessions_returns_one_row_per_learner_newest_session(db, org_a):
         learner_b = UserFactory()
         # learner A rewatched: two sessions on the same plio. The builder ranks
         # by descending session id, so only the newer (higher-id) session wins.
-        SessionFactory(plio=plio, user=learner_a, watch_time=10, retention="early-a")
+        # The newer session deliberately has the *smaller* watch time, so a
+        # ranking that switched to watch_time DESC would pick the older session
+        # and fail here.
+        SessionFactory(plio=plio, user=learner_a, watch_time=30, retention="early-a")
         newer_a = SessionFactory(
-            plio=plio, user=learner_a, watch_time=30, retention="late-a"
+            plio=plio, user=learner_a, watch_time=7, retention="late-a"
         )
         # learner B watched once
         session_b = SessionFactory(
@@ -128,13 +130,14 @@ def test_latest_sessions_returns_one_row_per_learner_newest_session(db, org_a):
 
     rows = _run(get_plio_latest_sessions_query(plio.uuid, org_a.schema_name))
 
-    # exactly one row per learner: A's earlier 10s session is superseded by the
-    # newer 30s one; learner B's single session stands; the decoy is absent.
-    # No ORDER BY in this builder -> compare order-insensitively but preserve
-    # row multiplicity (a set would hide join fan-out duplicates).
+    # exactly one row per learner: A's earlier 30s session is superseded by the
+    # newer 7s one (newest-by-id, not biggest-by-watch-time); learner B's single
+    # session stands; the decoy is absent. No ORDER BY in this builder ->
+    # compare order-insensitively but preserve row multiplicity (a set would
+    # hide join fan-out duplicates).
     assert Counter(rows) == Counter(
         [
-            (newer_a.id, 30.0, "late-a"),
+            (newer_a.id, 7.0, "late-a"),
             (session_b.id, 50.0, "only-b"),
         ]
     )
@@ -276,6 +279,11 @@ def test_sessions_dump_unmasked_identifier_fallback_and_sso_flag(db, org_a):
         # per-plio predicate would pull this row into the result set
         decoy = PlioFactory()
         SessionFactory(plio=decoy, user=UserFactory(), watch_time=999)
+        # touch one session after creation so its updated_at is measurably
+        # later than its created_at -- the two timestamp columns become
+        # distinguishable, so a builder swapping them fails below
+        email_s1.save()
+        email_s1.refresh_from_db()
 
     rows = _run(
         get_sessions_dump_query(
@@ -299,10 +307,14 @@ def test_sessions_dump_unmasked_identifier_fallback_and_sso_flag(db, org_a):
             (authorg_s.id, 70.0, learner_authorg.email, "false"),
         ]
     )
-    # created_at and last-updated timestamps come through on every row
-    for row in rows:
-        assert isinstance(row[4], datetime.datetime)
-        assert isinstance(row[5], datetime.datetime)
+    # the timestamp *values* come from the session row itself: a builder that
+    # selected the wrong datetime source (or swapped created/updated) fails
+    # these equality checks against the model fields
+    by_id = {row[0]: row for row in rows}
+    for sess in (email_s1, email_s2, mobile_s, unique_s, authorg_s):
+        assert by_id[sess.id][4] == sess.created_at
+        assert by_id[sess.id][5] == sess.updated_at
+    assert email_s1.updated_at > email_s1.created_at
 
 
 def test_sessions_dump_masked_identifier_is_md5_of_user_id(db, org_a):
@@ -357,19 +369,25 @@ def test_events_unmasked_identifier_fallback_sso_flag_and_content(db, org_a):
         # the email learner's session records *two* events: the builder must
         # return every event of a session, so a regression that collapses to
         # one row per session (e.g. DISTINCT ON) fails here
-        EventFactory(session=email_s, type="played", player_time=5, details={})
-        EventFactory(session=email_s, type="paused", player_time=8, details={})
-        EventFactory(
+        played_e = EventFactory(
+            session=email_s, type="played", player_time=5, details={}
+        )
+        paused_email_e = EventFactory(
+            session=email_s, type="paused", player_time=8, details={}
+        )
+        paused_mobile_e = EventFactory(
             session=mobile_s,
             type="paused",
             player_time=12.5,
             details={"reason": "buffering"},
         )
-        EventFactory(
+        answered_e = EventFactory(
             session=unique_s, type="question_answered", player_time=20, details={}
         )
         authorg_s = SessionFactory(plio=plio, user=learner_authorg)
-        EventFactory(session=authorg_s, type="played", player_time=30, details={})
+        authorg_e = EventFactory(
+            session=authorg_s, type="played", player_time=30, details={}
+        )
         # decoy plio in the same workspace with its own session + event
         decoy = PlioFactory()
         decoy_s = SessionFactory(plio=decoy, user=UserFactory())
@@ -409,9 +427,12 @@ def test_events_unmasked_identifier_fallback_sso_flag_and_content(db, org_a):
             (authorg_s.id, learner_authorg.email, "false", "played", 30.0, "{}"),
         ]
     )
-    # the event's global time comes through as a timestamp on every row
-    for row in rows:
-        assert isinstance(row[6], datetime.datetime)
+    # the event's global time is the *event row's own* created_at -- a builder
+    # sourcing it from the session (or any other timestamp) fails these
+    # equality checks against the model field
+    by_key = {(row[0], row[3]): row for row in rows}
+    for event in (played_e, paused_email_e, paused_mobile_e, answered_e, authorg_e):
+        assert by_key[(event.session_id, event.type)][6] == event.created_at
 
 
 def test_events_masked_identifier_is_md5_of_user_id(db, org_a):
@@ -499,14 +520,18 @@ def _seed_responses_grading(org):
 
     learner = UserFactory(email=None, unique_id="sso-responses", auth_org=org)
     session = SessionFactory(plio=plio, user=learner)
-    SessionAnswerFactory(session=session, item=subj_item, answer="essay")
-    SessionAnswerFactory(session=session, item=match_item, answer=0)
-    SessionAnswerFactory(session=session, item=mismatch_item, answer=1)
-    SessionAnswerFactory(session=session, item=skip_item, answer=None)
+    answers = [
+        SessionAnswerFactory(session=session, item=subj_item, answer="essay"),
+        SessionAnswerFactory(session=session, item=match_item, answer=0),
+        SessionAnswerFactory(session=session, item=mismatch_item, answer=1),
+        SessionAnswerFactory(session=session, item=skip_item, answer=None),
+    ]
 
     email_learner = UserFactory()
     email_session = SessionFactory(plio=plio, user=email_learner)
-    SessionAnswerFactory(session=email_session, item=match_item, answer=0)
+    answers.append(
+        SessionAnswerFactory(session=email_session, item=match_item, answer=0)
+    )
 
     decoy = PlioFactory()
     decoy_item = ItemFactory(plio=decoy, time=5)
@@ -520,6 +545,7 @@ def _seed_responses_grading(org):
         session=session,
         email_learner=email_learner,
         email_session=email_session,
+        answers=answers,
         subj_item=subj_item,
         match_item=match_item,
         mismatch_item=mismatch_item,
@@ -605,9 +631,12 @@ def test_responses_dump_grading_matrix_and_unmasked_identifier(db, org_a):
             ),
         ]
     )
-    # the answered-at timestamp comes through on every row
-    for row in rows:
-        assert isinstance(row[8], datetime.datetime)
+    # the answered-at timestamp is the *answer row's own* created_at -- a
+    # builder sourcing it from the session (or any other timestamp) fails
+    # these equality checks against the model field
+    by_key = {(row[0], row[4]): row for row in rows}
+    for answer in s.answers:
+        assert by_key[(answer.session_id, answer.item_id)][8] == answer.created_at
 
 
 def test_responses_dump_masked_identifier_is_md5_of_user_id(db, org_a):
@@ -667,13 +696,17 @@ def _seed_metrics_timeline(org):
     the decoy learner into the result set. Slice-local: shared by the two
     user-level-metrics specs.
     """
+    # each question has a *different* correct answer: with a uniform correct
+    # answer, a grading join degraded to ON TRUE still matches every answer
+    # against some question's correct value and the DISTINCT aggregates hide
+    # the fan-out -- distinct values make cross-question matches count wrong
     plio = PlioFactory()
     q1 = ItemFactory(plio=plio, time=10)
-    QuestionFactory(item=q1, type="mcq", options=["A", "B"], correct_answer=0)
+    QuestionFactory(item=q1, type="mcq", options=["A", "B", "C"], correct_answer=0)
     q2 = ItemFactory(plio=plio, time=20)
-    QuestionFactory(item=q2, type="mcq", options=["A", "B"], correct_answer=0)
+    QuestionFactory(item=q2, type="mcq", options=["A", "B", "C"], correct_answer=1)
     q3 = ItemFactory(plio=plio, time=30)
-    QuestionFactory(item=q3, type="mcq", options=["A", "B"], correct_answer=0)
+    QuestionFactory(item=q3, type="mcq", options=["A", "B", "C"], correct_answer=2)
 
     alice = UserFactory(email="alice@example.com")
     bob = UserFactory(email="bob@example.com", unique_id=None, auth_org=org)
@@ -685,13 +718,14 @@ def _seed_metrics_timeline(org):
     carol_old = SessionFactory(plio=plio, user=carol)
     SessionAnswerFactory(session=carol_old, item=q1, answer=0)
     carol_new = SessionFactory(plio=plio, user=carol)
-    SessionAnswerFactory(session=carol_new, item=q2, answer=0)
-    SessionAnswerFactory(session=carol_new, item=q3, answer=0)
+    SessionAnswerFactory(session=carol_new, item=q2, answer=1)
+    SessionAnswerFactory(session=carol_new, item=q3, answer=2)
 
-    # bob partial: Q1 right, Q2 wrong, Q3 skipped (explicit null-answer row)
+    # bob partial: Q1 right, Q2 wrong (submits q1's correct value against q2's
+    # different one), Q3 skipped (explicit null-answer row)
     bob_s = SessionFactory(plio=plio, user=bob)
     SessionAnswerFactory(session=bob_s, item=q1, answer=0)
-    SessionAnswerFactory(session=bob_s, item=q2, answer=1)
+    SessionAnswerFactory(session=bob_s, item=q2, answer=0)
     SessionAnswerFactory(session=bob_s, item=q3, answer=None)
 
     # dave: Q1 correct only, before alice so hers stays the highest session id
@@ -702,8 +736,8 @@ def _seed_metrics_timeline(org):
     # session id for this plio (drives totalQuestions = 3)
     alice_s = SessionFactory(plio=plio, user=alice)
     SessionAnswerFactory(session=alice_s, item=q1, answer=0)
-    SessionAnswerFactory(session=alice_s, item=q2, answer=0)
-    SessionAnswerFactory(session=alice_s, item=q3, answer=0)
+    SessionAnswerFactory(session=alice_s, item=q2, answer=1)
+    SessionAnswerFactory(session=alice_s, item=q3, answer=2)
 
     decoy = PlioFactory()
     decoy_item = ItemFactory(plio=decoy, time=5)

@@ -241,6 +241,10 @@ def test_checkbox_answers_are_reindexed_one_based(authed_client, report_dump_cle
     checkbox_rows = [r for r in responses if r["question_type"] == "checkbox"]
     assert len(checkbox_rows) == 1
     assert checkbox_rows[0]["answer"] == "[1, 3]"
+    # ...and the matching checkbox answer is graded correct: a grading CASE
+    # narrowed to mcq-only would mark this row false while every other
+    # assertion stayed green
+    assert checkbox_rows[0]["is_answer_correct"] == "true"
 
     # plio-interaction-details.csv: the checkbox correct answer, stored 0-based
     # as [0, 2], is serialized 1-based as [1, 3]

@@ -25,16 +25,28 @@ pinned the recursion's core path; slice #408 adds the deletion, ordering-identit
 and scoping edges: soft-deleted sessions and events skipped by the walk, the
 session -> event ``SOFT_DELETE_CASCADE``, chain exhaustion by deletion, the
 ``-updated_at`` re-save identity pin, and the cross-learner/cross-plio scoping
-decoys. A later slice appends the ``SessionSerializer`` create-path carryover
-specs. It changes no product code -- the observed behaviour is pinned as-is.
+decoys. Slice #409 then adds the module's one *secondary* seam -- two
+``SessionSerializer`` create-path specs -- pinning the retention/answer carryover
+across a soft-deleted predecessor: the fallback to the nearest *live* predecessor,
+and the fresh start when the whole history is soft-deleted. Those specs are
+grouped at the end of the module below the model-seam specs. A later slice
+ratchets the backend-unit coverage floor. This module changes no product code --
+the observed behaviour, quirks included, is pinned as-is.
 """
 
+from types import SimpleNamespace
+
+from entries.serializers import SessionSerializer
 from tests.builders import in_workspace
 from tests.factories import (
     EventFactory,
+    ExperimentFactory,
+    ItemFactory,
     PlioFactory,
+    SessionAnswerFactory,
     SessionFactory,
     UserFactory,
+    VideoFactory,
 )
 
 
@@ -288,3 +300,178 @@ def test_decoys_from_other_learner_and_other_plio_stay_out_of_the_chain(db, org_
         # neither decoy enters the chain: both properties resolve to the real pair
         assert current.last_session.id == real_predecessor.id
         assert current.last_global_event.id == real_event.id
+
+
+# --- Secondary seam: the SessionSerializer create path (#409) --------------
+#
+# The retention/answer carryover copy lives in ``SessionSerializer.create``, not
+# on the model, so its soft-delete edges are invisible at the model seam above.
+# These two specs drive the serializer directly -- no HTTP client -- with a
+# slice-local fake view context, per the fill's decided serializer seam. Nothing
+# here graduates to the shared harness.
+
+
+def _create_session_via_serializer(plio, user):
+    """Run the full serializer create lifecycle and return the new Session.
+
+    Slice-local on purpose. The serializer only needs ``context['view'].action``
+    to be ``"create"`` (the update branch of ``validate`` is the only reader of
+    ``view.kwargs``, and this drives create), and the user is passed explicitly
+    in the data rather than via a request -- so a bare ``SimpleNamespace`` stands
+    in for the view with no HTTP client. Driving ``is_valid`` then ``save``
+    exercises the ``is_first`` assignment in ``validate`` together with the
+    create-path carryover copy.
+    """
+    serializer = SessionSerializer(
+        data={"plio": plio.id, "user": user.id},
+        context={"view": SimpleNamespace(action="create")},
+    )
+    serializer.is_valid(raise_exception=True)
+    return serializer.save()
+
+
+def test_create_carries_over_from_nearest_live_predecessor(db, org_a):
+    """Session-create falls back to the nearest *live* predecessor.
+
+    Timeline: one learner on one published plio (two items). An older *live*
+    session holds distinctive retention, watch time and has-video-played, plus a
+    session answer per item; a newer session -- the immediate predecessor -- is
+    soft-deleted. The safedelete manager hides the deleted successor, so the
+    create path's own predecessor query resolves to the older live session: the
+    created session copies that session's three carryover fields and its answers,
+    and ``is_first`` is False. The soft-deleted successor's distinctive values and
+    answers must appear nowhere.
+
+    Experiment carryover is a pinned quirk, and it is why the live predecessor
+    here owns no experiment. The create path copies the predecessor's fields from
+    ``SessionSerializer(last_session).data``, whose ``to_representation`` renders
+    the experiment as a serialized *dict*; assigning that dict back to the
+    ``Session.experiment`` foreign key raises ``ValueError``, so a live
+    predecessor that owns an experiment cannot be carried over at all today
+    (a product fix is out of scope for this test-only fill). The created
+    session's experiment is therefore carried as ``None``. The factory-built
+    experiment instead hangs on the *soft-deleted* successor, where it doubles as
+    a wrong-pick tripwire: were the safedelete manager to stop hiding the deleted
+    successor, the create path would try to copy that experiment dict and raise,
+    turning a silent wrong-predecessor regression into a loud one.
+
+    Every expected value is a literal from this timeline -- the live session's own
+    field values and item/answer pairs -- never recomputed by re-running the
+    serializer.
+    """
+    with in_workspace(org_a):
+        creator = UserFactory()
+        video = VideoFactory(duration=4)
+        plio = PlioFactory(published=True, video=video, created_by=creator)
+        item_a = ItemFactory(plio=plio, time=1)
+        item_b = ItemFactory(plio=plio, time=2)
+        learner = UserFactory()
+
+        # older LIVE predecessor: unmistakable, non-default carryover values and
+        # one answer per item, no experiment (see the docstring quirk)
+        live = SessionFactory(
+            plio=plio,
+            user=learner,
+            retention="1,1,1,0",
+            watch_time=42.0,
+            has_video_played=True,
+        )
+        SessionAnswerFactory(session=live, item=item_a, answer=2)
+        SessionAnswerFactory(session=live, item=item_b, answer=3)
+
+        # newer session -- the immediate predecessor -- with different values, a
+        # factory-built experiment (the wrong-pick tripwire), then soft-deleted
+        deleted = SessionFactory(
+            plio=plio,
+            user=learner,
+            retention="9,9,9,9",
+            watch_time=99.0,
+            has_video_played=False,
+            experiment=ExperimentFactory(created_by=creator),
+        )
+        SessionAnswerFactory(session=deleted, item=item_a, answer=7)
+        SessionAnswerFactory(session=deleted, item=item_b, answer=8)
+        deleted.delete()  # soft delete via the model, not raw SQL
+
+        created = _create_session_via_serializer(plio, learner)
+
+        # the deleted successor is the nearest predecessor by id; the live one is
+        # older -- so a pick that ignored the soft delete would take the successor
+        assert live.id < deleted.id < created.id
+
+        # the three carryover fields come from the live predecessor, as literals
+        assert created.retention == "1,1,1,0"
+        assert created.watch_time == 42.0
+        assert created.has_video_played is True
+        # experiment carried as None from the live predecessor -- not the deleted
+        # successor's experiment (whose dict copy would have raised)
+        assert created.experiment_id is None
+        # a live predecessor exists, so this is not the learner's first session
+        assert created.is_first is False
+
+        # the answers replicate the live predecessor's item/answer pairs exactly
+        answers = sorted(
+            created.sessionanswer_set.values_list("item_id", "answer"),
+            key=lambda pair: pair[0],
+        )
+        assert answers == [(item_a.id, 2), (item_b.id, 3)]
+
+        # the soft-deleted successor's distinctive values and answers appear
+        # nowhere on the created session
+        assert created.retention != "9,9,9,9"
+        assert created.watch_time != 99.0
+        assert 7 not in [answer for _item_id, answer in answers]
+        assert 8 not in [answer for _item_id, answer in answers]
+
+
+def test_create_starts_fresh_when_all_predecessors_soft_deleted(db, org_a):
+    """A learner whose whole history is soft-deleted is treated as brand new.
+
+    Quirk pinned as-is: when every earlier session for the learner-plio pair is
+    soft-deleted, the create path's predecessor query (safedelete manager) finds
+    none, so the new session starts fresh -- a zeroed retention string sized to
+    the video duration, one empty answer per item, and ``is_first`` True again --
+    exactly as if the learner had never visited. The soft-deleted session's
+    retention and answer never resurface. A product fix (e.g. keeping
+    ``is_first`` False, or carrying from soft-deleted history) is out of scope for
+    this test-only fill.
+
+    The video duration is a small integer (4) so the zeroed retention is a
+    hand-written literal, ``"0,0,0,0"`` (four zeroes, comma-joined). The create
+    path sets that string on the returned in-memory session and does not persist
+    it, so the assertion reads the returned object -- the same value the HTTP
+    response serializes -- rather than re-reading the row. Every expected value
+    is a literal from this timeline, never recomputed by re-running the
+    serializer.
+    """
+    with in_workspace(org_a):
+        creator = UserFactory()
+        video = VideoFactory(duration=4)
+        plio = PlioFactory(published=True, video=video, created_by=creator)
+        item_a = ItemFactory(plio=plio, time=1)
+        item_b = ItemFactory(plio=plio, time=2)
+        learner = UserFactory()
+
+        # the learner's only prior session, with a non-default retention and an
+        # answer -- then soft-deleted so no live history remains
+        only = SessionFactory(plio=plio, user=learner, retention="1,2,3,4")
+        SessionAnswerFactory(session=only, item=item_a, answer=5)
+        only.delete()  # soft delete via the model, not raw SQL
+
+        created = _create_session_via_serializer(plio, learner)
+
+        # fresh start: zeroed retention sized to the duration-4 video, hand-written
+        assert created.retention == "0,0,0,0"
+        # the whole history being soft-deleted resets is_first to True (the quirk)
+        assert created.is_first is True
+
+        # exactly one empty (null-answer) session answer per item
+        answers = sorted(
+            created.sessionanswer_set.values_list("item_id", "answer"),
+            key=lambda pair: pair[0],
+        )
+        assert answers == [(item_a.id, None), (item_b.id, None)]
+
+        # the soft-deleted session's retention and answer do not resurface
+        assert created.retention != "1,2,3,4"
+        assert 5 not in [answer for _item_id, answer in answers]

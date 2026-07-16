@@ -54,6 +54,8 @@ matrix (non-superuser 403, anonymous crash); #419 bumps the unit coverage floor.
 The module changes no product code.
 """
 
+from datetime import datetime, timezone
+
 import pytest
 from rest_framework.test import APIClient
 
@@ -161,13 +163,22 @@ def test_create_persists_and_echoes_the_payload(authed_client):
 
 
 def test_update_via_put_replaces_all_writable_fields(authed_client):
-    # update via PUT -> 200 with the replaced literals. PUT is a full replace, so
-    # every writable field is overwritten; the response is asserted whole against the
-    # new literals. Driven through the actor's underlying client with format="json"
-    # (the established integration-suite idiom -- the shared Actor exposes only
-    # get/post/patch/delete and is not modified).
+    # update via PUT -> 200 with the replaced literals. Driven through the actor's
+    # underlying client with format="json" (the established integration-suite
+    # idiom -- the shared Actor exposes only get/post/patch/delete and is not
+    # modified). The row is seeded with *non-null* sync datetimes that the PUT
+    # payload omits: DRF's ModelSerializer leaves omitted optional fields
+    # untouched, so they come back preserved -- pinned as-is (a PUT that
+    # cleared omitted fields, or one that stopped writing the named ones,
+    # both fail here).
     caller = _superuser(authed_client)
-    job = _job("old-schema", "old-table", last_synced_row_id=1)
+    job = _job(
+        "old-schema",
+        "old-table",
+        last_synced_row_id=1,
+        last_updated_at=datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
+        last_synced_at=datetime(2026, 1, 2, 6, 7, 8, tzinfo=timezone.utc),
+    )
 
     response = caller.client.put(
         _detail_url(job.id),
@@ -184,8 +195,8 @@ def test_update_via_put_replaces_all_writable_fields(authed_client):
         "id": job.id,
         "schema": "new-schema",
         "table_to_sync": "new-table",
-        "last_updated_at": None,
-        "last_synced_at": None,
+        "last_updated_at": "2026-01-02T03:04:05Z",
+        "last_synced_at": "2026-01-02T06:07:08Z",
         "last_synced_row_id": 99,
     }
     # persistence, not just the response's in-memory instance: a fresh read
@@ -195,6 +206,8 @@ def test_update_via_put_replaces_all_writable_fields(authed_client):
     assert fetched.data["schema"] == "new-schema"
     assert fetched.data["table_to_sync"] == "new-table"
     assert fetched.data["last_synced_row_id"] == 99
+    assert fetched.data["last_updated_at"] == "2026-01-02T03:04:05Z"
+    assert fetched.data["last_synced_at"] == "2026-01-02T06:07:08Z"
 
 
 def test_partial_update_via_patch_changes_only_the_named_field(authed_client):
@@ -267,6 +280,30 @@ def test_create_with_only_required_fields_defaults_sync_state_to_null(authed_cli
     }
 
 
+def test_patch_writes_and_persists_non_null_sync_datetimes(authed_client):
+    # the sync-state datetimes accept real values through a write path and are
+    # serialized back in DRF's ISO-8601 form -- a serializer that made them
+    # read-only or silently dropped the writes fails here and on the fresh read
+    caller = _superuser(authed_client)
+    job = _job("dt-schema", "dt-table")
+
+    response = caller.patch(
+        _detail_url(job.id),
+        {
+            "last_updated_at": "2026-01-05T10:00:00Z",
+            "last_synced_at": "2026-01-05T11:30:00Z",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200, response.status_code
+    assert response.data["last_updated_at"] == "2026-01-05T10:00:00Z"
+    assert response.data["last_synced_at"] == "2026-01-05T11:30:00Z"
+    fetched = caller.get(_detail_url(job.id))
+    assert fetched.data["last_updated_at"] == "2026-01-05T10:00:00Z"
+    assert fetched.data["last_synced_at"] == "2026-01-05T11:30:00Z"
+
+
 def test_create_accepts_explicit_nulls_for_sync_state_fields(authed_client):
     # the three sync-state fields accept *explicit* null input, not merely
     # omission: a client sending null must succeed. Omission-only coverage
@@ -291,16 +328,20 @@ def test_create_accepts_explicit_nulls_for_sync_state_fields(authed_client):
 
 def test_create_missing_a_required_field_is_rejected(authed_client):
     # create missing a required field -> 400 whose body names the missing field.
-    # schema and table_to_sync are non-blank CharFields with no default, so a payload
-    # that omits table_to_sync is invalid; DRF returns 400 with that field as a key in
-    # the error body (pinning the required half of the field contract).
+    # schema and table_to_sync are non-blank CharFields with no default, so a
+    # payload omitting either is invalid; DRF returns 400 with that field as a
+    # key in the error body. *Both* required fields are exercised so a
+    # requiredness regression on either one is detected.
     caller = _superuser(authed_client)
-    payload = {"schema": "schema-only"}
 
-    response = caller.post(JOBS_URL, payload, format="json")
+    for missing_field, payload in [
+        ("table_to_sync", {"schema": "schema-only"}),
+        ("schema", {"table_to_sync": "table-only"}),
+    ]:
+        response = caller.post(JOBS_URL, payload, format="json")
 
-    assert response.status_code == 400, response.status_code
-    assert "table_to_sync" in response.data
+        assert response.status_code == 400, (missing_field, response.status_code)
+        assert missing_field in response.data
 
 
 # The six viewset actions as (label, HTTP method, is-detail-route). Parametrizing over

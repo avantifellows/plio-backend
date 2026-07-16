@@ -92,9 +92,10 @@ def _job(schema, table_to_sync, **fields):
 
 
 def test_list_returns_the_exact_set_of_existing_jobs(authed_client):
-    # list -> exact id set of the hand-constructed rows. Three distinct rows are
-    # built so the set is non-trivial by construction: a handler that dropped or
-    # duplicated a row, or leaked some other table, fails the exact-set equality.
+    # list -> exact id multiset of the hand-constructed rows. Three distinct
+    # rows are built so the comparison is non-trivial by construction: a
+    # handler that dropped, duplicated (a set would hide join fan-out), or
+    # leaked rows from some other table fails the sorted-list equality.
     caller = _superuser(authed_client)
     first = _job("analytics", "events")
     second = _job("warehouse", "orders")
@@ -103,7 +104,9 @@ def test_list_returns_the_exact_set_of_existing_jobs(authed_client):
     response = caller.get(JOBS_URL)
 
     assert response.status_code == 200, response.status_code
-    assert {row["id"] for row in response.data} == {first.id, second.id, third.id}
+    assert sorted(row["id"] for row in response.data) == sorted(
+        [first.id, second.id, third.id]
+    )
 
 
 def test_retrieve_returns_the_rows_fields_verbatim(authed_client):

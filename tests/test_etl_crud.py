@@ -188,6 +188,13 @@ def test_update_via_put_replaces_all_writable_fields(authed_client):
         "last_synced_at": None,
         "last_synced_row_id": 99,
     }
+    # persistence, not just the response's in-memory instance: a fresh read
+    # returns the replaced values -- an update() that mutated without saving
+    # would fail here
+    fetched = caller.get(_detail_url(job.id))
+    assert fetched.data["schema"] == "new-schema"
+    assert fetched.data["table_to_sync"] == "new-table"
+    assert fetched.data["last_synced_row_id"] == 99
 
 
 def test_partial_update_via_patch_changes_only_the_named_field(authed_client):
@@ -211,6 +218,12 @@ def test_partial_update_via_patch_changes_only_the_named_field(authed_client):
         "last_synced_at": None,
         "last_synced_row_id": 5,
     }
+    # persistence, not just the response's in-memory instance: a fresh read
+    # returns the patched value with the untouched fields intact
+    fetched = caller.get(_detail_url(job.id))
+    assert fetched.data["table_to_sync"] == "patched-table"
+    assert fetched.data["schema"] == "keep-schema"
+    assert fetched.data["last_synced_row_id"] == 5
 
 
 def test_destroy_hard_deletes_the_row(authed_client):
@@ -252,6 +265,28 @@ def test_create_with_only_required_fields_defaults_sync_state_to_null(authed_cli
         "last_synced_at": None,
         "last_synced_row_id": None,
     }
+
+
+def test_create_accepts_explicit_nulls_for_sync_state_fields(authed_client):
+    # the three sync-state fields accept *explicit* null input, not merely
+    # omission: a client sending null must succeed. Omission-only coverage
+    # would stay green if the serializer flipped to allow_null=False (the
+    # nulls there come from model defaults, not the client's payload).
+    caller = _superuser(authed_client)
+    payload = {
+        "schema": "null-schema",
+        "table_to_sync": "null-table",
+        "last_updated_at": None,
+        "last_synced_at": None,
+        "last_synced_row_id": None,
+    }
+
+    response = caller.post(JOBS_URL, payload, format="json")
+
+    assert response.status_code == 201, response.status_code
+    assert response.data["last_updated_at"] is None
+    assert response.data["last_synced_at"] is None
+    assert response.data["last_synced_row_id"] is None
 
 
 def test_create_missing_a_required_field_is_rejected(authed_client):

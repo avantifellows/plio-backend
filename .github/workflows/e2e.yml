@@ -1,0 +1,19 @@
+name: Playwright E2E
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    uses: avantifellows/plio-frontend/.github/workflows/e2e.yml@df2c383784d07b16fe595bb912eed22b8c10d1e4
+    with:
+      trigger_role: backend
+      trigger_ref: ${{ github.event.pull_request.head.sha }}
+      branch_name: ${{ github.head_ref }}
+    secrets:
+      GOOGLE_OAUTH2_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}
+      GOOGLE_OAUTH2_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}
+      GOOGLE_OAUTH2_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH2_REFRESH_TOKEN }}

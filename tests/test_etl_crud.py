@@ -19,9 +19,9 @@ Caller classes (three; documented here up front so the whole fill reads as one):
   on ``request.user.is_superuser``, so the superuser is the only caller that reaches
   the CRUD paths. This slice (#417) pins all six of its CRUD actions.
 * authenticated non-superuser -- a plain authed actor; rejected 403 across all
-  actions. Pinned by the next slice (#418), not here.
-* anonymous -- a bare unauthenticated client; the request never succeeds. Pinned by
-  the next slice (#418), not here.
+  actions (pinned below, by the parametrized rejection matrix).
+* anonymous -- a bare unauthenticated client; the request never succeeds -- it
+  crashes (pinned below; see the anonymous-caller quirk).
 
 Shared-schema deviation (flagged): the etl app is SHARED_APPS-only, so ``bigquery_jobs``
 is a public-schema table. This module therefore builds rows directly with a
@@ -41,7 +41,7 @@ later must consciously flip the pinning spec; neither is fixed in this fill:
   even from the deleted-inclusive ``all_objects`` manager (``deleted_objects`` would
   hold a soft-deleted row). The destroy spec pins this; the delete itself is
   performed only through the endpoint, and ``all_objects`` is read only as an oracle.
-* Anonymous-caller crash (pinned by the next slice, #418). DRF is configured with
+* Anonymous-caller crash (pinned below). DRF is configured with
   ``UNAUTHENTICATED_USER: None`` and the etl viewset's ``permission_classes`` contains
   only ``ETLPermissions`` -- no ``IsAuthenticated`` is stacked first -- so an anonymous
   request reaches ``has_permission`` and dereferences ``None.is_superuser``, raising
@@ -53,6 +53,9 @@ Slice map: #417 (this module's first commit) pins the six superuser CRUD actions
 matrix (non-superuser 403, anonymous crash); #419 bumps the unit coverage floor.
 The module changes no product code.
 """
+
+import pytest
+from rest_framework.test import APIClient
 
 from etl.models import BigqueryJobs
 
@@ -226,3 +229,107 @@ def test_destroy_hard_deletes_the_row(authed_client):
     assert response.status_code == 204, response.status_code
     assert caller.get(_detail_url(job_id)).status_code == 404
     assert not BigqueryJobs.all_objects.filter(id=job_id).exists()
+
+
+def test_create_with_only_required_fields_defaults_sync_state_to_null(authed_client):
+    # minimal create -> only the two required strings (schema, table_to_sync). The
+    # three sync-state fields (last_updated_at, last_synced_at, last_synced_row_id) are
+    # omitted from the payload and must come back literally null, pinning their
+    # optional/nullable contract through the serializer. The server-assigned id is
+    # read back (it cannot be a literal), and the rest is asserted whole.
+    caller = _superuser(authed_client)
+    payload = {"schema": "minimal-schema", "table_to_sync": "minimal-table"}
+
+    response = caller.post(JOBS_URL, payload, format="json")
+
+    assert response.status_code == 201, response.status_code
+    created_id = response.data["id"]
+    assert response.data == {
+        "id": created_id,
+        "schema": "minimal-schema",
+        "table_to_sync": "minimal-table",
+        "last_updated_at": None,
+        "last_synced_at": None,
+        "last_synced_row_id": None,
+    }
+
+
+def test_create_missing_a_required_field_is_rejected(authed_client):
+    # create missing a required field -> 400 whose body names the missing field.
+    # schema and table_to_sync are non-blank CharFields with no default, so a payload
+    # that omits table_to_sync is invalid; DRF returns 400 with that field as a key in
+    # the error body (pinning the required half of the field contract).
+    caller = _superuser(authed_client)
+    payload = {"schema": "schema-only"}
+
+    response = caller.post(JOBS_URL, payload, format="json")
+
+    assert response.status_code == 400, response.status_code
+    assert "table_to_sync" in response.data
+
+
+# The six viewset actions as (label, HTTP method, is-detail-route). Parametrizing over
+# them is the one accepted deviation from one-named-spec-per-edge: the edge (a rejected
+# caller) is identical across actions and only the action/method varies. DRF checks
+# view-level permissions in initial() before get_object(), so the detail-route cases
+# reject before any object lookup and seed no row -- an arbitrary id is enough.
+_ACTIONS = [
+    ("list", "get", False),
+    ("retrieve", "get", True),
+    ("create", "post", False),
+    ("update", "put", True),
+    ("partial_update", "patch", True),
+    ("destroy", "delete", True),
+]
+
+_ARBITRARY_ID = 1  # no row with this id is seeded; the rejection precedes any lookup
+
+
+def _action_url(is_detail):
+    """List route, or a detail route at an unseeded arbitrary id."""
+    return _detail_url(_ARBITRARY_ID) if is_detail else JOBS_URL
+
+
+def _issue(client, method, url):
+    """Issue one request through a bare ``APIClient`` (or an actor's underlying client),
+    dispatching on the HTTP method. Used for both rejection callers so a single
+    parametrized body covers all six actions -- including PUT, which the shared ``Actor``
+    does not expose. Write methods send an empty json body; the permission check denies
+    before the body is ever parsed, so its content is irrelevant to the rejection."""
+    issue = getattr(client, method)
+    if method in ("post", "put", "patch"):
+        return issue(url, {}, format="json")
+    return issue(url)
+
+
+@pytest.mark.parametrize("action, method, is_detail", _ACTIONS)
+def test_authenticated_non_superuser_is_forbidden_on_every_action(
+    authed_client, action, method, is_detail
+):
+    # ETLPermissions gates every action on request.user.is_superuser; a plain authed
+    # user is not a superuser, so DRF denies at the view-level permission check with
+    # 403 on all six actions. Detail routes seed no row -- the rejection precedes
+    # get_object(). Requests go through the actor's underlying client so PUT is reachable
+    # uniformly (organization=None -> no Organization header is added).
+    caller = authed_client()
+
+    response = _issue(caller.client, method, _action_url(is_detail))
+
+    assert response.status_code == 403, (action, response.status_code)
+
+
+@pytest.mark.parametrize("action, method, is_detail", _ACTIONS)
+def test_anonymous_caller_crashes_on_every_action(db, action, method, is_detail):
+    # Pinned quirk (not fixed here -- a guard/IsAuthenticated fix is future work for its
+    # own issue). DRF runs with UNAUTHENTICATED_USER=None and the etl viewset stacks no
+    # IsAuthenticated before ETLPermissions, so has_permission dereferences
+    # None.is_superuser and raises AttributeError. In production this surfaces as HTTP
+    # 500; at the test-client seam the uncaught exception propagates, so each of the six
+    # actions is pinned with pytest.raises(AttributeError). The crash occurs at the
+    # view-level permission check, before any object lookup, so detail routes seed no
+    # row. A future fix must consciously flip this spec. The caller is a bare
+    # unauthenticated APIClient (no credentials) -- not an actor.
+    anonymous = APIClient()
+
+    with pytest.raises(AttributeError):
+        _issue(anonymous, method, _action_url(is_detail))

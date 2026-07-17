@@ -8,10 +8,11 @@ permissions:
 
 jobs:
   e2e:
-    uses: avantifellows/plio-frontend/.github/workflows/e2e.yml@70cf9535fec735afc34ee5928d26f4db6dc999e7
+    uses: avantifellows/plio-frontend/.github/workflows/e2e.yml@661c2d55db9106de0adb191fe39228cbdb23e635
     with:
       trigger_role: backend
-      trigger_ref: ${{ github.event.pull_request.head.sha }}
+      # github.sha is the PR merge commit — test what would actually land
+      trigger_ref: ${{ github.sha }}
       branch_name: ${{ github.head_ref }}
     secrets:
       GOOGLE_OAUTH2_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}

@@ -103,7 +103,7 @@ _Avoid_: nightly, commit test
 - A **Plio** wraps one **Video** and contains ordered **Items**; each **Item** carries one **Question**
 - A **Workspace** (an **Organization** with its own schema) holds its plios and learner data; Users and Organizations themselves live in the shared public schema
 - The `Organization` request header picks the schema for every API call; no header lands in the **personal workspace**
-- A **Session** belongs to one **Learner** and one **Plio**; **Session answers** (one per item) and **Events** belong to a session; a new session carries over from the learner's latest previous session on that plio
+- A **Session** belongs to one **Learner** and one **Plio**; **Session answers** (one per item) and **Events** belong to a session; a new session carries over from the learner's latest previous *live* session on that plio — soft-deleted predecessors and their events are skipped by resume carryover, and a learner whose whole history is soft-deleted is treated as brand new (fresh session, `is_first` True)
 - An **SSO login** user is scoped to the **Organization** whose api_key created them (auth_org + unique_id)
 - **Integration tests** cover API journeys and the tenancy/permission matrix; **E2E journeys** cover the 9 browser paths; each of the four **Lanes** enforces its own **Floor**
 

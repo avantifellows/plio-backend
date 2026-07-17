@@ -1,15 +1,16 @@
 """
-Runtime smoke tests for Django 5.1 migration validation.
+Runtime smoke tests for Django migration validation.
 
 Covers integration points not exercised by existing app-level tests:
 - Admin panel accessibility and login
 - /api/v1/docs/ schema generation (drf-yasg)
 - /silk/ route accessibility
 - /auth/ OAuth2 social auth routes (including POST-level regression)
+- User.email nullable unique validation response shape (DRF 3.16)
 - Plio list with unique_viewers annotation (with actual sessions)
 - Session create/retrieve with SessionAnswer reverse-relation ordering
 - Tenant routing negative regression (invalid HTTP_ORGANIZATION)
-- Django 5.1 migration-sensitive integration points
+- Django 5.2 migration-sensitive integration points
 """
 
 import tempfile
@@ -219,7 +220,7 @@ class AuthDefaultAppRegressionTestCase(TestCase):
     def test_revoke_token_endpoint_wired_with_default_app(self):
         """POST /auth/revoke-token/ with Bearer auth and default app client_id
         returns a valid OAuth response (not 404/405), confirming dispatch works.
-        NOTE: drf-social-oauth2 3.2.0 has a known bug where RevokeTokenView
+        NOTE: drf-social-oauth2 3.4.1 has a known bug where RevokeTokenView
         passes the hashed client_secret from the DB back into OAuthLib, causing
         invalid_client. This test accepts 401 as proof the endpoint is wired."""
         token_resp = self.client.post(
@@ -245,6 +246,70 @@ class AuthDefaultAppRegressionTestCase(TestCase):
             [200, 204, 401],
             "Revoke endpoint should return an OAuth response, not 404/405",
         )
+
+
+class UserEmailNullableUniqueValidationSmokeTestCase(TestCase):
+    """Verify DRF 3.16 nullable unique validation for User.email."""
+
+    def setUp(self):
+        connection.set_schema_to_public()
+        self.client = APIClient()
+        self.superuser = User.objects.create_superuser(
+            email="user-email-smoke-admin@test.com",
+            password="testpassword123",
+        )
+        self.client.force_authenticate(user=self.superuser)
+
+    def test_nullable_unique_email_validation_response_shape(self):
+        null_email_response = self.client.post(
+            reverse("users-list"),
+            {
+                "email": None,
+                "mobile": "+910000000001",
+            },
+            format="json",
+        )
+        self.assertEqual(null_email_response.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(null_email_response.data["email"])
+
+        first_response = self.client.post(
+            reverse("users-list"),
+            {
+                "email": "duplicate-email-smoke@test.com",
+                "mobile": "+910000000002",
+            },
+            format="json",
+        )
+        self.assertEqual(first_response.status_code, status.HTTP_201_CREATED)
+
+        duplicate_response = self.client.post(
+            reverse("users-list"),
+            {
+                "email": "duplicate-email-smoke@test.com",
+                "mobile": "+910000000003",
+            },
+            format="json",
+        )
+
+        self.assertEqual(duplicate_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", duplicate_response.data)
+        self.assertNotIn("non_field_errors", duplicate_response.data)
+
+    def test_two_null_emails_can_coexist(self):
+        """Nullable unique fields should allow multiple NULL values."""
+        first_null = self.client.post(
+            reverse("users-list"),
+            {"email": None, "mobile": "+910000000010"},
+            format="json",
+        )
+        self.assertEqual(first_null.status_code, status.HTTP_201_CREATED)
+
+        second_null = self.client.post(
+            reverse("users-list"),
+            {"email": None, "mobile": "+910000000011"},
+            format="json",
+        )
+        self.assertEqual(second_null.status_code, status.HTTP_201_CREATED)
 
 
 class TenantRoutingNegativeTestCase(BaseTestCase):
@@ -285,8 +350,8 @@ class TenantRoutingNegativeTestCase(BaseTestCase):
         self.assertEqual(connection.schema_name, "public")
 
 
-class Django51MigrationSensitiveSmokeTestCase(BaseTestCase):
-    """Direct checks for code paths called out during the Django 5.1 upgrade."""
+class Django52MigrationSensitiveSmokeTestCase(BaseTestCase):
+    """Direct checks for code paths called out during the Django 5.2 upgrade."""
 
     LOCAL_STORAGES = {
         "default": {
@@ -346,12 +411,12 @@ class Django51MigrationSensitiveSmokeTestCase(BaseTestCase):
         self.assertRegex(image.url.name, r"^[a-z]{10}$")
 
     def test_redis_connection_flushdb_and_cache_operations(self):
-        cache.set("django-51-cache-smoke", "ok")
-        self.assertEqual(cache.get("django-51-cache-smoke"), "ok")
+        cache.set("django-52-cache-smoke", "ok")
+        self.assertEqual(cache.get("django-52-cache-smoke"), "ok")
 
         get_redis_connection("default").flushdb()
 
-        self.assertIsNone(cache.get("django-51-cache-smoke"))
+        self.assertIsNone(cache.get("django-52-cache-smoke"))
 
     def test_user_manager_create_and_soft_delete(self):
         user = User.objects.create_user(email="soft-delete@test.com")
@@ -366,8 +431,8 @@ class Django51MigrationSensitiveSmokeTestCase(BaseTestCase):
 
 class PlioListAnnotationSmokeTestCase(BaseTestCase):
     """Verify the Plio list endpoint returns correct unique_viewers counts
-    when actual sessions exist. This exercises the Subquery/annotate query
-    that is sensitive to Django 4.2's stricter GROUP BY handling."""
+    when actual sessions exist. This exercises the Subquery/annotate and
+    QuerySet.values() paths that are sensitive to Django ORM changes."""
 
     def setUp(self):
         super().setUp()
@@ -411,12 +476,27 @@ class PlioListAnnotationSmokeTestCase(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["results"][0]["video_url"], self.video.url)
 
+    def test_values_payload_contains_expected_model_and_annotation_data(self):
+        response = self.client.get("/api/v1/plios/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        result = response.data["results"][0]
+        self.assertEqual(result["id"], self.plio.id)
+        self.assertEqual(result["uuid"], self.plio.uuid)
+        self.assertEqual(result["name"], self.plio.name)
+        self.assertEqual(result["created_by_id"], self.user.id)
+        self.assertEqual(result["video_id"], self.video.id)
+        self.assertEqual(result["video_url"], self.video.url)
+        self.assertEqual(result["unique_viewers"], 0)
+        self.assertIn("created_at", result)
+        self.assertIn("updated_at", result)
+
 
 class SessionAnswerOrderingSmokeTestCase(BaseTestCase):
     """Verify that SessionAnswer reverse-relation ordering works correctly
-    after the Django 4.2 upgrade. SessionAnswer and Question both use
-    Meta.ordering = ['item__time'], and this cross-FK ordering is sensitive
-    to Django 4.2's stricter GROUP BY handling."""
+    after the Django 5.2 upgrade. SessionAnswer and Question both use
+    Meta.ordering = ['item__time'], and these QuerySet.values() payloads are
+    sensitive to Django ORM changes."""
 
     def setUp(self):
         super().setUp()
@@ -466,6 +546,51 @@ class SessionAnswerOrderingSmokeTestCase(BaseTestCase):
         self.assertEqual(answer_item_ids[0], self.item_1.id)  # time=1
         self.assertEqual(answer_item_ids[1], self.item_3.id)  # time=3
         self.assertEqual(answer_item_ids[2], self.item_2.id)  # time=5
+
+    def test_values_payload_and_last_session_copy_remain_stable(self):
+        first_response = self.client.post(
+            reverse("sessions-list"), {"plio": self.plio.id}
+        )
+        self.assertEqual(first_response.status_code, status.HTTP_201_CREATED)
+        first_session = first_response.data
+        first_answers = first_session["session_answers"]
+
+        self.assertEqual(
+            {answer["item_id"] for answer in first_answers},
+            {self.item_1.id, self.item_2.id, self.item_3.id},
+        )
+        for answer in first_answers:
+            self.assertEqual(answer["session_id"], first_session["id"])
+            self.assertIn("answer", answer)
+            self.assertIn("created_at", answer)
+            self.assertIn("updated_at", answer)
+
+        answer_to_update = first_answers[1]
+        update_response = self.client.put(
+            reverse("session-answers-detail", args=[answer_to_update["id"]]),
+            {
+                "id": answer_to_update["id"],
+                "item": answer_to_update["item_id"],
+                "session": first_session["id"],
+                "answer": {"choice": 2},
+            },
+            format="json",
+        )
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+
+        second_response = self.client.post(
+            reverse("sessions-list"), {"plio": self.plio.id}
+        )
+        self.assertEqual(second_response.status_code, status.HTTP_201_CREATED)
+        copied_answers_by_item = {
+            answer["item_id"]: answer
+            for answer in second_response.data["session_answers"]
+        }
+
+        self.assertEqual(
+            copied_answers_by_item[answer_to_update["item_id"]]["answer"],
+            {"choice": 2},
+        )
 
 
 class OrgWorkspaceSmokeTestCase(BaseTestCase):

@@ -11,7 +11,7 @@ Used by Django. It should be a secret value and shouldn't be added to git.
 
 You can create a secret key from this website: https://djecrety.ir/
 
-For more details, visit [Django official documentation on setting a secret key](https://docs.djangoproject.com/en/5.1/ref/settings/#std:setting-SECRET_KEY).
+For more details, visit [Django official documentation on setting a secret key](https://docs.djangoproject.com/en/5.2/ref/settings/#std:setting-SECRET_KEY).
 
 #### `DEBUG`
 Debug mode on or off. Possible values are `True` and `False`. Do not set to true on production environments.

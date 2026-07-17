@@ -18,7 +18,6 @@ class PlioPermission(permissions.BasePermission):
         organization_shortcode = (
             OrganizationTenantMiddleware.get_organization_shortcode(request)
         )
-        print(organization_shortcode)
 
         # If it's personal workspace (default tenant), allow creation
         if organization_shortcode == DEFAULT_TENANT_SHORTCODE:

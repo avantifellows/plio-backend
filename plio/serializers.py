@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 from plio.models import Video, Plio, Item, Question, Image
 from users.models import User
@@ -16,6 +17,17 @@ class ImageSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def validate_url(self, image):
+        # Until Django 3.2 oversized uploads were rejected only as a side
+        # effect of the request-logging middleware reading request.body;
+        # Django 4.0 removed that accident, so enforce the limit explicitly.
+        if image.size > settings.DATA_UPLOAD_MAX_MEMORY_SIZE:
+            raise serializers.ValidationError(
+                "Image size exceeds the maximum allowed "
+                f"({settings.DATA_UPLOAD_MAX_MEMORY_SIZE} bytes)."
+            )
+        return image
 
 
 class VideoSerializer(serializers.ModelSerializer):

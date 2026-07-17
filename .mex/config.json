@@ -1,0 +1,10 @@
+{
+  "scaffold_id": "f2195320-dcf1-4f65-992f-452811f820cf",
+  "scaffold_name": "plio-backend",
+  "origin": null,
+  "upstream": null,
+  "aiTools": [
+    "claude",
+    "codex"
+  ]
+}

@@ -51,7 +51,7 @@ schema_view = get_schema_view(
         contact=openapi.Contact(email="admin@plio.in"),
         license=openapi.License(
             name="MIT License",
-            url="https://github.com/avantifellows/plio-backend/blob/master/LICENSE",
+            url="https://github.com/avantifellows/plio-backend/blob/main/LICENSE",
         ),
         link="https://github.com/avantifellows/plio-backend",
     ),

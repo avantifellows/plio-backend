@@ -64,6 +64,7 @@ TENANT_APPS = (
 )
 
 INSTALLED_APPS = [
+    "daphne",
     "channels",
     "django_tenants",
     "corsheaders",
@@ -126,7 +127,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "request_logging.middleware.LoggingMiddleware",
+    "plio.middleware.SafeBodyLoggingMiddleware",
 ]
 
 ROOT_URLCONF = "plio.urls"
@@ -271,6 +272,10 @@ OAUTH2_PROVIDER = {
     "DEFAULT_SCOPES": ["read", "write"],
 }
 
+# django-rest-framework-social-oauth2 1.2.0 added app_name='drfso2' to its URL config.
+# The DjangoOAuth2 backend uses this namespace for reverse() calls.
+DRFSO2_URL_NAMESPACE = "drfso2"
+
 OTP_EXPIRE_SECONDS = 300  # 5 minutes
 
 CORS_ALLOW_HEADERS = list(default_headers) + [
@@ -350,3 +355,8 @@ CACHES = {
         },
     }
 }
+
+# Django 4.0 defaults SECURE_CROSS_ORIGIN_OPENER_POLICY to "same-origin",
+# which breaks popup-based Google OAuth sign-in. Allow popups to communicate
+# with their opener.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"

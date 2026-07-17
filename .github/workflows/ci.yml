@@ -12,11 +12,22 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
-      - uses: pre-commit/action@v2.0.0
+        with:
+          # the hook pins need 3.9 <= python <= 3.11: flake8 7.3.0 requires
+          # >=3.9, and the runner default (3.14+) crashes black 22.3.0
+          python-version: "3.10"
+      # run pre-commit directly instead of the archived pre-commit/action,
+      # whose bundled cache client hard-fails the job whenever the GitHub
+      # cache service has an outage
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure
 
   test:
-    name: Test cases
+    name: Test ${{ matrix.lane }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lane: [unit, integration]
     services:
       redis:
         image: redis
@@ -49,9 +60,10 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-test.txt
 
-      - name: Run Test Cases
+      - name: Run unit tests
+        if: matrix.lane == 'unit'
         env:
           DB_HOST: 127.0.0.1
           DB_PORT: 5432
@@ -65,8 +77,47 @@ jobs:
           AWS_STORAGE_BUCKET_NAME: ${{ secrets.AWS_STORAGE_BUCKET_NAME }}
           REDIS_HOSTNAME: 127.0.0.1
           REDIS_PORT: 6379
-        # command to run tests and generate coverage metrics
-        run: coverage run manage.py test
+          DEFAULT_TENANT_SHORTCODE: plio
+        run: coverage run -m pytest --ignore=tests/integration
+
+      - name: Run integration tests
+        if: matrix.lane == 'integration'
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_NAME: github_actions_testing
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          SECRET_KEY: test-secret-key
+          REDIS_HOSTNAME: 127.0.0.1
+          REDIS_PORT: 6379
+          DEFAULT_TENANT_SHORTCODE: plio
+        run: coverage run -m pytest -m integration
+
+      - name: Generate coverage reports
+        run: |
+          coverage xml
+          coverage json -o coverage.json
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: ${{ matrix.lane }}
+          fail_ci_if_error: true
+
+      - name: Fetch base branch coverage floor
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin ${{ github.base_ref }}
+          git show origin/${{ github.base_ref }}:coverage_floors/${{ matrix.lane }} \
+            > /tmp/base-floor-${{ matrix.lane }} || true
+
+      - name: Enforce coverage floor
+        run: >-
+          python scripts/check_coverage_floor.py
+          --lane ${{ matrix.lane }}
+          --coverage-json coverage.json
+          --floor-file coverage_floors/${{ matrix.lane }}
+          ${{ github.event_name == 'pull_request' && format('--base-floor-file /tmp/base-floor-{0}', matrix.lane) || '' }}

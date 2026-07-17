@@ -12,7 +12,7 @@ edges:
     condition: when the reasoning behind a tech choice is needed
   - target: context/conventions.md
     condition: when understanding how to use a technology in this codebase
-last_updated: 2026-07-11
+last_updated: 2026-07-13
 ---
 
 # Stack
@@ -37,11 +37,12 @@ last_updated: 2026-07-11
 - **drf-yasg 1.20.0** — API docs at `/api/v1/docs/`
 - **django-silk** — profiling in local/staging; **sentry-sdk** — error monitoring
 - **coverage 5.5** — test coverage (CI uploads to Codecov)
+- **pytest 6.2.5**, **pytest-django 4.5.2**, and **pytest-xdist 2.5.0** — one runner for legacy unit tests and the tenant-aware backend integration lane
 
 ## What We Deliberately Do NOT Use
 
 - No celery/task queue — nothing here should assume async background workers exist
-- No pytest — tests are Django `TestCase`/DRF `APITestCase` style, run with `manage.py test`
+- No BDD layer — legacy Django `TestCase`/DRF `APITestCase` tests and plain pytest integration specs share the pytest runner
 - No raw `cache.set/get` with hand-built keys — tenant-scoped key builders in `plio/cache.py` only
 - No ORM `.delete()` semantics assumptions — safedelete changes behaviour; see the soft-delete pattern
 

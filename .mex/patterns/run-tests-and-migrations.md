@@ -10,22 +10,23 @@ triggers:
 edges:
   - target: "context/setup.md"
     condition: "if the docker environment isn't up yet"
-last_updated: 2026-07-11
+last_updated: 2026-07-13
 ---
 
 # Run Tests & Migrations
 
 ## Context
-The supported environment is docker compose (services: db, web, redis). Tests are Django/DRF
-style (`APITestCase`), run through `manage.py test` — there is no pytest. CI (GitHub Actions)
-runs `coverage run manage.py test` on Python 3.8 and uploads to Codecov.
+The supported environment is docker compose (services: db, web, redis). Legacy Django/DRF
+tests (`APITestCase`) and plain integration specs share pytest. CI runs separate unit and
+integration lanes on Python 3.8; the unit lane retains the existing Codecov upload.
 
 ## Steps
 1. Ensure the stack is up: `docker-compose up -d --build`
-2. Full suite: `docker-compose exec web python manage.py test`
-3. One app or case: `docker-compose exec web python manage.py test users` (or a dotted path to a test class/method)
-4. Migrations: `docker-compose exec web python manage.py makemigrations` → inspect the generated files → `docker-compose exec web python manage.py migrate`
-5. Before committing: `pre-commit run --all-files`
+2. Unit suite: `docker-compose exec web pytest --ignore=tests/integration`
+3. Integration lane: `docker-compose exec web pytest -m integration`
+4. One app or case: `docker-compose exec web pytest users/tests.py` (or a pytest node id)
+5. Migrations: `docker-compose exec web python manage.py makemigrations` → inspect the generated files → `docker-compose exec web python manage.py migrate`
+6. Before committing: `pre-commit run --all-files`
 
 ## Gotchas
 - makemigrations with no model changes can still emit migrations if a third-party package (notably django-safedelete) changes model state between versions — treat unexpected migrations as a red flag, not noise

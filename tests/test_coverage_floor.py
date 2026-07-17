@@ -296,3 +296,41 @@ def test_cli_recalibration_lowers_floor_with_new_tool(tmp_path):
         env={"GITHUB_STEP_SUMMARY": str(summary), "PATH": ""},
     )
     assert proc.returncode == 0
+
+
+def test_ratchet_rejects_bogus_tool_marker():
+    error = floor_tool.check_ratchet(
+        floor=10.0, base_floor=95.0, tool="not-a-real-tool", base_tool=None
+    )
+    assert error is not None
+    assert "unrecognized tool marker" in error
+
+
+def test_ratchet_rejects_marker_not_matching_installed_tool():
+    error = floor_tool.check_ratchet(
+        floor=10.0, base_floor=95.0, tool="coverage==0.0.1", base_tool=None
+    )
+    assert error is not None
+    assert "installed coverage" in error
+
+
+def test_ratchet_rejects_dropping_the_tool_marker():
+    # toggling the marker off (base has one, branch drops it) must not
+    # reopen the numeric bypass
+    error = floor_tool.check_ratchet(
+        floor=10.0, base_floor=95.0, tool=None, base_tool="coverage==7.6.1"
+    )
+    assert error is not None
+    assert "drops its tool marker" in error
+
+
+def test_ratchet_allows_recalibration_with_installed_tool():
+    import coverage
+
+    marker = "coverage==" + coverage.__version__
+    assert (
+        floor_tool.check_ratchet(
+            floor=10.0, base_floor=95.0, tool=marker, base_tool=None
+        )
+        is None
+    )

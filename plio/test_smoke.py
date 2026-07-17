@@ -1,5 +1,5 @@
 """
-Runtime smoke tests for Django 4.1 migration validation (US-010).
+Runtime smoke tests for Django 4.2 migration validation.
 
 Covers integration points not exercised by existing app-level tests:
 - Admin panel accessibility and login
@@ -47,7 +47,7 @@ class AdminSmokeTestCase(TestCase):
 
     def test_admin_redirects_unauthenticated(self):
         response = self.client.get("/admin/")
-        # Django 3.2 admin catch-all redirects to login
+        # Django 4.2 admin catch-all redirects to login
         self.assertIn(response.status_code, [301, 302])
 
 
@@ -99,7 +99,7 @@ class AuthRoutesSmokeTestCase(TestCase):
 class PlioListAnnotationSmokeTestCase(BaseTestCase):
     """Verify the Plio list endpoint returns correct unique_viewers counts
     when actual sessions exist. This exercises the Subquery/annotate query
-    that is sensitive to Django 3.2's stricter GROUP BY handling."""
+    that is sensitive to Django 4.2's stricter GROUP BY handling."""
 
     def setUp(self):
         super().setUp()
@@ -146,9 +146,9 @@ class PlioListAnnotationSmokeTestCase(BaseTestCase):
 
 class SessionAnswerOrderingSmokeTestCase(BaseTestCase):
     """Verify that SessionAnswer reverse-relation ordering works correctly
-    after the Django 3.2 upgrade. SessionAnswer and Question both use
+    after the Django 4.2 upgrade. SessionAnswer and Question both use
     Meta.ordering = ['item__time'], and this cross-FK ordering is sensitive
-    to Django 3.2's stricter GROUP BY handling."""
+    to Django 4.2's stricter GROUP BY handling."""
 
     def setUp(self):
         super().setUp()
@@ -202,7 +202,7 @@ class SessionAnswerOrderingSmokeTestCase(BaseTestCase):
 
 class OrgWorkspaceSmokeTestCase(BaseTestCase):
     """Verify multi-tenancy organization switching works with the
-    HTTP_ORGANIZATION header after the Django 3.2 upgrade."""
+    HTTP_ORGANIZATION header after the Django 4.2 upgrade."""
 
     def setUp(self):
         super().setUp()

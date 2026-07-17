@@ -27,6 +27,14 @@ redis_url = "redis://{}:{}/{}".format(
 
 CACHES["default"]["LOCATION"] = redis_url  # noqa: F405
 CHANNEL_LAYERS["default"]["CONFIG"]["hosts"] = [redis_url]  # noqa: F405
-DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+# Django 4.2+: STORAGES replaces DEFAULT_FILE_STORAGE (mutually exclusive)
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 MEDIA_ROOT = os.path.join(tempfile.gettempdir(), "plio-tests-{}".format(worker))
 SMS_DRIVER = None

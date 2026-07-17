@@ -287,7 +287,7 @@ DEFAULT_ROLES = [
 ]
 
 REDIS_HOSTNAME = os.environ.get("REDIS_HOSTNAME")
-REDIS_PORT = os.environ.get("REDIS_PORT")
+REDIS_PORT = int(os.environ.get("REDIS_PORT", 6379))
 
 # https://channels.readthedocs.io/en/latest/topics/channel_layers.html
 CHANNEL_LAYERS = {
@@ -301,7 +301,14 @@ CHANNEL_LAYERS = {
 SMS_DRIVER = os.environ.get("SMS_DRIVER")
 
 # file storage for uploaded images
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 AWS_QUERYSTRING_AUTH = False
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10 mb

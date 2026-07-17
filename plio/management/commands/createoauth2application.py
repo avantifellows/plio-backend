@@ -40,5 +40,10 @@ class Command(BaseCommand):
             redirect_uris="",
             client_type=Application.CLIENT_CONFIDENTIAL,
             authorization_grant_type=Application.GRANT_PASSWORD,
+            # drf-social-oauth2's convert-token flow injects the STORED
+            # secret into the token request, so it must stay retrievable
+            # plaintext — django-oauth-toolkit >= 2.4 would otherwise hash
+            # it on save and break every convert-token exchange.
+            hash_client_secret=False,
         )
         print("Created default OAuth2 client id and secret!")

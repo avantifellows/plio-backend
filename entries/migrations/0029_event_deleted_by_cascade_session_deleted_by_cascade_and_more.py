@@ -6,38 +6,38 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('entries', '0028_auto_20211130_0828'),
+        ("entries", "0028_auto_20211130_0828"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='event',
-            name='deleted_by_cascade',
+            model_name="event",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='session',
-            name='deleted_by_cascade',
+            model_name="session",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='sessionanswer',
-            name='deleted_by_cascade',
+            model_name="sessionanswer",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AlterField(
-            model_name='event',
-            name='deleted',
+            model_name="event",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
         migrations.AlterField(
-            model_name='session',
-            name='deleted',
+            model_name="session",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
         migrations.AlterField(
-            model_name='sessionanswer',
-            name='deleted',
+            model_name="sessionanswer",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
     ]

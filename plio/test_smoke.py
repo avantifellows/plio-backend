@@ -234,7 +234,8 @@ class AuthDefaultAppRegressionTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {access_token}",
         )
         self.assertIn(
-            revoke_resp.status_code, [200, 204, 401],
+            revoke_resp.status_code,
+            [200, 204, 401],
             "Revoke endpoint should return an OAuth response, not 404/405",
         )
 

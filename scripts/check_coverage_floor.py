@@ -64,21 +64,41 @@ def read_measured(coverage_json_path):
 
 def read_floor(floor_file_path):
     """Read the committed floor, or ``None`` if it is missing/empty (bootstrap)."""
+    return read_floor_record(floor_file_path)[0]
+
+
+def read_floor_record(floor_file_path):
+    """Read ``(floor, tool)`` from a floor file.
+
+    The first non-empty line is the floor value. An optional ``tool: <spec>``
+    line records the measurement tool the floor was calibrated against
+    (e.g. ``tool: coverage==7.6.1``); absent means the original yardstick.
+    """
     path = Path(floor_file_path)
     if not path.exists():
-        return None
-    raw = path.read_text().strip()
-    if not raw:
-        return None
-    return float(raw)
+        return None, None
+    lines = [line.strip() for line in path.read_text().splitlines() if line.strip()]
+    if not lines:
+        return None, None
+    tool = None
+    for line in lines[1:]:
+        if line.startswith("tool:"):
+            tool = line[len("tool:") :].strip()
+    return float(lines[0]), tool
 
 
-def check_ratchet(floor, base_floor):
+def check_ratchet(floor, base_floor, tool=None, base_tool=None):
     """Enforce the upward-only ratchet against the base branch's floor.
 
     Returns an error message when the PR deletes/empties the floor file or
     lowers its value relative to the base branch, else ``None``. ``base_floor
     is None`` (no committed floor on the base branch yet) skips the check.
+
+    When the committed ``tool:`` marker differs between the branch and its
+    base, the two floors were calibrated with different measurement tools and
+    the numeric comparison is meaningless -- the ratchet is skipped for that
+    one recalibration diff (the change is a reviewable line in the PR), while
+    the floor itself keeps enforcing measured coverage on every run.
     """
     if base_floor is None:
         return None
@@ -87,6 +107,8 @@ def check_ratchet(floor, base_floor):
             "floor file is missing or empty but the base branch commits "
             "{:.2f} -- floors only ratchet up; restore the file.".format(base_floor)
         )
+    if tool != base_tool:
+        return None
     if floor + EPSILON < base_floor:
         return (
             "floor lowered from {:.2f} (base branch) to {:.2f} -- floors only "
@@ -173,10 +195,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     measured = read_measured(args.coverage_json)
-    floor = read_floor(args.floor_file)
+    floor, tool = read_floor_record(args.floor_file)
 
     if args.base_floor_file:
-        ratchet_error = check_ratchet(floor, read_floor(args.base_floor_file))
+        base_floor, base_tool = read_floor_record(args.base_floor_file)
+        ratchet_error = check_ratchet(floor, base_floor, tool, base_tool)
         if ratchet_error:
             write_summary(format_ratchet_failure(args.lane, ratchet_error))
             return 1

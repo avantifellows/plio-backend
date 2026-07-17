@@ -34,9 +34,7 @@ def asgi_post_without_content_length(body=FORM_BODY):
 
 
 def drf_data(django_request):
-    return Request(
-        django_request, parsers=[FormParser(), JSONParser()]
-    ).data
+    return Request(django_request, parsers=[FormParser(), JSONParser()]).data
 
 
 def test_drf_drops_chunked_body_without_middleware():

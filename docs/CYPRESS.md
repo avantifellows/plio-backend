@@ -3,4 +3,4 @@ The job `integration-tests` inside the GitHub workflow file [ci.yml](../.github/
 
 All Cypress test cases are written in the Plio Frontend repository.
 
-Refer [Cypress documentation](https://github.com/avantifellows/plio-frontend/blob/master/docs/CYPRESS.md) in the Plio Frontend repository for more details on the integration testing in Plio.
+Refer [Cypress documentation](https://github.com/avantifellows/plio-frontend/blob/main/docs/CYPRESS.md) in the Plio Frontend repository for more details on the integration testing in Plio.

@@ -4,8 +4,9 @@ from oauth2_provider.models import Application
 from rest_framework.test import APIClient
 
 # A known plaintext client secret for the convert-token confidential client.
-# oauth2_provider stores client secrets hashed, so a spec can only authenticate
-# a confidential client whose plaintext secret it set itself.
+# drf-social-oauth2's convert-token view injects the STORED secret into the
+# token request, so the application must keep it retrievable plaintext
+# (hash_client_secret=False) — mirroring createoauth2application.
 CONVERT_TOKEN_CLIENT_SECRET = "convert-token-test-secret"
 
 
@@ -23,6 +24,7 @@ def api_application(db):
             "redirect_uris": "",
             "client_type": Application.CLIENT_CONFIDENTIAL,
             "authorization_grant_type": Application.GRANT_AUTHORIZATION_CODE,
+            "hash_client_secret": False,
         },
     )[0]
 
@@ -31,9 +33,12 @@ def api_application(db):
 def convert_token_app(api_application):
     """The confidential client the convert-token exchange authenticates against.
 
-    Returns ``(application, plaintext_secret)`` — the plaintext is needed because
-    the stored secret is hashed and cannot be recovered.
+    Returns ``(application, plaintext_secret)``. The application is forced to
+    hash_client_secret=False regardless of which conftest seeded the row —
+    drf-social-oauth2 injects the stored secret into the token request, so
+    convert-token only works with a plaintext-at-rest secret.
     """
+    api_application.hash_client_secret = False
     api_application.client_secret = CONVERT_TOKEN_CLIENT_SECRET
     api_application.save()
     return api_application, CONVERT_TOKEN_CLIENT_SECRET

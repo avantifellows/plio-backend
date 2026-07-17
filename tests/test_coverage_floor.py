@@ -232,3 +232,105 @@ def test_cli_ratchet_skipped_when_base_floor_empty(tmp_path):
         tmp_path, measured=96.0, floor_value=95.0, base_floor_value=None
     )
     assert proc.returncode == 0
+
+
+def test_read_floor_record_parses_tool_line(tmp_path):
+    floor_file = tmp_path / "floor"
+    floor_file.write_text("75.40\ntool: coverage==7.6.1\n")
+    floor, tool = floor_tool.read_floor_record(floor_file)
+    assert floor == 75.40
+    assert tool == "coverage==7.6.1"
+
+
+def test_read_floor_record_without_tool_line(tmp_path):
+    floor_file = tmp_path / "floor"
+    floor_file.write_text("95.0\n")
+    assert floor_tool.read_floor_record(floor_file) == (95.0, None)
+
+
+def test_ratchet_skipped_when_measurement_tool_changed():
+    # a recalibration: the branch commits a new tool marker, so the numeric
+    # comparison against the old-yardstick base floor is meaningless
+    assert (
+        floor_tool.check_ratchet(
+            floor=75.4, base_floor=77.58, tool="coverage==7.6.1", base_tool=None
+        )
+        is None
+    )
+
+
+def test_ratchet_still_fails_when_tool_unchanged():
+    error = floor_tool.check_ratchet(
+        floor=75.4,
+        base_floor=77.58,
+        tool="coverage==7.6.1",
+        base_tool="coverage==7.6.1",
+    )
+    assert error is not None
+    assert "lowered" in error
+
+
+def test_cli_recalibration_lowers_floor_with_new_tool(tmp_path):
+    coverage_json = tmp_path / "coverage.json"
+    _write_coverage_json(coverage_json, 76.0)
+    floor_file = tmp_path / "floor"
+    floor_file.write_text("75.40\ntool: coverage==7.6.1\n")
+    base_floor_file = tmp_path / "base-floor"
+    base_floor_file.write_text("77.58\n")
+    summary = tmp_path / "summary.md"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--lane",
+            "integration",
+            "--coverage-json",
+            str(coverage_json),
+            "--floor-file",
+            str(floor_file),
+            "--base-floor-file",
+            str(base_floor_file),
+        ],
+        capture_output=True,
+        text=True,
+        env={"GITHUB_STEP_SUMMARY": str(summary), "PATH": ""},
+    )
+    assert proc.returncode == 0
+
+
+def test_ratchet_rejects_bogus_tool_marker():
+    error = floor_tool.check_ratchet(
+        floor=10.0, base_floor=95.0, tool="not-a-real-tool", base_tool=None
+    )
+    assert error is not None
+    assert "unrecognized tool marker" in error
+
+
+def test_ratchet_rejects_marker_not_matching_installed_tool():
+    error = floor_tool.check_ratchet(
+        floor=10.0, base_floor=95.0, tool="coverage==0.0.1", base_tool=None
+    )
+    assert error is not None
+    assert "installed coverage" in error
+
+
+def test_ratchet_rejects_dropping_the_tool_marker():
+    # toggling the marker off (base has one, branch drops it) must not
+    # reopen the numeric bypass
+    error = floor_tool.check_ratchet(
+        floor=10.0, base_floor=95.0, tool=None, base_tool="coverage==7.6.1"
+    )
+    assert error is not None
+    assert "drops its tool marker" in error
+
+
+def test_ratchet_allows_recalibration_with_installed_tool():
+    import coverage
+
+    marker = "coverage==" + coverage.__version__
+    assert (
+        floor_tool.check_ratchet(
+            floor=10.0, base_floor=95.0, tool=marker, base_tool=None
+        )
+        is None
+    )

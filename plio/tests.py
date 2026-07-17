@@ -49,6 +49,12 @@ class BaseTestCase(APITestCase):
             authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
         )
 
+        import plio.settings as _settings
+        import users.views as _user_views
+
+        _settings.DEFAULT_OAUTH2_CLIENT_ID = cls.application.client_id
+        _user_views.DEFAULT_OAUTH2_CLIENT_ID = cls.application.client_id
+
         # create org
         cls.organization = Organization.objects.create(name="Org 1", shortcode="org-1")
 

@@ -10,15 +10,15 @@ jobs:
     name: Pre-commit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           # the hook pins need 3.9 <= python <= 3.11: flake8 7.3.0 requires
-          # >=3.9, and the runner default (3.14+) crashes black 22.3.0
+          # >=3.9, and black 22.3.0 breaks on newer pythons
           python-version: "3.10"
-      # run pre-commit directly instead of the archived pre-commit/action,
-      # whose bundled cache client hard-fails the job whenever the GitHub
-      # cache service has an outage
+      # run pre-commit directly instead of pre-commit/action, whose bundled
+      # cache client hard-fails the job whenever the GitHub cache service
+      # has an outage
       - run: pip install pre-commit
       - run: pre-commit run --all-files --show-diff-on-failure
 
@@ -51,11 +51,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      # Install Python. This matches the Python version in Dockerfile.
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+      # Install Python. This matches the Python version in Dockerfile (python:3.12).
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: '3.12'
 
       - name: Install Dependencies
         run: |

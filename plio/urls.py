@@ -1,7 +1,7 @@
 """plio URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/2.1/topics/http/urls/
+    https://docs.djangoproject.com/en/5.0/topics/http/urls/
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -99,7 +99,7 @@ urlpatterns = [
     ),
     path("api/v1/", include(api_router.urls)),
     path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
-    re_path(r"^auth/", include("rest_framework_social_oauth2.urls")),
+    re_path(r"^auth/", include("drf_social_oauth2.urls")),
     re_path(
         r"^api/v1/docs/$",
         schema_view.with_ui("redoc", cache_timeout=0),

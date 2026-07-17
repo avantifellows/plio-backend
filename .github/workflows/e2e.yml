@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   e2e:
-    uses: avantifellows/plio-frontend/.github/workflows/e2e.yml@185e7ef1a48a1121692e58c634e0e21ef2a0cd67
+    uses: avantifellows/plio-frontend/.github/workflows/e2e.yml@185e7ef1dd9efb0caabe73971d27876cd59309be
     with:
       trigger_role: backend
       trigger_ref: ${{ github.event.pull_request.head.sha }}

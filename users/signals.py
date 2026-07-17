@@ -12,7 +12,7 @@ from plio.cache import invalidate_cache_for_instance, invalidate_cache_for_insta
 
 
 @receiver([post_save, post_delete], sender=User)
-def user_update_cache(sender, instance, created, raw, **kwargs):
+def user_update_cache(sender, instance, **kwargs):
     invalidate_cache_for_instance(instance)
 
     # invalidate cache for plios created by user

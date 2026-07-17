@@ -16,6 +16,7 @@ source =
 omit =
     */migrations/*
     */tests.py
+    */test_*.py
     tests/*
     plio/settings.py
     plio/test_settings.py

@@ -9,7 +9,6 @@ class PlioPermission(permissions.BasePermission):
     """Permission check for plios."""
 
     def has_permission(self, request, view):
-
         """View-level permissions for plio. This determines whether the request can access plio instances or not."""
         # For non-create actions, allow access (existing behavior)
         if view.action != "create":

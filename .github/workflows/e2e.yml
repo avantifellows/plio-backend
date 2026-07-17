@@ -1,0 +1,20 @@
+name: Playwright E2E
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    uses: avantifellows/plio-frontend/.github/workflows/e2e.yml@16597bba7b0f5b9742a3c78d5883388ec04f0207
+    with:
+      trigger_role: backend
+      # github.sha is the PR merge commit — test what would actually land
+      trigger_ref: ${{ github.sha }}
+      branch_name: ${{ github.head_ref }}
+    secrets:
+      GOOGLE_OAUTH2_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH2_CLIENT_ID }}
+      GOOGLE_OAUTH2_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH2_CLIENT_SECRET }}
+      GOOGLE_OAUTH2_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH2_REFRESH_TOKEN }}

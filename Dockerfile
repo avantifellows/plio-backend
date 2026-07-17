@@ -7,6 +7,7 @@ WORKDIR /app
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ARG REQUIREMENTS_FILE=requirements.txt
 # install dependencies
 RUN pip install --upgrade pip
 # copy whole project to your docker home directory.
@@ -14,7 +15,7 @@ COPY . .
 COPY entrypoint.sh .
 
 # run this command to install all dependencies
-RUN pip install -r requirements.txt
+RUN pip install -r ${REQUIREMENTS_FILE}
 # port where the Django app runs
 EXPOSE ${APP_PORT}
 

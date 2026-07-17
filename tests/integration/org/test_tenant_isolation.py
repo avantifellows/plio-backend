@@ -1,0 +1,110 @@
+"""Tenant isolation across every entity type.
+
+Data created inside org-a's workspace must be invisible under org-b's
+``Organization`` header and under the personal workspace (no header). Every
+entity in the Plio graph and the learner-entries graph is covered. Invisibility
+is observed only through the API -- a detail read returns 200 in org-a and 404
+elsewhere -- never through ORM queries.
+"""
+import pytest
+
+from tests.builders import in_workspace
+from tests.factories import (
+    EventFactory,
+    ImageFactory,
+    ItemFactory,
+    PlioFactory,
+    QuestionFactory,
+    SessionAnswerFactory,
+    SessionFactory,
+)
+
+# The eight entity types the isolation guarantee must hold for.
+ENTITY_TYPES = [
+    "plio",
+    "video",
+    "item",
+    "question",
+    "image",
+    "session",
+    "session-answer",
+    "event",
+]
+
+
+@pytest.fixture
+def org_a_entities(creator, org_a):
+    """One instance of every entity type, all created inside org-a's schema.
+
+    Returns a mapping of entity type to its API detail path. The plio is public
+    and the session belongs to ``creator`` so that the org-a read is a genuine
+    200 (the positive control) rather than an access denial.
+    """
+    with in_workspace(org_a):
+        plio = PlioFactory(created_by=creator.user, is_public=True)
+        video = plio.video
+        item = ItemFactory(plio=plio)
+        question = QuestionFactory(item=item)
+        image = ImageFactory()
+        session = SessionFactory(user=creator.user, plio=plio)
+        answer = SessionAnswerFactory(session=session, item=item)
+        event = EventFactory(session=session)
+
+    return {
+        "plio": "/api/v1/plios/{}/".format(plio.uuid),
+        "video": "/api/v1/videos/{}/".format(video.id),
+        "item": "/api/v1/items/{}/".format(item.id),
+        "question": "/api/v1/questions/{}/".format(question.id),
+        "image": "/api/v1/images/{}/".format(image.id),
+        "session": "/api/v1/sessions/{}/".format(session.id),
+        "session-answer": "/api/v1/session-answers/{}/".format(answer.id),
+        "event": "/api/v1/events/{}/".format(event.id),
+    }
+
+
+def test_unknown_organization_header_falls_back_to_public_schema(
+    org_a_entities, creator, org_a
+):
+    """An unrecognized shortcode must land the request in the public schema --
+    not retain the previous request's tenant or resolve some other one. The
+    known-org request first matters: it routes the connection into org-a's
+    schema before the unknown header must reset it."""
+    plio_path = org_a_entities["plio"]
+    # seed the public-schema control row *before* any org-header request: the
+    # harness shares one connection, and an API call under org-a's header
+    # leaves the connection in org-a's schema for direct factory writes
+    personal = PlioFactory(created_by=creator.user, is_public=True, published=True)
+
+    assert creator.get(plio_path, organization=org_a).status_code == 200
+    # org-a's plio does not exist in the schema the unknown header lands in
+    assert creator.get(plio_path, HTTP_ORGANIZATION="ghost-org").status_code == 404
+
+    # positive control that the unknown header landed in the *public schema*:
+    # play is open for public plios regardless of membership, so the personal
+    # public plio resolves -- it would 404 if the connection had stayed in
+    # org-a's schema (or resolved some other tenant)
+    played = creator.get(
+        "/api/v1/plios/{}/play/".format(personal.uuid), HTTP_ORGANIZATION="ghost-org"
+    )
+    assert played.status_code == 200
+    assert played.data["uuid"] == personal.uuid
+
+    # the list endpoint scopes by the *header* shortcode, not the schema: an
+    # unknown org the caller has no membership in yields no rows at all
+    listing = creator.get("/api/v1/plios/", HTTP_ORGANIZATION="ghost-org")
+    assert listing.status_code == 200
+    assert listing.data["results"] == []
+
+
+@pytest.mark.parametrize("entity_type", ENTITY_TYPES, ids=ENTITY_TYPES)
+def test_org_a_entity_is_isolated_from_org_b_and_personal_workspace(
+    entity_type, org_a_entities, creator, org_a, org_b
+):
+    path = org_a_entities[entity_type]
+
+    # positive control: visible in the workspace it was created in
+    assert creator.get(path, organization=org_a).status_code == 200
+    # invisible under another org's header
+    assert creator.get(path, organization=org_b).status_code == 404
+    # invisible in the personal workspace (no Organization header)
+    assert creator.get(path).status_code == 404

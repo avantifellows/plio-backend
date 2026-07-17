@@ -1,0 +1,26 @@
+# Coverage configuration for the backend test lanes (#382).
+# Source is scoped to the Django app packages so the number measures the code
+# that ships, not the framework or the test scaffolding. Branch coverage is on
+# so conditional paths count. Migrations, test modules, settings, and the
+# wsgi/asgi entrypoints are omitted.
+[run]
+branch = True
+source =
+    entries
+    etl
+    experiments
+    organizations
+    plio
+    tags
+    users
+omit =
+    */migrations/*
+    */tests.py
+    tests/*
+    plio/settings.py
+    plio/test_settings.py
+    plio/wsgi.py
+    plio/asgi.py
+
+[report]
+show_missing = True

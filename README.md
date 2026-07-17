@@ -14,6 +14,22 @@ This repository is responsible for managing plio data, API support and database 
 ## Installation
 To set up this project, visit the [installation steps](docs/INSTALLATION.md).
 
+## Postgres 14 upgrade note
+
+This branch moves the local database image from `postgres:11` to
+`postgres:14-alpine`. Postgres cannot open a data directory created by an
+older major version, so docker-compose now uses a fresh `postgres14_data`
+volume; your previous `postgres_data` volume is left untouched. Local dev
+data is normally disposable (re-run migrations and the seed commands). If
+you need the old data, dump it before upgrading:
+
+```bash
+docker compose run --rm -v plio-backend_postgres_data:/old postgres:11 \
+  bash -c "pg_dumpall -h db -U postgres" > backup.sql
+# then, after `docker compose up` on this branch:
+cat backup.sql | docker compose exec -T db psql -U postgres
+```
+
 ## Tests
 After starting the docker-compose stack, run the backend integration lane with:
 

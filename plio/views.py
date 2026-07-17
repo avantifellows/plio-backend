@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db import connection
-from django.db.models import Q, F, Count, OuterRef, Subquery
+from django.db.models import Q, F, Count, IntegerField, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.http import FileResponse
 
@@ -202,7 +202,9 @@ class PlioViewSet(viewsets.ModelViewSet):
 
         # annotate the plio's queryset with the count of unique users
         queryset = queryset.annotate(
-            unique_viewers=Coalesce(Subquery(plios_unique_users_count), 0)
+            unique_viewers=Coalesce(
+                Subquery(plios_unique_users_count), 0, output_field=IntegerField()
+            )
         )
 
         queryset = self.filter_queryset(queryset)

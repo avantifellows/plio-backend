@@ -410,11 +410,11 @@ class Django52MigrationSensitiveSmokeTestCase(BaseTestCase):
 
         self.assertRegex(image.url.name, r"^[a-z]{10}$")
 
-    def test_redis_connection_flushall_and_cache_operations(self):
+    def test_redis_connection_flushdb_and_cache_operations(self):
         cache.set("django-52-cache-smoke", "ok")
         self.assertEqual(cache.get("django-52-cache-smoke"), "ok")
 
-        get_redis_connection("default").flushall()
+        get_redis_connection("default").flushdb()
 
         self.assertIsNone(cache.get("django-52-cache-smoke"))
 

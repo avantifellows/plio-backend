@@ -52,6 +52,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+coverage.json
 *.cover
 *.py,cover
 .hypothesis/
@@ -161,3 +162,4 @@ zappa_settings.json
 # Local tool repos
 pral/
 ralph/
+.ralph/

@@ -6,58 +6,58 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('plio', '0031_question_survey'),
+        ("plio", "0031_question_survey"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='image',
-            name='deleted_by_cascade',
+            model_name="image",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='item',
-            name='deleted_by_cascade',
+            model_name="item",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='plio',
-            name='deleted_by_cascade',
+            model_name="plio",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='question',
-            name='deleted_by_cascade',
+            model_name="question",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AddField(
-            model_name='video',
-            name='deleted_by_cascade',
+            model_name="video",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AlterField(
-            model_name='image',
-            name='deleted',
+            model_name="image",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
         migrations.AlterField(
-            model_name='item',
-            name='deleted',
+            model_name="item",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
         migrations.AlterField(
-            model_name='plio',
-            name='deleted',
+            model_name="plio",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
         migrations.AlterField(
-            model_name='question',
-            name='deleted',
+            model_name="question",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
         migrations.AlterField(
-            model_name='video',
-            name='deleted',
+            model_name="video",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
     ]

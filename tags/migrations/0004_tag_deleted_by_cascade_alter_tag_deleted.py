@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tags', '0003_tag_deleted'),
+        ("tags", "0003_tag_deleted"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='tag',
-            name='deleted_by_cascade',
+            model_name="tag",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AlterField(
-            model_name='tag',
-            name='deleted',
+            model_name="tag",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
     ]

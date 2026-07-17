@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('organizations', '0004_organization_config'),
+        ("organizations", "0004_organization_config"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='organization',
-            name='deleted_by_cascade',
+            model_name="organization",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AlterField(
-            model_name='organization',
-            name='deleted',
+            model_name="organization",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
     ]

@@ -232,3 +232,67 @@ def test_cli_ratchet_skipped_when_base_floor_empty(tmp_path):
         tmp_path, measured=96.0, floor_value=95.0, base_floor_value=None
     )
     assert proc.returncode == 0
+
+
+def test_read_floor_record_parses_tool_line(tmp_path):
+    floor_file = tmp_path / "floor"
+    floor_file.write_text("75.40\ntool: coverage==7.6.1\n")
+    floor, tool = floor_tool.read_floor_record(floor_file)
+    assert floor == 75.40
+    assert tool == "coverage==7.6.1"
+
+
+def test_read_floor_record_without_tool_line(tmp_path):
+    floor_file = tmp_path / "floor"
+    floor_file.write_text("95.0\n")
+    assert floor_tool.read_floor_record(floor_file) == (95.0, None)
+
+
+def test_ratchet_skipped_when_measurement_tool_changed():
+    # a recalibration: the branch commits a new tool marker, so the numeric
+    # comparison against the old-yardstick base floor is meaningless
+    assert (
+        floor_tool.check_ratchet(
+            floor=75.4, base_floor=77.58, tool="coverage==7.6.1", base_tool=None
+        )
+        is None
+    )
+
+
+def test_ratchet_still_fails_when_tool_unchanged():
+    error = floor_tool.check_ratchet(
+        floor=75.4,
+        base_floor=77.58,
+        tool="coverage==7.6.1",
+        base_tool="coverage==7.6.1",
+    )
+    assert error is not None
+    assert "lowered" in error
+
+
+def test_cli_recalibration_lowers_floor_with_new_tool(tmp_path):
+    coverage_json = tmp_path / "coverage.json"
+    _write_coverage_json(coverage_json, 76.0)
+    floor_file = tmp_path / "floor"
+    floor_file.write_text("75.40\ntool: coverage==7.6.1\n")
+    base_floor_file = tmp_path / "base-floor"
+    base_floor_file.write_text("77.58\n")
+    summary = tmp_path / "summary.md"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--lane",
+            "integration",
+            "--coverage-json",
+            str(coverage_json),
+            "--floor-file",
+            str(floor_file),
+            "--base-floor-file",
+            str(base_floor_file),
+        ],
+        capture_output=True,
+        text=True,
+        env={"GITHUB_STEP_SUMMARY": str(summary), "PATH": ""},
+    )
+    assert proc.returncode == 0

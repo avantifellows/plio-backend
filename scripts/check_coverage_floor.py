@@ -108,12 +108,48 @@ def check_ratchet(floor, base_floor, tool=None, base_tool=None):
             "{:.2f} -- floors only ratchet up; restore the file.".format(base_floor)
         )
     if tool != base_tool:
+        error = validate_tool_marker(tool)
+        if error:
+            return error
         return None
     if floor + EPSILON < base_floor:
         return (
             "floor lowered from {:.2f} (base branch) to {:.2f} -- floors only "
             "ratchet up; never lower a floor to make a build pass.".format(
                 base_floor, floor
+            )
+        )
+    return None
+
+
+def validate_tool_marker(tool):
+    """A recalibration marker must name the measurement tool actually
+    installed in this run (e.g. ``coverage==7.6.1``) — otherwise a PR could
+    lower a floor by committing an arbitrary marker string."""
+    if tool is None:
+        return (
+            "floor drops its tool marker while the base branch has none to "
+            "compare against -- restore the marker or the floor value."
+        )
+    if not tool.startswith("coverage=="):
+        return (
+            "unrecognized tool marker {!r} -- expected 'coverage==<version>' "
+            "matching the installed measurement tool.".format(tool)
+        )
+    expected_version = tool[len("coverage==") :].strip()
+    try:
+        import coverage
+    except ImportError:
+        return (
+            "tool marker {!r} cannot be verified: the coverage package is "
+            "not importable in this run.".format(tool)
+        )
+    installed = getattr(coverage, "__version__", "")
+    if installed != expected_version:
+        return (
+            "tool marker says {!r} but the installed coverage is {} -- a "
+            "recalibration must be measured with the tool it names.".format(
+                tool, installed or "unknown"
             )
         )
     return None

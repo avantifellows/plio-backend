@@ -1,5 +1,8 @@
 from django.dispatch import receiver
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete, pre_save
+from oauth2_provider.models import Application
+
+from plio.settings import API_APPLICATION_NAME, DEFAULT_OAUTH2_CLIENT_ID
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
@@ -36,3 +39,20 @@ def update_organization_user(sender, instance: OrganizationUser, **kwargs):
     async_to_sync(channel_layer.group_send)(
         user_group_name, {"type": "send_user", "data": user_data}
     )
+
+
+@receiver(pre_save, sender=Application)
+def keep_convert_token_application_secret_plaintext(sender, instance, **kwargs):
+    """
+    The convert-token application's secret must stay retrievable plaintext:
+    drf-social-oauth2 injects the STORED secret into the token exchange, so
+    a hashed secret breaks every Google login. users/0022 repairs existing
+    rows; this guard covers applications created or edited afterwards (e.g.
+    through the Django admin), where django-oauth-toolkit >= 2.4 would
+    default hash_client_secret=True and hash on save.
+    """
+    is_convert_token_app = instance.name == API_APPLICATION_NAME or (
+        DEFAULT_OAUTH2_CLIENT_ID and instance.client_id == DEFAULT_OAUTH2_CLIENT_ID
+    )
+    if is_convert_token_app:
+        instance.hash_client_secret = False

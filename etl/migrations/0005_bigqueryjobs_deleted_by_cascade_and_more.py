@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('etl', '0004_auto_20220412_1055'),
+        ("etl", "0004_auto_20220412_1055"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='bigqueryjobs',
-            name='deleted_by_cascade',
+            model_name="bigqueryjobs",
+            name="deleted_by_cascade",
             field=models.BooleanField(default=False, editable=False),
         ),
         migrations.AlterField(
-            model_name='bigqueryjobs',
-            name='deleted',
+            model_name="bigqueryjobs",
+            name="deleted",
             field=models.DateTimeField(db_index=True, editable=False, null=True),
         ),
     ]

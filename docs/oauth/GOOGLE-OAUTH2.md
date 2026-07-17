@@ -5,7 +5,7 @@ Plio backend uses [drf-social-oauth2](https://github.com/wagber/drf-social-oauth
   - [Set up API client credentials](#set-up-api-client-credentials)
 
 ### Set up Google OAuth2 Credentials
-1. Use the [Plio frontend Google-OAuth2 guide](https://github.com/avantifellows/plio-frontend/blob/master/docs/oauth/GOOGLE-OAUTH2.md#set-up-google-oauth2-credentials) to configure Google Developer Console and get the **Client ID** and **Client Secret**.
+1. Use the [Plio frontend Google-OAuth2 guide](https://github.com/avantifellows/plio-frontend/blob/main/docs/oauth/GOOGLE-OAUTH2.md#set-up-google-oauth2-credentials) to configure Google Developer Console and get the **Client ID** and **Client Secret**.
 2.  Update your `.env` file and set `GOOGLE_OAUTH2_CLIENT_ID` and `GOOGLE_OAUTH2_CLIENT_SECRET` variables from the copied values in the above step:
     ```sh
     GOOGLE_OAUTH2_CLIENT_ID="your_client_id"

@@ -1,9 +1,11 @@
 name: Biweekly Release
 
-# Biweekly LLM-written release notes (issue #219).
-# GitHub cron can't express "every 14 days", so a weekly cron fires and the
-# gate step runs the job only on odd epoch-weeks: Jul 27 2026, Aug 10, … .
-# Manual runs bypass the gate. Local run:
+# Biweekly LLM-written release notes (see avantifellows/af_lms#219 for the
+# decision record). Org repos post in staggered groups, max 3 per day:
+# this repo is in the plio-and-ai group.
+# The weekly cron fires on the group's weekday; the gate step runs the job
+# only when a whole number of 14-day cycles has passed since the group's
+# anchor date. Manual runs bypass the gate. Local run:
 #   act workflow_dispatch -W .github/workflows/biweekly-release.yml \
 #     --secret-file .secrets --input provider=openrouter \
 #     -P ubuntu-latest=catthehacker/ubuntu:act-latest
@@ -27,10 +29,14 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: "30 3 * * 1" # Mondays 09:00 IST; gate skips every other week
+    - cron: "30 3 * * 2" # Tuesdays 09:00 IST; gate enforces the 14-day cycle
 
 permissions:
   contents: write
+
+env:
+  # Epoch-day of this group's first scheduled run (2026-07-21).
+  RELEASE_ANCHOR_DAY: "20655"
 
 jobs:
   biweekly-release:
@@ -43,10 +49,10 @@ jobs:
         id: gate
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] || \
-             [ $(( $(date +%s) / 86400 / 7 % 2 )) -eq 1 ]; then
+             [ $(( ($(date +%s) / 86400 - ${{ env.RELEASE_ANCHOR_DAY }}) % 14 )) -eq 0 ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Off week — the biweekly cadence runs next Monday. Skipping."
+            echo "Off week — this repo's 14-day cycle runs next week. Skipping."
             echo "run=false" >> "$GITHUB_OUTPUT"
           fi
 

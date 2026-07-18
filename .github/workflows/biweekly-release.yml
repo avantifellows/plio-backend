@@ -113,19 +113,25 @@ jobs:
           echo "--- Generated notes ---"
           cat out/notes.md
 
-      - name: Create draft release
+      - name: Create release
         id: release
         if: steps.gate.outputs.run == 'true' && steps.gather.outputs.skip != 'true' && inputs.dry_run != true
         run: |
           TAG="${{ steps.gather.outputs.tag }}"
-          # Idempotent re-runs: replace an existing draft for the same tag.
-          EXISTING=$(gh release list --repo "$GH_REPO" --json tagName,isDraft \
-            --jq ".[] | select(.tagName == \"$TAG\" and .isDraft) | .tagName")
-          [ -n "$EXISTING" ] && gh release delete "$TAG" --repo "$GH_REPO" --yes
-          URL=$(gh release create "$TAG" --repo "$GH_REPO" --draft \
-            --title "Release $TAG (${{ steps.gather.outputs.range }})" --notes-file out/notes.md)
+          TITLE="Release $TAG (${{ steps.gather.outputs.range }})"
+          # Idempotent re-runs: refresh a published release's notes in place;
+          # replace a leftover draft with the same tag.
+          STATE=$(gh release view "$TAG" --repo "$GH_REPO" --json isDraft --jq .isDraft 2>/dev/null || echo "absent")
+          if [ "$STATE" = "false" ]; then
+            gh release edit "$TAG" --repo "$GH_REPO" --title "$TITLE" --notes-file out/notes.md
+            URL=$(gh release view "$TAG" --repo "$GH_REPO" --json url --jq .url)
+          else
+            [ "$STATE" = "true" ] && gh release delete "$TAG" --repo "$GH_REPO" --yes
+            URL=$(gh release create "$TAG" --repo "$GH_REPO" \
+              --title "$TITLE" --notes-file out/notes.md)
+          fi
           echo "url=$URL" >> "$GITHUB_OUTPUT"
-          echo "Draft release: $URL"
+          echo "Release: $URL"
 
       - name: Post to Discord
         if: steps.gate.outputs.run == 'true' && steps.gather.outputs.skip != 'true' && inputs.dry_run != true
@@ -133,7 +139,7 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           jq -n \
-            --arg title "${GH_REPO#*/} — release ${{ steps.gather.outputs.tag }} · ${{ steps.gather.outputs.range }} (draft)" \
+            --arg title "${GH_REPO#*/} — release ${{ steps.gather.outputs.tag }} · ${{ steps.gather.outputs.range }}" \
             --arg url "${{ steps.release.outputs.url }}" \
             --arg desc "$(head -c 4000 out/notes.md)" \
             '{embeds: [{title: $title, url: $url, description: $desc, color: 5793266}]}' \

@@ -20,6 +20,7 @@ Download docker for your operating system: https://docs.docker.com/get-docker/
     cp .env.example .env
     ```
 4. Update environment variables in your `.env` file based on your environment. For all available settings, see our [Environment variables guide](ENV.md).
+- If the environment variables SUPERUSER_EMAIL and SUPERUSER_PASSWORD are set, the superuser will be created automatically during the setup process.
 5. Build the docker image and run the containers using just one command:
     ```sh
     docker-compose up -d --build

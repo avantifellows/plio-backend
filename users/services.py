@@ -1,16 +1,22 @@
 import boto3
-from plio.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
+from django.conf import settings
 
 
 class SnsService:
     def __init__(self):
         self.client = boto3.client(
             "sns",
-            aws_access_key_id=AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-            region_name=AWS_REGION,
+            region_name=settings.AWS_REGION or None,
         )
 
     def publish(self, mobile, message):
-        self.client.set_sms_attributes(attributes={"DefaultSMSType": "Transactional"})
-        self.client.publish(PhoneNumber=mobile, Message=message)
+        self.client.publish(
+            PhoneNumber=mobile,
+            Message=message,
+            MessageAttributes={
+                "AWS.SNS.SMS.SMSType": {
+                    "DataType": "String",
+                    "StringValue": "Transactional",
+                }
+            },
+        )

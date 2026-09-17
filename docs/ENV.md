@@ -47,6 +47,11 @@ The password for the database user.
 
 
 ### Web server
+#### `FRONTEND_URL`
+Frontend origin; defaults to `https://app.plio.in`. Set staging to
+`https://staging-app.plio.in`. This does not configure the OAuth provider's
+redirect allowlist or prove a real browser login works.
+
 #### `APP_PORT`
 Port on which you want your docker app to run and expose.
 
@@ -60,7 +65,11 @@ OAuth2 client id from Google. Required for Google Sign in functionality.
 OAuth2 client secret from Google. Required for Google Sign in functionality.
 
 ### AWS
-AWS credentials are needed for One Time Pin functionality for user logins. Read more about configuring AWS credentials for OTP functionality from our [OTP guide](ONE-TIME-PIN.md).
+S3 uploads and SNS use AWS credentials. In ECS, attach a scoped **task role** and
+omit static AWS credentials from the container so the SDK uses rotating role
+credentials. The task execution role used for ECR/log delivery is separate.
+Local environment credentials (including `AWS_SESSION_TOKEN` for temporary
+credentials) remain supported by the SDK. Never place root credentials in a task.
 #### `AWS_ACCESS_KEY_ID`
 AWS access key ID.
 
@@ -74,7 +83,13 @@ Region of the AWS IAM user.
 AWS bucket where `django-storages` uploads the files
 
 #### `SMS_DRIVER`
-The driver to send sms. The only supported value is `sns` right now for AWS SNS. When in development mode, use an empty string to avoid SMS triggers while debugging/testing.
+`sns` sends real messages; the Transactional type is set per message, without
+changing account-wide SNS defaults. `disabled` rejects OTP requests and
+verification with HTTP 503, without creating/consuming an OTP or issuing tokens.
+Use `disabled` on staging until controlled real SMS testing is ready, together
+with an IAM deny on SNS. An empty/unset value preserves the existing development
+flow (creates/verifies OTPs without sending SMS); it is not a safe substitute for
+explicitly disabling SMS login in a deployed environment.
 
 ### Redis
 #### `REDIS_HOSTNAME`

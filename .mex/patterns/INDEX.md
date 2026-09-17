@@ -4,6 +4,7 @@ Lookup table for all pattern files in this directory. Check here before starting
 
 | Pattern | Use when |
 |---------|----------|
+| [staging-isolation rollout](../../docs/staging-isolation/README.md) | Preparing or applying the staging DB/AWS boundary; includes verification and rollback |
 | [add-api-endpoint.md](add-api-endpoint.md) | Adding a new DRF resource, model, or custom viewset action |
 | [pin-raw-sql-builder.md](pin-raw-sql-builder.md) | Writing a direct result-set test for a raw-SQL builder in `plio/queries.py` (plio unit fill #375) |
 | [pin-report-csv-http-seam.md](pin-report-csv-http-seam.md) | Pinning `download_data` report CSV content (zip members, columns, cells, masking) at the HTTP seam in the unit lane (plio unit fill #375) |

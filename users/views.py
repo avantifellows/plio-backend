@@ -286,6 +286,11 @@ def get_new_access_token(user, application):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def request_otp(request):
+    if SMS_DRIVER == "disabled":
+        return Response(
+            {"detail": "SMS login is unavailable."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
     otp = OneTimePassword()
     if "mobile" not in request.data:
         return Response(
@@ -310,7 +315,11 @@ def request_otp(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def verify_otp(request):
-
+    if SMS_DRIVER == "disabled":
+        return Response(
+            {"detail": "SMS login is unavailable."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
     for key in ["mobile", "otp"]:
         if key not in request.data:
             return Response(

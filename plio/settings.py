@@ -266,7 +266,7 @@ AUTH_USER_MODEL = "users.User"
 
 DATABASE_ROUTERS = ("django_tenants.routers.TenantSyncRouter",)
 
-FRONTEND_URL = "https://app.plio.in"
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://app.plio.in")
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.environ.get("GOOGLE_OAUTH2_CLIENT_ID", "")
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.environ.get("GOOGLE_OAUTH2_CLIENT_SECRET", "")

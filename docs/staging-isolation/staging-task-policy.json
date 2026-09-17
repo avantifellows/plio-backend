@@ -1,0 +1,33 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "StagingImages",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::plio-staging-assets/images/*"
+    },
+    {
+      "Sid": "ListStagingImagePrefix",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::plio-staging-assets",
+      "Condition": {"StringLike": {"s3:prefix": ["images", "images/*"]}}
+    },
+    {
+      "Sid": "DenyOtherStorageEvenIfPublic",
+      "Effect": "Deny",
+      "Action": "s3:*",
+      "NotResource": [
+        "arn:aws:s3:::plio-staging-assets",
+        "arn:aws:s3:::plio-staging-assets/images/*"
+      ]
+    },
+    {
+      "Sid": "NoSmsUntilControlledDeliveryIsReady",
+      "Effect": "Deny",
+      "Action": "sns:*",
+      "Resource": "*"
+    }
+  ]
+}

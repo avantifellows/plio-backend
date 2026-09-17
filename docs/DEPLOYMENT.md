@@ -30,6 +30,17 @@ An overview of how the continuous delivery cycle works in Plio with GitHub actio
 
 Follow the steps below to set up the staging environment on AWS.
 
+### Static files served by the backend
+
+The container entrypoint runs `collectstatic --no-input --clear` before Daphne
+starts. The ASGI HTTP branch serves the resulting `STATIC_ROOT` directory under
+`STATIC_URL`; only collected public static assets are exposed. Uploaded media
+continues to use its configured storage backend and is not served from the
+container filesystem. The generated static directory is part of the image and
+must not be mounted over by an ECS volume. Unversioned assets use a 60-second
+cache lifetime so deployments do not leave stale documentation or admin assets
+in browser caches.
+
 1. Login to your AWS console.
 
 2. Go to VPC. (skip this step if you've already created a VPC when setting up the frontend repository)

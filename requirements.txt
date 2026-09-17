@@ -35,3 +35,4 @@ sentry-sdk==2.19.2
 django-silk==5.5.0
 daphne==4.1.2
 django-redis==6.0.0
+servestatic==4.3.4

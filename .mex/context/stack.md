@@ -12,7 +12,7 @@ edges:
     condition: when the reasoning behind a tech choice is needed
   - target: context/conventions.md
     condition: when understanding how to use a technology in this codebase
-last_updated: 2026-07-13
+last_updated: 2026-09-17
 ---
 
 # Stack
@@ -35,6 +35,7 @@ last_updated: 2026-07-13
 - **pandas** + **pyarrow** — metrics/report post-processing over raw SQL from `plio/queries.py`
 - **boto3 / django-storages** — S3 image storage and SNS SMS
 - **drf-yasg 1.20.0** — API docs at `/api/v1/docs/`
+- **servestatic 4.3.4** — native ASGI serving for collected public static files
 - **django-silk** — profiling in local/staging; **sentry-sdk** — error monitoring
 - **coverage 5.5** — test coverage (CI uploads to Codecov)
 - **pytest 6.2.5**, **pytest-django 4.5.2**, and **pytest-xdist 2.5.0** — one runner for legacy unit tests and the tenant-aware backend integration lane

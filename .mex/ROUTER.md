@@ -14,7 +14,7 @@ edges:
     condition: when setting up the dev environment or running the project for the first time
   - target: patterns/INDEX.md
     condition: when starting a task — check the pattern index for a matching pattern file
-last_updated: 2026-07-13
+last_updated: 2026-09-17
 ---
 
 # Session Bootstrap
@@ -29,6 +29,7 @@ Then read this file fully before doing anything else in this session.
 - Full REST API (v1): plios, items, questions, videos, images, sessions, session-answers, events, users, organizations, experiments, tags — standard DRF CRUD plus plio actions (play, duplicate, copy, metrics, download_data)
 - Three auth flows: Google OAuth (convert-token), OTP over SMS (AWS SNS), and third-party SSO (org api_key + unique_id)
 - Schema-per-workspace multi-tenancy, Redis caching with tenant-scoped keys, soft delete everywhere, live user updates over WebSocket (channels)
+- Collected public static assets are served from `STATIC_ROOT` under `/static/` by the ASGI HTTP branch; uploads remain on configured storage
 - ~260 unit tests across users, organizations, entries, and plio apps (CI: coverage + Codecov)
 - Pytest backend harness on #374's feature branch: separate unit/integration lanes, xdist-safe tenant/Redis fixtures, shared factories/builders, and an HTTP tenant-isolation smoke journey
 

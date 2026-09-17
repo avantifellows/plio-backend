@@ -2,7 +2,7 @@
 set -e
 
 # collect static files
-python manage.py collectstatic --no-input
+python manage.py collectstatic --no-input --clear
 
 # check for unexpected migrations in our apps (fail fast on model drift)
 python manage.py makemigrations --check --dry-run plio organizations users entries experiments tags etl

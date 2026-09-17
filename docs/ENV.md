@@ -14,7 +14,7 @@ You can create a secret key from this website: https://djecrety.ir/
 For more details, visit [Django official documentation on setting a secret key](https://docs.djangoproject.com/en/5.2/ref/settings/#std:setting-SECRET_KEY).
 
 #### `DEBUG`
-Debug mode on or off. Possible values are `True` and `False`. Do not set to true on production environments.
+Debug mode on or off. Possible values are `True`/`False` or `1`/`0`, with surrounding whitespace and letter case ignored. Unset, empty, and unrecognized values keep debug mode off. Do not set to true on production environments.
 
 ### Database settings
 #### `DB_ENGINE`

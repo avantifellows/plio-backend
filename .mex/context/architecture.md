@@ -12,7 +12,7 @@ edges:
     condition: when specific technology details are needed
   - target: context/decisions.md
     condition: when understanding why the architecture is structured this way
-last_updated: 2026-07-11
+last_updated: 2026-09-17
 ---
 
 # Architecture
@@ -42,7 +42,7 @@ pushes the serialized user object on updates via Redis channel layers.
 - **PostgreSQL** (postgres:11 in docker) — one schema per workspace via django-tenants; public schema holds shared apps
 - **Redis** (redis:5 in docker) — entity cache (django-redis) and channel layer for WebSockets (channels_redis)
 - **AWS S3** — question image storage via django-storages/boto3 (`AWS_STORAGE_BUCKET_NAME`)
-- **AWS SNS** — outbound OTP SMS when `SMS_DRIVER=sns`
+- **AWS SNS** — outbound OTP SMS when `SMS_DRIVER=sns`, using the SDK credential chain and per-message Transactional type; `disabled` rejects OTP request/verify without writing data
 - **Google OAuth2** — social login exchanged for internal OAuth tokens at `/auth/convert-token/`
 - **Sentry** — error monitoring (staging/production); **BigQuery** — analytics sync via the etl app
 

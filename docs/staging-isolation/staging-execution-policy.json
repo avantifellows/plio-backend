@@ -1,0 +1,9 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Sid": "InjectOnlyStagingDatabaseSecret",
+    "Effect": "Allow",
+    "Action": "secretsmanager:GetSecretValue",
+    "Resource": "arn:aws:secretsmanager:ap-south-1:111766607077:secret:plio/staging/database-??????"
+  }]
+}

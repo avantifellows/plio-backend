@@ -39,6 +39,7 @@ Then read this file fully before doing anything else in this session.
 - experiments and tags apps have placeholder tests; events, session-answers, images have minimal coverage
 
 **Known issues:**
+- Staging P03 isolation is not yet applied: reviewed rollout artifacts live in `docs/staging-isolation/README.md`; merging the preparation PR alone does not replace shared DB/AWS credentials.
 - Several dependencies are years behind (see requirements.txt pins) until the migration chain merges — don't add code relying on newer Django/DRF APIs on main
 - django-request-logging is abandoned upstream; replacement deferred to its own PR (post-migration)
 

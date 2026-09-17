@@ -8,7 +8,7 @@ import datetime
 
 import boto3
 import pytest
-from botocore.stub import Stubber
+from botocore.stub import ANY, Stubber
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -117,6 +117,32 @@ def test_otp_request_does_not_touch_sns_when_driver_unset(client, db, monkeypatc
     assert OneTimePassword.objects.filter(mobile="+919000000004").exists()
 
 
+def test_disabled_sms_rejects_request_without_creating_otp(client, db, monkeypatch):
+    monkeypatch.setattr(user_views, "SMS_DRIVER", "disabled")
+    monkeypatch.setattr(
+        user_views, "SnsService", lambda: pytest.fail("SNS must not be contacted")
+    )
+    response = client.post(REQUEST_URL, {"mobile": "+919000000008"})
+    assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+    assert not OneTimePassword.objects.filter(mobile="+919000000008").exists()
+
+
+def test_disabled_sms_rejects_existing_otp_without_consuming_it(
+    client, db, monkeypatch
+):
+    mobile = "+919000000009"
+    otp = OneTimePassword.objects.create(
+        mobile=mobile,
+        otp="123456",
+        expires_at=timezone.now() + datetime.timedelta(minutes=5),
+    )
+    monkeypatch.setattr(user_views, "SMS_DRIVER", "disabled")
+    response = client.post(VERIFY_URL, {"mobile": mobile, "otp": "123456"})
+    assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+    assert OneTimePassword.objects.filter(pk=otp.pk).exists()
+    assert not User.objects.filter(mobile=mobile).exists()
+
+
 def test_otp_request_with_sns_driver_uses_stubbed_client_no_live_call(
     client, db, monkeypatch
 ):
@@ -128,8 +154,20 @@ def test_otp_request_with_sns_driver_uses_stubbed_client_no_live_call(
         aws_secret_access_key="stub",
     )
     stubber = Stubber(sns_client)
-    stubber.add_response("set_sms_attributes", {})
-    stubber.add_response("publish", {"MessageId": "stub-message-id"})
+    stubber.add_response(
+        "publish",
+        {"MessageId": "stub-message-id"},
+        expected_params={
+            "PhoneNumber": "+919000000005",
+            "Message": ANY,
+            "MessageAttributes": {
+                "AWS.SNS.SMS.SMSType": {
+                    "DataType": "String",
+                    "StringValue": "Transactional",
+                }
+            },
+        },
+    )
     stubber.activate()
 
     monkeypatch.setattr(user_views, "SMS_DRIVER", "sns")
@@ -138,7 +176,7 @@ def test_otp_request_with_sns_driver_uses_stubbed_client_no_live_call(
     try:
         response = client.post(REQUEST_URL, {"mobile": "+919000000005"})
         assert response.status_code == status.HTTP_200_OK
-        # both SNS operations were served by the stub — no live call happened
+        # Only Publish is permitted; no account-wide SMS setting is changed.
         stubber.assert_no_pending_responses()
     finally:
         stubber.deactivate()

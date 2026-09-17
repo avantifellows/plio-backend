@@ -80,7 +80,7 @@ CREATEDB/CREATEROLE just to make startup work.
 
 Create `plio-backend-staging-app` with `staging-task-trust.json` and
 `staging-task-policy.json`. The explicit S3 deny prevents authenticated access
-outside the staging image resources even where a bucket policy is public. SMS is
+outside the staging image/avatar resources even where a bucket policy is public. SMS is
 explicitly denied until controlled delivery is ready.
 
 Create `plio-backend-staging-execution` with the same ECS trust, AWS's managed
@@ -91,13 +91,13 @@ Decrypt grant; do not add wildcard KMS or secret access. Confirm the service's
 Fargate platform/agent supports JSON-key secret injection before rollout.
 
 Apply `staging-bucket-policy.json` to staging after comparing the live policy.
-It retains public image reads; authenticated task-role IAM grants permit writes.
+It retains public lesson-image and avatar reads; authenticated task-role IAM grants permit writes.
 The production counterpart is a **separate reviewed policy change**, after proving
 the production upload principal has its own Get/Put/Delete permissions.
 
 Review and apply `public-access-block.json` per bucket: ignore/block public ACLs
 while retaining intentional policy-based public reads. First inspect whether any
-legitimate assets outside `images/` rely on public ACLs. Do not silently break
+legitimate assets outside `images/` and `avatars/` rely on public ACLs. Do not silently break
 them; migrate that read access before applying. These files must not overwrite
 new legitimate policy statements introduced after this baseline.
 
@@ -105,7 +105,8 @@ Validate policy syntax with IAM Access Analyzer. Evaluate denied production
 access using IAM simulation plus resource-policy/ACL inspection, not writes to
 production. IAM simulation alone does not establish effective live access.
 After isolation, a disposable staging image verifies authenticated upload, read,
-replace and supported cleanup; unsigned browser read must still work. Never use
+replace and supported cleanup; repeat with a disposable avatar. Unsigned browser
+reads for both existing images and avatars must still work. Never use
 an anonymous destructive request against an existing object as a denial test.
 
 Root-key retirement is a follow-up after ALL consumers, including production and

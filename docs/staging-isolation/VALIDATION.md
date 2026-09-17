@@ -35,3 +35,14 @@ Remaining before apply: code review/CI, production database client inventory,
 public-ACL read dependency review, privately provisioned credentials and an exact
 reviewed image digest. Live deployment, fresh denied connections under new real
 credentials, storage/browser smoke and P03 recheck remain **NOT RUN**.
+
+## Avatar review correction
+
+Added the deployed `User.avatar_url` storage prefix (`avatars/`) alongside
+`images/` in the staging task permissions, allowed listing prefixes, explicit
+deny exclusions, and both public-read bucket policies. AWS Access Analyzer
+returned no findings for the three changed policies. Sixteen IAM simulations
+passed: Get/Put/Delete for both media prefixes are allowed on staging and
+explicitly denied on production; listing both staging prefixes is allowed.
+Both bucket policies still allow only anonymous GetObject, not public writes.
+No live policies were installed.

@@ -27,7 +27,22 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 APP_ENV = os.environ.get("APP_ENV", "production")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", False)
+
+
+def _parse_env_bool(value, default=False):
+    """Parse a boolean environment value, failing closed for unknown input."""
+    if value is None:
+        return default
+
+    normalized = value.strip().lower()
+    if normalized in {"true", "1"}:
+        return True
+    if normalized in {"false", "0"}:
+        return False
+    return default
+
+
+DEBUG = _parse_env_bool(os.environ.get("DEBUG"))
 
 # allowed hosts that can access the Django app
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(" ")
